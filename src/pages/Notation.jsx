@@ -1,0 +1,555 @@
+import { useState, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
+import { Chart, RadarController, BarController, RadialLinearScale, LinearScale, CategoryScale, PointElement, LineElement, BarElement, Tooltip, Legend } from 'chart.js';
+Chart.register(RadarController, BarController, RadialLinearScale, LinearScale, CategoryScale, PointElement, LineElement, BarElement, Tooltip, Legend);
+
+import Layout from '../components/Layout';
+import { marches } from '../data/mockData';
+import { useNotation } from '../context/NotationContext';
+import MarcheNavTabs from '../components/MarcheNavTabs';
+
+const VENDOR_COLORS = ['#B91C1C','#1A6B3A','#7C3AED','#1A4FA8','#0F7285','#9D3FAF'];
+const MEDALS = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49','4\ufe0f\u20e3','5\ufe0f\u20e3','6\ufe0f\u20e3'];
+
+function noteColor(n) {
+  if (n >= 4.25) return '#10B981';
+  if (n >= 3.5)  return '#F59E0B';
+  return '#EF4444';
+}
+
+function parseExcel(wb, fileName) {
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const hdrRow = raw[3] || [];
+  const vendorCols = [3,4,5,6,7,8];
+  const noteCols  = [9,10,11,12,13,14];
+  const vendors = vendorCols.map((ci, vi) => {
+    const h = String(hdrRow[ci] || '').trim();
+    const parts = h.split('\n').map(s => s.trim()).filter(Boolean);
+    return {
+      idx: vi, colResp: ci, colNote: noteCols[vi],
+      name: parts[0] || ('F' + (vi+1)),
+      label: parts[0] || ('F' + (vi+1)),
+      color: VENDOR_COLORS[vi] || '#64748B',
+      initials: (parts[0] || '?').split(/[\s(]/)[0].substring(0,2).toUpperCase(),
+    };
+  });
+  const questions = [];
+  for (let ri = 4; ri < raw.length; ri++) {
+    const row = raw[ri];
+    if (!row || !String(row[1] || '').trim()) break;
+    const question = String(row[1]).trim();
+    const num = row[0] || (questions.length + 1);
+    const methode = String(row[2] || '').trim();
+    const answers = {}, notes = {}, comments = {};
+    vendors.forEach(v => {
+      answers[v.name] = String(row[v.colResp] || '\u2014').trim() || '\u2014';
+      const rn = row[v.colNote];
+      notes[v.name] = (rn !== '' && rn != null) ? (parseFloat(rn) || null) : null;
+      comments[v.name] = '';
+    });
+    questions.push({ num, question, methode, answers, notes, comments, skipped: {}, xlsxRowIdx: ri });
+  }
+  if (!questions.length) throw new Error('Aucune question trouv\u00e9e (lignes 5+ colonne B)');
+  return { fileName, sheetName, vendors, questions };
+}
+
+export default function Notation() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { getSession, setSession, clearSession } = useNotation();
+  const marche = marches.find(m => m.id === id);
+  const session = getSession(id);
+
+  const [activeQ, setActiveQ] = useState(0);
+  const [tab, setTab] = useState('notation');
+  const [isDrag, setIsDrag] = useState(false);
+  const [importErr, setImportErr] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const origBin = useRef(null);
+
+  const barRef   = useRef(null);
+  const radarRef = useRef(null);
+  const barChart   = useRef(null);
+  const radarChart = useRef(null);
+
+  function loadFile(file) {
+    if (!file?.name.match(/\.xlsx?$/i)) { setImportErr('Fichier .xlsx requis'); return; }
+    setImportErr('');
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const buf = e.target.result;
+        const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+        const data = parseExcel(wb, file.name);
+        origBin.current = buf.slice(0);
+        try {
+          const saved = JSON.parse(localStorage.getItem('gm-notation-' + id) || 'null');
+          if (saved?.fileName === file.name) {
+            data.questions.forEach(q => {
+              if (saved.notes?.[q.xlsxRowIdx]) {
+                data.vendors.forEach(v => {
+                  const n = saved.notes[q.xlsxRowIdx][v.name];
+                  if (n !== undefined) q.notes[v.name] = n;
+                });
+              }
+              if (saved.skipped?.[q.xlsxRowIdx]) {
+                data.vendors.forEach(v => {
+                  if (saved.skipped[q.xlsxRowIdx]?.[v.name]) q.skipped[v.name] = true;
+                });
+              }
+            });
+          }
+        } catch(_) {}
+        setSession(id, data);
+        setActiveQ(0);
+        setTab('notation');
+      } catch(err) { setImportErr('Erreur : ' + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function persist(data) {
+    try {
+      const notes = {}, skipped = {};
+      data.questions.forEach(q => {
+        notes[q.xlsxRowIdx] = q.notes;
+        const sk = {};
+        data.vendors.forEach(v => { if (q.skipped[v.name]) sk[v.name] = true; });
+        if (Object.keys(sk).length) skipped[q.xlsxRowIdx] = sk;
+      });
+      localStorage.setItem('gm-notation-' + id, JSON.stringify({ fileName: data.fileName, notes, skipped }));
+    } catch(_) {}
+  }
+
+  function setNote(qIdx, vName, val) {
+    if (!session) return;
+    const qs = session.questions.map((q, i) =>
+      i === qIdx ? { ...q, notes: { ...q.notes, [vName]: parseFloat(val) } } : q
+    );
+    const ns = { ...session, questions: qs };
+    setSession(id, ns); persist(ns);
+  }
+
+  function setComment(qIdx, vName, txt) {
+    if (!session) return;
+    const qs = session.questions.map((q, i) =>
+      i === qIdx ? { ...q, comments: { ...q.comments, [vName]: txt } } : q
+    );
+    const ns = { ...session, questions: qs };
+    setSession(id, ns); persist(ns);
+  }
+
+  function toggleSkip(qIdx, vName) {
+    if (!session) return;
+    const qs = session.questions.map((q, i) =>
+      i === qIdx ? { ...q, skipped: { ...q.skipped, [vName]: !q.skipped[vName] } } : q
+    );
+    const ns = { ...session, questions: qs };
+    setSession(id, ns); persist(ns);
+  }
+
+  function avg(v) {
+    if (!session) return null;
+    const vals = session.questions
+      .filter(q => !q.skipped[v.name])
+      .map(q => q.notes[v.name])
+      .filter(n => n !== null && n !== undefined && !isNaN(n));
+    return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+  }
+
+  function doExport() {
+    if (!session || !origBin.current) return;
+    setExporting(true);
+    try {
+      const { vendors, questions, sheetName } = session;
+      const wb = XLSX.read(new Uint8Array(origBin.current), { type: 'array' });
+      const ws = wb.Sheets[sheetName];
+      questions.forEach(q => {
+        vendors.forEach(v => {
+          if (q.skipped[v.name]) return;
+          const note = q.notes[v.name];
+          if (note !== null && note !== undefined && !isNaN(note)) {
+            ws[XLSX.utils.encode_cell({ r: q.xlsxRowIdx, c: v.colNote })] = { v: note, t: 'n' };
+          }
+        });
+      });
+      vendors.forEach(v => {
+        const a = avg(v);
+        if (a !== null) ws[XLSX.utils.encode_cell({ r: 2, c: v.colNote })] = { v: +a.toFixed(3), t: 'n' };
+      });
+      const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'sortie_' + session.fileName;
+      a.click();
+    } catch(err) { alert('Erreur export : ' + err.message); }
+    setExporting(false);
+  }
+
+  // Charts dans la Synthèse
+  useEffect(() => {
+    if (tab !== 'synthese' || !session) return;
+    if (barChart.current)   { barChart.current.destroy();   barChart.current = null; }
+    if (radarChart.current) { radarChart.current.destroy(); radarChart.current = null; }
+    const { vendors, questions } = session;
+    const labels = questions.map(q => String(q.num));
+
+    setTimeout(() => {
+      if (barRef.current) {
+        barChart.current = new Chart(barRef.current.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: vendors.map(v => ({
+              label: v.label.split('(')[0].trim(),
+              data: questions.map(q => {
+                if (q.skipped[v.name]) return null;
+                const n = q.notes[v.name];
+                return (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
+              }),
+              backgroundColor: v.color + 'BB',
+              borderColor: v.color,
+              borderWidth: 1, borderRadius: 3,
+              skipNull: true,
+            })),
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
+            scales: {
+              y: { min: 0, max: 5, ticks: { stepSize: 1 } },
+              x: { ticks: { font: { size: 10 } } },
+            },
+          },
+        });
+      }
+      if (radarRef.current) {
+        radarChart.current = new Chart(radarRef.current.getContext('2d'), {
+          type: 'radar',
+          data: {
+            labels,
+            datasets: vendors.map(v => ({
+              label: v.label.split('(')[0].trim(),
+              data: questions.map(q => {
+                if (q.skipped[v.name]) return null;
+                const n = q.notes[v.name];
+                return (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
+              }),
+              borderColor: v.color,
+              backgroundColor: v.color + '22',
+              borderWidth: 2, pointRadius: 3,
+            })),
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
+            scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 9 } } } },
+          },
+        });
+      }
+    }, 50);
+
+    return () => {
+      if (barChart.current)   { barChart.current.destroy();   barChart.current = null; }
+      if (radarChart.current) { radarChart.current.destroy(); radarChart.current = null; }
+    };
+  }, [tab, session]);
+
+  if (!marche) return (
+    <Layout title="March\u00e9 introuvable">
+      <div className="empty-state"><div className="empty-title">March\u00e9 introuvable</div></div>
+    </Layout>
+  );
+
+  const title = marche.reference + ' \u2014 ' + marche.nom;
+
+  if (!session) {
+    return (
+      <Layout title={title} sub="\u2014 Notation des offres">
+        <div className="import-zone-wrapper">
+          <MarcheNavTabs />
+        <div className="page-header">
+            <div className="page-title">Charger un fichier d'\u00e9valuation</div>
+            <div className="page-sub">Chargez le fichier Excel issu du template d'\u00e9valuation des fournisseurs</div>
+          </div>
+          {importErr && <div className="info-box red" style={{ marginBottom: 16 }}>{importErr}</div>}
+          <div
+            className={'drop-zone' + (isDrag ? ' drag-over' : '')}
+            onDragOver={e => { e.preventDefault(); setIsDrag(true); }}
+            onDragLeave={() => setIsDrag(false)}
+            onDrop={e => { e.preventDefault(); setIsDrag(false); loadFile(e.dataTransfer.files[0]); }}
+          >
+            <div className="drop-icon">\ud83d\udcc2</div>
+            <div className="drop-title">Glissez-d\u00e9posez votre fichier ici</div>
+            <div className="drop-sub">Format .xlsx \u00b7 Template d'\u00e9valuation fournisseurs Unicancer</div>
+            <label className="btn btn-primary" style={{ marginTop: 16, cursor: 'pointer' }}>
+              Parcourir\u2026
+              <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
+            </label>
+          </div>
+          <div className="info-box blue" style={{ marginTop: 16 }}>
+            <strong>Format attendu :</strong> feuille 1 \u2014 ligne 4 = en-t\u00eates fournisseurs (colonnes D\u2013I pour les r\u00e9ponses, J\u2013O pour les notes), lignes 5+ = questions/crit\u00e8res.
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const { vendors, questions } = session;
+  const qi = Math.max(0, Math.min(activeQ, questions.length - 1));
+  const q = questions[qi];
+  const totalNoted = questions.filter(qq =>
+    vendors.every(v => qq.skipped[v.name] || (qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])))
+  ).length;
+  const ranking = [...vendors].map(v => ({ ...v, avgScore: avg(v) })).sort((a,b) => (b.avgScore||0) - (a.avgScore||0));
+
+  return (
+    <Layout
+      title={title}
+      sub="\u2014 Notation des offres"
+      actions={
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{totalNoted}/{questions.length} crit\u00e8res not\u00e9s</span>
+          <button className="btn btn-success btn-sm" onClick={doExport} disabled={exporting || !origBin.current}>
+            \u2b07 Exporter XLSX
+          </button>
+          <button
+            className="btn btn-outline btn-sm"
+            onClick={() => { if (window.confirm('Supprimer la session de notation pour ' + marche.reference + ' ?')) { clearSession(id); origBin.current = null; } }}
+          >
+            \ud83d\uddd1 R\u00e9initialiser
+          </button>
+        </div>
+      }
+    >
+      <MarcheNavTabs />
+      <div className="notation-summary-bar">
+        {vendors.map(v => {
+          const a = avg(v);
+          return (
+            <div key={v.name} className="notation-vendor-chip">
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: v.color, flexShrink: 0 }}></div>
+              <span style={{ fontWeight: 700, color: v.color }}>{v.label.split('(')[0].trim()}</span>
+              <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 700, color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>
+                {a !== null ? a.toFixed(2) : '\u2014'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="tabs">
+        <div className={'tab' + (tab === 'notation' ? ' active' : '')} onClick={() => setTab('notation')}>\u270f\ufe0f Notation</div>
+        <div className={'tab' + (tab === 'synthese' ? ' active' : '')} onClick={() => setTab('synthese')}>\ud83d\udcca Synth\u00e8se</div>
+      </div>
+
+      {tab === 'notation' && (
+        <div className="fade-in">
+          <div className="fq-nav-controls">
+            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>\u2190 Pr\u00e9c\u00e9dent</button>
+            <div className="fq-progress">
+              <div style={{ marginBottom: 6 }}>Question {qi+1} / {questions.length}</div>
+              <div className="fq-progress-dots">
+                {questions.map((qq, i) => {
+                  const done = vendors.every(v => qq.skipped[v.name] || (qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])));
+                  return (
+                    <div
+                      key={i}
+                      className="fq-dot"
+                      onClick={() => setActiveQ(i)}
+                      style={{ background: i === qi ? 'var(--blue)' : done ? 'var(--green)' : 'var(--border)', color: (i === qi || done) ? '#fff' : 'var(--text-muted)' }}
+                      title={'Question ' + (i+1)}
+                    >{i+1}</div>
+                  );
+                })}
+              </div>
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant \u2192</button>
+          </div>
+
+          <div className="fq-card">
+            <div className="fq-header">
+              <div className="fq-header-num">{q.num}</div>
+              <div className="fq-header-text">
+                <div className="fq-header-q">{q.question}</div>
+                {q.methode && q.methode !== '\u2014' && <div className="fq-header-m">\ud83d\udcd0 M\u00e9thodologie : {q.methode}</div>}
+              </div>
+            </div>
+            <div className="fq-body">
+              <div className="table-container" style={{ border: 'none' }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fournisseur</th>
+                      <th style={{ textAlign: 'left' }}>R\u00e9ponse</th>
+                      <th>Note /5</th>
+                      <th style={{ minWidth: 160 }}>Commentaire</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vendors.map((v, vi) => {
+                      const ans = q.answers[v.name] || '\u2014';
+                      const note = q.notes[v.name];
+                      const hasNote = note !== null && note !== undefined && !isNaN(note);
+                      const noteVal = hasNote ? note : 3;
+                      const comment = q.comments[v.name] || '';
+                      const isSkipped = !!q.skipped[v.name];
+                      return (
+                        <tr key={v.name} style={isSkipped ? { opacity: .55, background: 'repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(0,0,0,.02) 4px,rgba(0,0,0,.02) 8px)' } : {}}>
+                          <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                            <div className="vendor-pill" style={{ background: v.color }}>{v.initials}</div>
+                            <div style={{ fontSize: 9, color: v.color, fontWeight: 700, marginTop: 3 }}>{v.label.split('(')[0].trim()}</div>
+                          </td>
+                          <td>
+                            <div className="fq-ans" title={ans}>{ans.length > 150 ? ans.substring(0,150) + '\u2026' : ans}</div>
+                          </td>
+                          <td className="fq-note-cell">
+                            <button className={'skip-btn' + (isSkipped ? ' active' : '')} onClick={() => toggleSkip(qi, v.name)}>
+                              {isSkipped ? '\u21a9 R\u00e9activer' : '\u2014 Non not\u00e9'}
+                            </button>
+                            {isSkipped
+                              ? <div className="fq-score-disp" style={{ color: 'var(--text-muted)', marginTop: 4 }}>N/N</div>
+                              : <>
+                                  <div className="fq-score-disp" style={{ color: hasNote ? noteColor(noteVal) : 'var(--text-muted)' }}>
+                                    {hasNote ? noteVal.toFixed(2) : '\u2014'}
+                                  </div>
+                                  <input
+                                    type="range" className="fq-slider" min="0" max="5" step="0.25"
+                                    value={noteVal}
+                                    style={{ accentColor: v.color }}
+                                    onChange={e => setNote(qi, v.name, parseFloat(e.target.value))}
+                                  />
+                                  <div className="fq-stars">
+                                    {[1,2,3,4,5].map(n => (
+                                      <span key={n} className={'fq-star' + (hasNote && noteVal >= n ? ' on' : '')} onClick={() => setNote(qi, v.name, n)}>\u2605</span>
+                                    ))}
+                                  </div>
+                                </>
+                            }
+                          </td>
+                          <td style={{ verticalAlign: 'top', padding: 10 }}>
+                            <textarea
+                              className="fq-comment"
+                              placeholder="Commentaire\u2026"
+                              value={comment}
+                              onChange={e => setComment(qi, v.name, e.target.value)}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="fq-nav-controls" style={{ marginTop: 12 }}>
+            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>\u2190 Pr\u00e9c\u00e9dent</button>
+            <div style={{ fontSize: 11 }}>
+              {vendors.map(v => {
+                const a = avg(v);
+                return (
+                  <span key={v.name} style={{ margin: '0 6px', color: v.color, fontWeight: 700 }}>
+                    {v.initials}: <span style={{ fontFamily: 'DM Mono,monospace', color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>{a !== null ? a.toFixed(2) : '\u2014'}</span>
+                  </span>
+                );
+              })}
+            </div>
+            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant \u2192</button>
+          </div>
+        </div>
+      )}
+
+      {tab === 'synthese' && (
+        <div className="fade-in">
+          {ranking[0]?.avgScore !== null && ranking[0]?.avgScore !== undefined && (
+            <div className="info-box green" style={{ marginBottom: 16 }}>
+              <strong>Meilleure offre provisoire \u2014 {ranking[0].label.split('(')[0].trim()}</strong>
+              <span style={{ marginLeft: 8, fontFamily: 'DM Mono,monospace', fontWeight: 700 }}>
+                {ranking[0].avgScore?.toFixed(3)} / 5
+              </span>
+            </div>
+          )}
+
+          {/* Classement */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12, marginBottom: 20 }}>
+            {ranking.map((v, r) => (
+              <div key={v.name} className="card">
+                <div className="card-header" style={{ background: `linear-gradient(135deg,${v.color} 0%,${v.color}bb 100%)` }}>
+                  <span style={{ fontSize: 20 }}>{MEDALS[r] || (r+1)}</span>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#fff' }}>{v.label.split('(')[0].trim()}</div>
+                  <div style={{ marginLeft: 'auto', fontFamily: 'DM Mono,monospace', fontWeight: 800, fontSize: 18, color: '#fff' }}>
+                    {v.avgScore !== null && v.avgScore !== undefined ? v.avgScore.toFixed(3) : '\u2014'}
+                  </div>
+                </div>
+                <div className="card-body" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  {questions.filter(qq => !qq.skipped[v.name] && qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])).length} / {questions.length} crit\u00e8res not\u00e9s
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Graphiques */}
+          <div className="charts-grid" style={{ marginBottom: 20 }}>
+            <div className="card">
+              <div className="card-header"><span className="card-title">\ud83d\udcca Notes par crit\u00e8re</span></div>
+              <div className="card-body" style={{ height: 280 }}>
+                <canvas ref={barRef} />
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-header"><span className="card-title">\ud83d\udd78 Radar multi-crit\u00e8res</span></div>
+              <div className="card-body" style={{ height: 280 }}>
+                <canvas ref={radarRef} />
+              </div>
+            </div>
+          </div>
+
+          {/* D\u00e9tail par crit\u00e8re */}
+          <div className="card">
+            <div className="card-header"><span className="card-title">D\u00e9tail par crit\u00e8re</span></div>
+            <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Crit\u00e8re</th>
+                    {vendors.map(v => <th key={v.name} className="td-center" style={{ color: v.color }}>{v.initials}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {questions.map((qq, i) => (
+                    <tr key={i}>
+                      <td className="td-mono" style={{ fontSize: 11 }}>{qq.num}</td>
+                      <td style={{ fontSize: 11, maxWidth: 300 }}>{qq.question.length > 60 ? qq.question.substring(0,60) + '\u2026' : qq.question}</td>
+                      {vendors.map(v => {
+                        const isSkip = !!qq.skipped[v.name];
+                        const n = qq.notes[v.name];
+                        const hasN = n !== null && n !== undefined && !isNaN(n);
+                        return (
+                          <td key={v.name} className="td-center">
+                            {isSkip
+                              ? <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>N/N</span>
+                              : hasN
+                                ? <span className="score-chip" style={{ background: noteColor(n)+'18', color: noteColor(n), fontSize: 11 }}>{n.toFixed(2)}</span>
+                                : <span style={{ color: 'var(--text-muted)' }}>\u2014</span>
+                            }
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
+}

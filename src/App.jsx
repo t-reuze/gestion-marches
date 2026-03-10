@@ -1,0 +1,35 @@
+import { createHashRouter, RouterProvider, Navigate, useParams } from 'react-router-dom';
+import Dashboard     from './pages/Dashboard';
+import Reporting     from './pages/Reporting';
+import Notation      from './pages/Notation';
+import Reponses     from './pages/Reponses';
+import { NotationProvider, useNotation } from './context/NotationContext';
+import { marches }   from './data/mockData';
+
+function MarcheRedirect() {
+  const { id } = useParams();
+  const { getSession } = useNotation();
+  const m = marches.find(x => x.id === id);
+  if (!m) return <Navigate to="/" replace />;
+  if (getSession(id))  return <Navigate to={'/marche/' + id + '/notation'}  replace />;
+  if (m.hasReporting)  return <Navigate to={'/marche/' + id + '/reporting'} replace />;
+  return <Navigate to={'/marche/' + id + '/notation'} replace />;
+}
+
+const router = createHashRouter([
+  { path: '/',                          element: <Dashboard /> },
+  { path: '/reporting',                 element: <Reporting /> },
+  { path: '/marche/:id/reporting',      element: <Reporting /> },
+  { path: '/marche/:id/notation',       element: <Notation /> },
+  { path: '/marche/:id/reponses',       element: <Reponses /> },
+  { path: '/marche/:id',                element: <MarcheRedirect /> },
+  { path: '*',                          element: <Navigate to="/" replace /> },
+]);
+
+export default function App() {
+  return (
+    <NotationProvider>
+      <RouterProvider router={router} />
+    </NotationProvider>
+  );
+}
