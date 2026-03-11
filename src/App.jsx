@@ -4,9 +4,11 @@ import Reporting     from './pages/Reporting';
 import Notation      from './pages/Notation';
 import Reponses     from './pages/Reponses';
 import MarcheInfos  from './pages/MarcheInfos';
-import Formations   from './pages/Formations';
+import Formations      from './pages/Formations';
+import FormationDetail from './pages/FormationDetail';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider } from './context/MarcheMetaContext';
+import { FormationsMetaProvider } from './context/FormationsMetaContext';
 import { marches }   from './data/mockData';
 
 function MarcheRedirect() {
@@ -23,6 +25,7 @@ const router = createHashRouter([
   { path: '/',                          element: <Dashboard /> },
   { path: '/reporting',                 element: <Reporting /> },
   { path: '/formations',                element: <Formations /> },
+  { path: '/formations/:id',            element: <FormationDetail /> },
   { path: '/marche/:id/reporting',      element: <Reporting /> },
   { path: '/marche/:id/notation',       element: <Notation /> },
   { path: '/marche/:id/reponses',       element: <Reponses /> },
@@ -33,10 +36,12 @@ const router = createHashRouter([
 
 export default function App() {
   return (
+    <FormationsMetaProvider>
     <MarcheMetaProvider>
     <NotationProvider>
       <RouterProvider router={router} />
     </NotationProvider>
     </MarcheMetaProvider>
+    </FormationsMetaProvider>
   );
 }

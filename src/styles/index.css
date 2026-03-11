@@ -427,3 +427,15 @@ tbody tr:hover { background: var(--surface); }
   box-shadow: 0 0 0 3px rgba(26,79,168,.1);
 }
 select.info-field-input { cursor: pointer; }
+
+/* ── Formation Detail ─────────────── */
+.kpi-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 10px;
+  min-width: 100px;
+  gap: 2px;
+}
