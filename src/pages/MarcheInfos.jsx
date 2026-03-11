@@ -34,9 +34,9 @@ export default function MarcheInfos() {
       dateLimiteDepot:     merged.dateLimiteDepot     || '',
       dateAttributionPrevue: merged.dateAttributionPrevue || '',
       progression:         merged.progression         > 0 ? String(merged.progression) : '0',
-      tags:                Array.isArray(merged.tags) && merged.tags.length
+      tags:                Array.isArray(merged.tags)
                              ? merged.tags.join(', ')
-                             : (merged.tags || ''),
+                             : (typeof merged.tags === 'string' ? merged.tags : ''),
     });
   }, [id]);
 
@@ -54,7 +54,7 @@ export default function MarcheInfos() {
       dateLimiteDepot:     form.dateLimiteDepot,
       dateAttributionPrevue: form.dateAttributionPrevue,
       progression:         form.progression !== '' ? Number(form.progression) : 0,
-      tags:                form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      tags:                (typeof form.tags === 'string' && form.tags) ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -162,7 +162,7 @@ export default function MarcheInfos() {
             />
             {form.tags && (
               <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {form.tags.split(',').map(t => t.trim()).filter(Boolean).map(t => (
+                {(typeof form.tags === 'string' ? form.tags : '').split(',').map(t => t.trim()).filter(Boolean).map(t => (
                   <span key={t} className="tag">{t}</span>
                 ))}
               </div>
