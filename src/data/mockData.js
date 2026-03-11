@@ -108,7 +108,7 @@ export const marches = [
     responsable: 'Claire FOURIS', service: '',
     nbLots: 15, nbOffresRecues: 0, hasAnalyse: false, hasReporting: false,
     budgetEstime: '', progression: 0,
-    tags: ['Marché prolongé d'un an'],
+    tags: ["March\u00e9 prolong\u00e9 d'un an"],
   },
   {
     id: 'ctrl-qual-al083', reference: 'AL083',
