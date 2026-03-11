@@ -25,19 +25,32 @@ const STATUTS_I = [
   { value: 'annule',      label: 'Annul&#xe9;',     color: '#EF4444' },
 ];
 
-const EMPTY_MODELE = { nbParticipants: '', nbJours: '', fraisPeda: '', fraisMateriel: '', transport: '', nbNuits: '', hebergement: '', restauration: '', coutSalarial: '', autresFrais: '' };
+const EMPTY_MODELE = {
+  nbParticipants: '', nbJours: '',
+  fraisPeda: '', fraisMateriel: '',
+  honorairesFormateur: '', nbFormateurs: '', deplFormateur: '',
+  fraisInscription: '', fraisCertification: '',
+  transport: '', nbNuits: '', hebergement: '', restauration: '',
+  coutSalarial: '',
+  fraisAdmin: '', autresFrais: '',
+};
 const EMPTY_INSC   = { nom: '', service: '', email: '', statut: 'confirme' };
 
 function calcModele(m) {
-  const nb    = Number(m.nbParticipants) || 0;
-  const jours = Number(m.nbJours)        || 0;
-  const nuits = Number(m.nbNuits)        || 0;
-  const coutPeda      = (Number(m.fraisPeda) || 0) + (Number(m.fraisMateriel) || 0);
-  const coutDeplac    = ((Number(m.transport) || 0) + (Number(m.hebergement) || 0) * nuits + (Number(m.restauration) || 0) * jours) * nb;
-  const coutTemps     = (Number(m.coutSalarial) || 0) * jours * nb;
-  const coutAutres    = Number(m.autresFrais) || 0;
-  const total         = coutPeda + coutDeplac + coutTemps + coutAutres;
-  return { coutPeda, coutDeplac, coutTemps, coutAutres, total, parParticipant: nb > 0 ? total / nb : 0 };
+  const nb      = Number(m.nbParticipants)      || 0;
+  const jours   = Number(m.nbJours)             || 0;
+  const nuits   = Number(m.nbNuits)             || 0;
+  const nbForm  = Number(m.nbFormateurs)        || 1;
+  const pedaBase    = (Number(m.fraisPeda) || 0) + (Number(m.fraisMateriel) || 0);
+  const pedaInscrit = ((Number(m.fraisInscription) || 0) + (Number(m.fraisCertification) || 0)) * nb;
+  const coutPeda    = pedaBase + pedaInscrit;
+  const coutFormateur = ((Number(m.honorairesFormateur) || 0) * jours + (Number(m.deplFormateur) || 0)) * nbForm;
+  const coutDeplac  = ((Number(m.transport) || 0) + (Number(m.hebergement) || 0) * nuits + (Number(m.restauration) || 0) * jours) * nb;
+  const coutTemps   = (Number(m.coutSalarial) || 0) * jours * nb;
+  const coutAdmin   = Number(m.fraisAdmin)  || 0;
+  const coutAutres  = Number(m.autresFrais) || 0;
+  const total = coutPeda + coutFormateur + coutDeplac + coutTemps + coutAdmin + coutAutres;
+  return { coutPeda, pedaBase, pedaInscrit, coutFormateur, coutDeplac, coutTemps, coutAdmin, coutAutres, total, parParticipant: nb > 0 ? total / nb : 0 };
 }
 
 function euro(n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + '\u00a0\u20ac'; }
@@ -324,8 +337,7 @@ export default function FormationDetail() {
           </div>
         </div>
       )}
-
-      {/* ── TAB: Modèle économique ── */}
+       {/* ── TAB: Modèle économique ── */}
       {tab === 'modele' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
           <div>
@@ -334,8 +346,8 @@ export default function FormationDetail() {
               <div className="card-header"><span className="card-title">&#x2699;&#xFE0F; Param&#xe8;tres g&#xe9;n&#xe9;raux</span></div>
               <div className="card-body">
                 <div className="info-grid">
-                  {mfield('Nombre de participants', 'nbParticipants', modele, setModele, { min: 0, placeholder: '0' })}
-                  {mfield('Dur&#xe9;e (jours)', 'nbJours', modele, setModele, { min: 0, step: 0.5, placeholder: '1' })}
+                  {mfield('Nombre de participants', 'nbParticipants', modele, setModele, { min: 0, placeholder: '0', help: 'Nombre total de personnels inscrits à la formation' })}
+                  {mfield('Dur&#xe9;e (jours)', 'nbJours', modele, setModele, { min: 0, step: 0.5, placeholder: '1', help: 'Durée totale en jours (0,5 = demi-journée)' })}
                 </div>
               </div>
             </div>
@@ -344,34 +356,92 @@ export default function FormationDetail() {
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="card-header"><span className="card-title">&#x1F4DA; Co&#xfb;ts p&#xe9;dagogiques</span></div>
               <div className="card-body">
-                <div className="info-grid">
-                  {mfield('Frais p&#xe9;dagogiques (&#x20ac; total)', 'fraisPeda', modele, setModele, { min: 0, placeholder: '0' })}
-                  {mfield('Mat&#xe9;riel / documentation (&#x20ac;)', 'fraisMateriel', modele, setModele, { min: 0, placeholder: '0' })}
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #3B82F6' }}>
+                  Coûts liés au contenu pédagogique : frais de formation, supports, droits d&apos;accès aux ressources, frais d&apos;inscription et de certification individuelle.
                 </div>
+                <div className="info-grid">
+                  {mfield('Frais p&#xe9;dagogiques (&#x20ac; total)', 'fraisPeda', modele, setModele, { min: 0, placeholder: '0', help: 'Coût global de la prestation pédagogique (forfait organisme de formation)' })}
+                  {mfield('Mat&#xe9;riel / documentation (&#x20ac;)', 'fraisMateriel', modele, setModele, { min: 0, placeholder: '0', help: 'Impressions, supports de cours, livres, outils pédagogiques' })}
+                  {mfield('Frais d&#x27;inscription (&#x20ac;/pers.)', 'fraisInscription', modele, setModele, { min: 0, placeholder: '0', help: "Droits d'inscription individuelle à la session ou à la plateforme" })}
+                  {mfield('Frais de certification (&#x20ac;/pers.)', 'fraisCertification', modele, setModele, { min: 0, placeholder: '0', help: "Coût de passage d'examen, de certification ou d'habilitation" })}
+                </div>
+                {(Number(modele.fraisInscription) > 0 || Number(modele.fraisCertification) > 0) && Number(modele.nbParticipants) > 0 && (
+                  <div style={{ fontSize: 11, color: '#3B82F6', marginTop: 8, fontWeight: 500 }}>
+                    &#x2139;&#xFE0F; Frais individuels × {modele.nbParticipants} participants = {euro(calc.pedaInscrit)}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Frais de déplacement */}
+            {/* Intervenants externes */}
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div className="card-header"><span className="card-title">&#x1F3AB; Intervenant(s) externe(s)</span></div>
+              <div className="card-body">
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #10B981' }}>
+                  Coûts liés aux formateurs ou experts extérieurs. Calcul : (honoraires × nb jours + frais déplacement) × nb formateurs.
+                </div>
+                <div className="info-grid">
+                  {mfield('Nombre de formateurs', 'nbFormateurs', modele, setModele, { min: 0, placeholder: '1', help: "Nombre d'intervenants/formateurs rémunérés" })}
+                  {mfield('Honoraires (&#x20ac;/jour/formateur)', 'honorairesFormateur', modele, setModele, { min: 0, placeholder: '0', help: "Tarif journalier moyen d'un intervenant externe (HT)" })}
+                  {mfield('D&#xe9;placement formateur (&#x20ac; total)', 'deplFormateur', modele, setModele, { min: 0, placeholder: '0', help: 'Transport + hébergement + repas du formateur (forfait total)' })}
+                </div>
+                {calc.coutFormateur > 0 && (
+                  <div style={{ fontSize: 11, color: '#10B981', marginTop: 8, fontWeight: 500 }}>
+                    &#x2139;&#xFE0F; Sous-total intervenants = {euro(calc.coutFormateur)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Frais de déplacement participants */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="card-header"><span className="card-title">&#x1F686; Frais de d&#xe9;placement (par participant)</span></div>
               <div className="card-body">
-                <div className="info-grid">
-                  {mfield('Transport (&#x20ac;/pers.)', 'transport', modele, setModele, { min: 0, placeholder: '0' })}
-                  {mfield('Nb nuits h&#xe9;bergement', 'nbNuits', modele, setModele, { min: 0, placeholder: '0' })}
-                  {mfield('H&#xe9;bergement (&#x20ac;/nuit/pers.)', 'hebergement', modele, setModele, { min: 0, placeholder: '0' })}
-                  {mfield('Per diem restauration (&#x20ac;/jour/pers.)', 'restauration', modele, setModele, { min: 0, placeholder: '0' })}
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #F59E0B' }}>
+                  Ces coûts sont multipliés par le nombre de participants. L&apos;hébergement est multiplié par le nombre de nuits, la restauration par le nombre de jours.
                 </div>
+                <div className="info-grid">
+                  {mfield('Transport (&#x20ac;/pers.)', 'transport', modele, setModele, { min: 0, placeholder: '0', help: 'Train, avion, voiture… coût moyen aller-retour par personne' })}
+                  {mfield('Nb nuits h&#xe9;bergement', 'nbNuits', modele, setModele, { min: 0, placeholder: '0', help: 'Nombre de nuits par participant' })}
+                  {mfield('H&#xe9;bergement (&#x20ac;/nuit/pers.)', 'hebergement', modele, setModele, { min: 0, placeholder: '0', help: 'Tarif hôtel moyen par nuit et par personne' })}
+                  {mfield('Per diem restauration (&#x20ac;/jour/pers.)', 'restauration', modele, setModele, { min: 0, placeholder: '0', help: 'Remboursement repas journalier par participant (selon barème)' })}
+                </div>
+                {calc.coutDeplac > 0 && (
+                  <div style={{ fontSize: 11, color: '#F59E0B', marginTop: 8, fontWeight: 500 }}>
+                    &#x2139;&#xFE0F; Sous-total déplacements participants = {euro(calc.coutDeplac)}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Coût du temps */}
+            {/* Coût du temps agents */}
             <div className="card" style={{ marginBottom: 16 }}>
               <div className="card-header"><span className="card-title">&#x23F1;&#xFE0F; Co&#xfb;t du temps agent (co&#xfb;t opportunit&#xe9;)</span></div>
               <div className="card-body">
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Co&#xfb;t salarial journalier moyen charg&#xe9; &#xd7; nb jours &#xd7; nb participants</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #8B5CF6' }}>
+                  Valorisation du temps de travail mobilisé. Formule : coût salarial journalier chargé × nb jours × nb participants.
+                </div>
                 <div className="info-grid">
-                  {mfield('Co&#xfb;t salarial journalier (&#x20ac;/jour/pers.)', 'coutSalarial', modele, setModele, { min: 0, placeholder: 'ex: 350' })}
-                  {mfield('Autres frais (&#x20ac; total)', 'autresFrais', modele, setModele, { min: 0, placeholder: '0' })}
+                  {mfield('Co&#xfb;t salarial journalier (&#x20ac;/jour/pers.)', 'coutSalarial', modele, setModele, { min: 0, placeholder: 'ex: 350', help: 'Salaire chargé moyen journalier (charges patronales incluses). Ex : 350 € pour un cadre hospitalier' })}
+                </div>
+                {calc.coutTemps > 0 && (
+                  <div style={{ fontSize: 11, color: '#8B5CF6', marginTop: 8, fontWeight: 500 }}>
+                    &#x2139;&#xFE0F; {modele.coutSalarial} €/j × {modele.nbJours} j × {modele.nbParticipants} pers. = {euro(calc.coutTemps)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Frais administratifs & autres */}
+            <div className="card" style={{ marginBottom: 16 }}>
+              <div className="card-header"><span className="card-title">&#x1F4BC; Frais administratifs &amp; autres</span></div>
+              <div className="card-body">
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #64748B' }}>
+                  Frais de gestion interne, logistique ou toute dépense non catégorisée ci-dessus.
+                </div>
+                <div className="info-grid">
+                  {mfield('Frais administratifs (&#x20ac; total)', 'fraisAdmin', modele, setModele, { min: 0, placeholder: '0', help: 'Coûts de secrétariat, gestion des dossiers, outils de suivi' })}
+                  {mfield('Autres frais (&#x20ac; total)', 'autresFrais', modele, setModele, { min: 0, placeholder: '0', help: 'Toute autre dépense non couverte par les catégories précédentes' })}
                 </div>
               </div>
             </div>
@@ -389,22 +459,65 @@ export default function FormationDetail() {
               <div className="card-body" style={{ padding: 0 }}>
                 <table style={{ width: '100%' }}>
                   <tbody>
-                    {[
-                      { label: 'Co\u00fbts p\u00e9dagogiques',    value: calc.coutPeda,   color: '#3B82F6' },
-                      { label: 'Frais de d\u00e9placement',        value: calc.coutDeplac, color: '#F59E0B' },
-                      { label: 'Co\u00fbt du temps agents',        value: calc.coutTemps,  color: '#8B5CF6' },
-                      { label: 'Autres frais',                      value: calc.coutAutres, color: '#64748B' },
-                    ].map(r => (
-                      <tr key={r.label} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: r.color, fontWeight: 500 }}>{r.label}</td>
-                        <td style={{ padding: '10px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 600 }}>{euro(r.value)}</td>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '8px 16px', fontSize: 12, color: '#3B82F6', fontWeight: 600 }}>&#x1F4DA; Coûts pédagogiques</td>
+                      <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutPeda)}</td>
+                    </tr>
+                    {calc.pedaBase > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
+                        <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Formation &amp; matériel</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(calc.pedaBase)}</td>
                       </tr>
-                    ))}
-                    <tr style={{ background: 'var(--blue)', color: '#fff', borderRadius: '0 0 8px 8px' }}>
+                    )}
+                    {calc.pedaInscrit > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
+                        <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Inscription &amp; certification</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(calc.pedaInscrit)}</td>
+                      </tr>
+                    )}
+                    {calc.coutFormateur > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 16px', fontSize: 12, color: '#10B981', fontWeight: 600 }}>&#x1F3AB; Intervenants externes</td>
+                        <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutFormateur)}</td>
+                      </tr>
+                    )}
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '8px 16px', fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>&#x1F686; Déplacements participants</td>
+                      <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutDeplac)}</td>
+                    </tr>
+                    {Number(modele.transport) > 0 && Number(modele.nbParticipants) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
+                        <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Transport</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.transport) * (Number(modele.nbParticipants) || 0))}</td>
+                      </tr>
+                    )}
+                    {Number(modele.hebergement) > 0 && Number(modele.nbNuits) > 0 && Number(modele.nbParticipants) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
+                        <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Hébergement ({modele.nbNuits} nuit{Number(modele.nbNuits) > 1 ? 's' : ''})</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.hebergement) * (Number(modele.nbNuits) || 0) * (Number(modele.nbParticipants) || 0))}</td>
+                      </tr>
+                    )}
+                    {Number(modele.restauration) > 0 && Number(modele.nbJours) > 0 && Number(modele.nbParticipants) > 0 && (
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
+                        <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Restauration</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.restauration) * (Number(modele.nbJours) || 0) * (Number(modele.nbParticipants) || 0))}</td>
+                      </tr>
+                    )}
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '8px 16px', fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>&#x23F1; Temps agents</td>
+                      <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutTemps)}</td>
+                    </tr>
+                    {(calc.coutAdmin > 0 || calc.coutAutres > 0) && (
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 16px', fontSize: 12, color: '#64748B', fontWeight: 600 }}>&#x1F4BC; Admin &amp; autres</td>
+                        <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutAdmin + calc.coutAutres)}</td>
+                      </tr>
+                    )}
+                    <tr style={{ background: 'var(--blue)', color: '#fff' }}>
                       <td style={{ padding: '14px 16px', fontWeight: 800, fontSize: 14 }}>TOTAL</td>
                       <td style={{ padding: '14px 16px', fontFamily: 'DM Mono,monospace', fontSize: 16, fontWeight: 800, textAlign: 'right' }}>{euro(calc.total)}</td>
                     </tr>
-                    {(Number(modele.nbParticipants) > 0) && (
+                    {Number(modele.nbParticipants) > 0 && (
                       <tr style={{ background: '#EFF6FF' }}>
                         <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--blue)' }}>Co&#xfb;t par participant</td>
                         <td style={{ padding: '10px 16px', fontFamily: 'DM Mono,monospace', fontSize: 14, fontWeight: 700, textAlign: 'right', color: 'var(--blue)' }}>{euro(calc.parParticipant)}</td>
@@ -421,10 +534,11 @@ export default function FormationDetail() {
                 <div className="card-header"><span className="card-title">R&#xe9;partition</span></div>
                 <div className="card-body">
                   {[
-                    { label: 'P&#xe9;dagogique', value: calc.coutPeda,   color: '#3B82F6' },
-                    { label: 'D&#xe9;placement', value: calc.coutDeplac, color: '#F59E0B' },
-                    { label: 'Temps agents',    value: calc.coutTemps,  color: '#8B5CF6' },
-                    { label: 'Autres',          value: calc.coutAutres, color: '#64748B' },
+                    { label: 'P&#xe9;dagogique',    value: calc.coutPeda,                    color: '#3B82F6' },
+                    { label: 'Intervenants',         value: calc.coutFormateur,               color: '#10B981' },
+                    { label: 'D&#xe9;placements',    value: calc.coutDeplac,                  color: '#F59E0B' },
+                    { label: 'Temps agents',          value: calc.coutTemps,                   color: '#8B5CF6' },
+                    { label: 'Admin &amp; autres',   value: calc.coutAdmin + calc.coutAutres, color: '#64748B' },
                   ].filter(r => r.value > 0).map(r => (
                     <div key={r.label} style={{ marginBottom: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
@@ -449,7 +563,12 @@ export default function FormationDetail() {
 function mfield(label, key, state, setState, opts = {}) {
   return (
     <div className="info-field">
-      <label className="info-field-label" dangerouslySetInnerHTML={{ __html: label }} />
+      <label className="info-field-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span dangerouslySetInnerHTML={{ __html: label }} />
+        {opts.help && (
+          <span title={opts.help} style={{ cursor: 'help', fontSize: 11, color: 'var(--text-muted)', userSelect: 'none' }}>&#x2139;&#xFE0F;</span>
+        )}
+      </label>
       <input
         type="number"
         className="info-field-input"
