@@ -33,6 +33,9 @@ export default function Layout({ children, title, sub, actions }) {
           <NavLink to="/reporting" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
             <span className="ni">&#x1F4C8;</span>Reporting global
           </NavLink>
+          <NavLink to="/formations" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
+            <span className="ni">&#x1F4DA;</span>Formations
+          </NavLink>
         </div>
 
         <div className="sidebar-section">

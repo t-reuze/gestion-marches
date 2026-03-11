@@ -4,6 +4,7 @@ import Reporting     from './pages/Reporting';
 import Notation      from './pages/Notation';
 import Reponses     from './pages/Reponses';
 import MarcheInfos  from './pages/MarcheInfos';
+import Formations   from './pages/Formations';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider } from './context/MarcheMetaContext';
 import { marches }   from './data/mockData';
@@ -21,6 +22,7 @@ function MarcheRedirect() {
 const router = createHashRouter([
   { path: '/',                          element: <Dashboard /> },
   { path: '/reporting',                 element: <Reporting /> },
+  { path: '/formations',                element: <Formations /> },
   { path: '/marche/:id/reporting',      element: <Reporting /> },
   { path: '/marche/:id/notation',       element: <Notation /> },
   { path: '/marche/:id/reponses',       element: <Reponses /> },
