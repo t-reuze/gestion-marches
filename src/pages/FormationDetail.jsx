@@ -145,7 +145,7 @@ export default function FormationDetail() {
   const nbAttente = inscriptions.filter(i => i.statut === 'en_attente').length;
 
   return (
-    <Layout title={formation.nom} sub="\u2014 D\u00e9tail de la formation">
+    <Layout title={formation.nom} sub="— Détail de la formation">
       <button className="btn btn-outline btn-sm" style={{ marginBottom: 16 }} onClick={() => navigate('/formations')}>
         &#x2190; Retour aux formations
       </button>
@@ -160,8 +160,8 @@ export default function FormationDetail() {
               {formation.contact && <span>&#x1F4DE; {formation.contact}</span>}
             </div>
             <div style={{ fontSize: 12, display: 'flex', gap: 16, color: 'var(--text-muted)' }}>
-              <span>&#x1F4C5; &#xc9;ch&#xe9;ance\u00a0: {formatDateF(formation.dateEcheance)}</span>
-              {formation.renouvellement && <span style={{ color: '#10B981', fontWeight: 600 }}>&#x2713; Renouvellement 2026\u20132027</span>}
+              <span>&#x1F4C5; &#xc9;ch&#xe9;ance&#xa0;: {formatDateF(formation.dateEcheance)}</span>
+              {formation.renouvellement && <span style={{ color: '#10B981', fontWeight: 600 }}>&#x2713; Renouvellement 2026&#x2013;2027</span>}
             </div>
             {formation.commentaires && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, fontStyle: 'italic' }}>{formation.commentaires}</div>}
           </div>
@@ -292,7 +292,7 @@ export default function FormationDetail() {
             >
               <div style={{ fontSize: 32, marginBottom: 8 }}>&#x1F4C4;</div>
               <div style={{ fontWeight: 600, fontSize: 13 }}>D&#xe9;poser un fichier ici ou cliquer pour s&#xe9;lectionner</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Fichiers &lt; 1\u00a0Mo stock&#xe9;s dans le navigateur &bull; Formats accept&#xe9;s\u00a0: PDF, Word, Excel, images</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Fichiers &lt; 1&#xa0;Mo stock&#xe9;s dans le navigateur &bull; Formats accept&#xe9;s&#xa0;: PDF, Word, Excel, images</div>
             </div>
             <input ref={fileRef} type="file" multiple style={{ display: 'none' }} onChange={e => { [...e.target.files].forEach(handleFileUpload); e.target.value = ''; }} />
 
@@ -406,7 +406,7 @@ export default function FormationDetail() {
                     </tr>
                     {(Number(modele.nbParticipants) > 0) && (
                       <tr style={{ background: '#EFF6FF' }}>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--blue)' }}>Co\u00fbt par participant</td>
+                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--blue)' }}>Co&#xfb;t par participant</td>
                         <td style={{ padding: '10px 16px', fontFamily: 'DM Mono,monospace', fontSize: 14, fontWeight: 700, textAlign: 'right', color: 'var(--blue)' }}>{euro(calc.parParticipant)}</td>
                       </tr>
                     )}
@@ -429,7 +429,7 @@ export default function FormationDetail() {
                     <div key={r.label} style={{ marginBottom: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
                         <span dangerouslySetInnerHTML={{ __html: r.label }} />
-                        <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 600 }}>{Math.round(r.value / calc.total * 100)}\u00a0%</span>
+                        <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 600 }}>{Math.round(r.value / calc.total * 100)}&#xa0;%</span>
                       </div>
                       <div className="progress">
                         <div className="progress-fill" style={{ width: (r.value / calc.total * 100) + '%', background: r.color }} />
