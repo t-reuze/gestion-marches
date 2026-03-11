@@ -1,6 +1,7 @@
 import { NavLink, useParams } from 'react-router-dom';
 import { marches } from '../data/mockData';
 import { useNotation } from '../context/NotationContext';
+import { useMarcheMeta } from '../context/MarcheMetaContext';
 
 const STATUT_DOT = {
   ouvert:      '#3B82F6',
@@ -13,48 +14,43 @@ const STATUT_DOT = {
 export default function Layout({ children, title, sub, actions }) {
   const { id } = useParams();
   const { getSession } = useNotation();
+  const { getMeta } = useMarcheMeta();
   const activeId = id || null;
 
   return (
     <div className="app-shell">
       <div className="sidebar">
         <div className="sidebar-logo">
-          <div className="app-name">⚕ Unicancer</div>
+          <div className="app-name">&#x2695; Unicancer</div>
           <div className="app-sub">Gestion des marchés</div>
         </div>
 
         <div className="sidebar-section">
           <div className="sidebar-section-label">Navigation</div>
           <NavLink to="/" end className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-            <span className="ni">📊</span>Tableau de bord
+            <span className="ni">&#x1F4CA;</span>Tableau de bord
           </NavLink>
           <NavLink to="/reporting" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-            <span className="ni">📈</span>Reporting global
+            <span className="ni">&#x1F4C8;</span>Reporting global
           </NavLink>
         </div>
 
         <div className="sidebar-section">
           <div className="sidebar-section-label">Marchés</div>
           {marches.map(m => {
+            const meta    = getMeta(m.id);
+            const statut  = meta.statut || m.statut;
             const hasSession = !!getSession(m.id);
-            const dest = m.hasAnalyse
-              ? '/marche/' + m.id + '/analyse'
-              : m.hasReporting
-                ? '/marche/' + m.id + '/reporting'
-                : '/marche/' + m.id + '/notation';
             const isActive = activeId === m.id;
             return (
               <NavLink
                 key={m.id}
-                to={dest}
+                to={'/marche/' + m.id + '/notation'}
                 className={() => 'nav-item nav-marche-item' + (isActive ? ' active' : '')}
               >
-                <span className="nm-dot" style={{ background: STATUT_DOT[m.statut] || '#94A3B8' }}></span>
-                <span className="nm-text">
-                  <span className="nm-ref">{m.reference}</span>
-                  <span className="nm-nom">{m.nom}</span>
-                </span>
-                {hasSession && <span className="nm-session" title="Session de notation active">✏</span>}
+                <span className="nm-dot" style={{ background: STATUT_DOT[statut] || '#94A3B8' }}></span>
+                <span className="nm-nom">{m.nom}</span>
+                {hasSession && <span className="nm-session" title="Session de notation active">&#x270F;</span>}
               </NavLink>
             );
           })}

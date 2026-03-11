@@ -374,3 +374,56 @@ tbody tr:hover { background: var(--surface); }
   margin-top: 6px; font-size: 10px; color: var(--text-muted);
   font-style: italic; border-top: 1px solid var(--border); padding-top: 4px;
 }
+
+/* ─── EDIT META PANEL ─────────────────────────────── */
+.edit-meta-panel {
+  background: var(--bg); border-top: 2px solid var(--blue-light);
+  padding: 16px 20px; margin: 0;
+}
+.edit-meta-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px; margin-bottom: 12px;
+}
+.edit-meta-field { display: flex; flex-direction: column; gap: 4px; }
+.edit-meta-field--wide { grid-column: 1 / -1; }
+.edit-meta-field label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.edit-meta-field input,
+.edit-meta-field select { font-size: 12px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); color: var(--text); }
+.edit-meta-field input[type="range"] { padding: 4px 0; border: none; background: transparent; }
+.edit-meta-field input:focus,
+.edit-meta-field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,79,168,.1); }
+.edit-meta-actions { display: flex; gap: 8px; }
+
+/* ─── INFOS PAGE ──────────────────────────────────── */
+.info-header-bar {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.info-section {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.info-section-title {
+  font-size: 11px; font-weight: 800; color: var(--blue);
+  text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px;
+}
+.info-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px;
+}
+.info-field { display: flex; flex-direction: column; gap: 5px; }
+.info-field--full { margin-top: 4px; }
+.info-field-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.info-field-input {
+  font-size: 13px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--text);
+  transition: border-color .15s, box-shadow .15s;
+}
+.info-field-input:focus {
+  outline: none; border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,79,168,.1);
+}
+select.info-field-input { cursor: pointer; }

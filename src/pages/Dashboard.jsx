@@ -4,6 +4,7 @@ import Layout from '../components/Layout';
 import StatusBadge from '../components/StatusBadge';
 import KpiCard from '../components/KpiCard';
 import { marches, STATUT_CONFIG, formatDate } from '../data/mockData';
+import { useMarcheMeta } from '../context/MarcheMetaContext';
 
 function parseBudget(s) { return parseInt(String(s).replace(/[\s€]/g, '')) || 0; }
 function formatBudget(n) {
@@ -12,16 +13,25 @@ function formatBudget(n) {
 }
 
 export default function Dashboard() {
-  const [filtre, setFiltre]   = useState('tous');
-  const [search, setSearch]   = useState('');
+  const [filtre, setFiltre] = useState('tous');
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const { getMeta } = useMarcheMeta();
 
-  // KPIs calculés depuis les données réelles
-  const total       = marches.length;
-  const actifs      = marches.filter(m => m.statut !== 'cloture').length;
-  const offres      = marches.reduce((s, m) => s + (m.nbOffresRecues || 0), 0);
-  const enAnalyse   = marches.filter(m => m.statut === 'analyse').length;
-  const budgetTotal = marches.reduce((s, m) => s + parseBudget(m.budgetEstime), 0);
+  function mergeMarche(m) {
+    const meta = getMeta(m.id);
+    return {
+      ...m, ...meta,
+      tags: meta.tags ? (Array.isArray(meta.tags) ? meta.tags : meta.tags.split(',').map(t => t.trim()).filter(Boolean)) : m.tags,
+    };
+  }
+
+  const marchesMerged = marches.map(mergeMarche);
+  const total       = marchesMerged.length;
+  const actifs      = marchesMerged.filter(m => m.statut !== 'cloture').length;
+  const offres      = marchesMerged.reduce((s, m) => s + (Number(m.nbOffresRecues) || 0), 0);
+  const enAnalyse   = marchesMerged.filter(m => m.statut === 'analyse').length;
+  const budgetTotal = marchesMerged.reduce((s, m) => s + parseBudget(m.budgetEstime), 0);
 
   const filtres = [
     { value: 'tous',        label: 'Tous' },
@@ -32,7 +42,7 @@ export default function Dashboard() {
     { value: 'cloture',     label: 'Clôturés' },
   ];
 
-  const marchesFiltres = marches.filter(m => {
+  const marchesFiltres = marchesMerged.filter(m => {
     const matchStatut = filtre === 'tous' || m.statut === filtre;
     const matchSearch = !search ||
       m.nom.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,40 +51,26 @@ export default function Dashboard() {
   });
 
   return (
-    <Layout title="Tableau de bord" sub="— Vue d'ensemble des marchés en cours">
-
-      {/* KPIs */}
+    <Layout title="Tableau de bord" sub="— Vue d’ensemble des marchés en cours">
       <div className="kpi-grid">
-        <KpiCard label="Total marchés"    value={total}               color="#1A4FA8" icon="📋" sub={actifs + ' actif' + (actifs > 1 ? 's' : '')} />
-        <KpiCard label="Offres reçues"    value={offres}              color="#10B981" icon="📥" sub={'sur ' + total + ' marchés'} />
-        <KpiCard label="En analyse"       value={enAnalyse}           color="#F59E0B" icon="🔍" sub={'marché' + (enAnalyse > 1 ? 's' : '') + ' en cours'} />
-        <KpiCard label="Budget total"     value={formatBudget(budgetTotal)} color="#8B5CF6" icon="💶" sub={'estimation cumulée'} />
+        <KpiCard label="Total marchés"    value={total}     color="#1A4FA8" icon="&#x1F4CB;" sub={actifs + ' actif' + (actifs > 1 ? 's' : '')} />
+        <KpiCard label="Offres reçues"    value={offres}    color="#10B981" icon="&#x1F4E5;" sub={'sur ' + total + ' marchés'} />
+        <KpiCard label="En analyse"       value={enAnalyse} color="#F59E0B" icon="&#x1F50D;" sub={'marché' + (enAnalyse > 1 ? 's' : '') + ' en cours'} />
+        <KpiCard label="Budget total"     value={budgetTotal > 0 ? formatBudget(budgetTotal) : '—'} color="#8B5CF6" icon="&#x1F4B6;" sub={'estimation cumulée'} />
       </div>
 
-      {/* Filtres */}
       <div className="filters-row" style={{ marginBottom: 16 }}>
-        <input
-          className="filter-input"
-          placeholder="Rechercher un marché…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ width: 220 }}
-        />
+        <input className="filter-input" placeholder="Rechercher un marché…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: 220 }} />
         {filtres.map(f => (
-          <button
-            key={f.value}
-            className={'btn btn-sm ' + (filtre === f.value ? 'btn-primary' : 'btn-outline')}
-            onClick={() => setFiltre(f.value)}
-          >
+          <button key={f.value} className={'btn btn-sm ' + (filtre === f.value ? 'btn-primary' : 'btn-outline')} onClick={() => setFiltre(f.value)}>
             {f.label}
           </button>
         ))}
       </div>
 
-      {/* Grille marchés */}
       {marchesFiltres.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🔍</div>
+          <div className="empty-icon">&#x1F50D;</div>
           <div className="empty-title">Aucun marché trouvé</div>
           <div className="empty-sub">Modifiez vos critères de recherche.</div>
         </div>
@@ -92,45 +88,34 @@ export default function Dashboard() {
                   <div className="marche-nom">{m.nom}</div>
                   <div className="marche-desc">{m.description}</div>
                 </div>
-
                 <div className="marche-card-body">
                   <div className="marche-meta">
-                    <span className="marche-meta-item">👤 {m.responsable}</span>
-                    <span className="marche-meta-item">🏥 {m.service}</span>
-                    <span className="marche-meta-item">📦 {m.nbLots} lot{m.nbLots > 1 ? 's' : ''}</span>
-                    <span className="marche-meta-item">📥 {m.nbOffresRecues} offre{m.nbOffresRecues !== 1 ? 's' : ''}</span>
-                    <span className="marche-meta-item">📅 Limite : {formatDate(m.dateLimiteDepot)}</span>
-                    <span className="marche-meta-item">💶 {m.budgetEstime}</span>
+                    {m.responsable      && <span className="marche-meta-item">&#x1F464; {m.responsable}</span>}
+                    {m.service          && <span className="marche-meta-item">&#x1F3E5; {m.service}</span>}
+                    {m.nbLots      > 0  && <span className="marche-meta-item">&#x1F4E6; {m.nbLots} lot{m.nbLots > 1 ? 's' : ''}</span>}
+                    {m.nbOffresRecues > 0 && <span className="marche-meta-item">&#x1F4E5; {m.nbOffresRecues} offre{m.nbOffresRecues !== 1 ? 's' : ''}</span>}
+                    {m.dateLimiteDepot  && <span className="marche-meta-item">&#x1F4C5; Limite : {formatDate(m.dateLimiteDepot)}</span>}
+                    {m.budgetEstime     && <span className="marche-meta-item">&#x1F4B6; {m.budgetEstime}</span>}
                   </div>
-                  <div className="marche-tags">
-                    {m.tags.map(t => <span key={t} className="tag">{t}</span>)}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>
-                    Progression — {m.progression}%
-                  </div>
-                  <div className="marche-progress-bar">
-                    <div
-                      className="marche-progress-fill"
-                      style={{ width: m.progression + '%', background: cfg.color || '#3B82F6' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="marche-card-footer">
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => navigate('/marche/' + m.id + '/notation')}
-                  >
-                    ✏️ Notation
-                  </button>
-                  {m.hasAnalyse && (
-                    <button className="btn btn-outline btn-sm" onClick={() => navigate('/marche/' + m.id + '/analyse')}>
-                      🔍 Analyse
-                    </button>
+                  {m.tags && m.tags.length > 0 && (
+                    <div className="marche-tags">{m.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>
                   )}
+                  {m.progression > 0 && (
+                    <>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Progression — {m.progression}%</div>
+                      <div className="marche-progress-bar">
+                        <div className="marche-progress-fill" style={{ width: m.progression + '%', background: cfg.color || '#3B82F6' }} />
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="marche-card-footer">
+                  <button className="btn btn-primary btn-sm" onClick={() => navigate('/marche/' + m.id + '/notation')}>
+                    &#x270F;&#xFE0F; Notation
+                  </button>
                   {m.hasReporting && (
                     <button className="btn btn-outline btn-sm" onClick={() => navigate('/marche/' + m.id + '/reporting')}>
-                      📈 Reporting
+                      &#x1F4C8; Reporting
                     </button>
                   )}
                 </div>

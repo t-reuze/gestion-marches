@@ -10,7 +10,7 @@ import { useNotation } from '../context/NotationContext';
 import MarcheNavTabs from '../components/MarcheNavTabs';
 
 const VENDOR_COLORS = ['#B91C1C','#1A6B3A','#7C3AED','#1A4FA8','#0F7285','#9D3FAF'];
-const MEDALS = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49','4\ufe0f\u20e3','5\ufe0f\u20e3','6\ufe0f\u20e3'];
+const MEDALS = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
 
 function noteColor(n) {
   if (n >= 4.25) return '#10B981';
@@ -45,14 +45,14 @@ function parseExcel(wb, fileName) {
     const methode = String(row[2] || '').trim();
     const answers = {}, notes = {}, comments = {};
     vendors.forEach(v => {
-      answers[v.name] = String(row[v.colResp] || '\u2014').trim() || '\u2014';
+      answers[v.name] = String(row[v.colResp] || '—').trim() || '—';
       const rn = row[v.colNote];
       notes[v.name] = (rn !== '' && rn != null) ? (parseFloat(rn) || null) : null;
       comments[v.name] = '';
     });
     questions.push({ num, question, methode, answers, notes, comments, skipped: {}, xlsxRowIdx: ri });
   }
-  if (!questions.length) throw new Error('Aucune question trouv\u00e9e (lignes 5+ colonne B)');
+  if (!questions.length) throw new Error('Aucune question trouvée (lignes 5+ colonne B)');
   return { fileName, sheetName, vendors, questions };
 }
 
@@ -69,7 +69,6 @@ export default function Notation() {
   const [importErr, setImportErr] = useState('');
   const [exporting, setExporting] = useState(false);
   const origBin = useRef(null);
-
   const barRef   = useRef(null);
   const radarRef = useRef(null);
   const barChart   = useRef(null);
@@ -190,14 +189,12 @@ export default function Notation() {
     setExporting(false);
   }
 
-  // Charts dans la Synthèse
   useEffect(() => {
     if (tab !== 'synthese' || !session) return;
     if (barChart.current)   { barChart.current.destroy();   barChart.current = null; }
     if (radarChart.current) { radarChart.current.destroy(); radarChart.current = null; }
     const { vendors, questions } = session;
     const labels = questions.map(q => String(q.num));
-
     setTimeout(() => {
       if (barRef.current) {
         barChart.current = new Chart(barRef.current.getContext('2d'), {
@@ -211,19 +208,14 @@ export default function Notation() {
                 const n = q.notes[v.name];
                 return (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
               }),
-              backgroundColor: v.color + 'BB',
-              borderColor: v.color,
-              borderWidth: 1, borderRadius: 3,
-              skipNull: true,
+              backgroundColor: v.color + 'BB', borderColor: v.color,
+              borderWidth: 1, borderRadius: 3, skipNull: true,
             })),
           },
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
-            scales: {
-              y: { min: 0, max: 5, ticks: { stepSize: 1 } },
-              x: { ticks: { font: { size: 10 } } },
-            },
+            scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } },
           },
         });
       }
@@ -239,8 +231,7 @@ export default function Notation() {
                 const n = q.notes[v.name];
                 return (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
               }),
-              borderColor: v.color,
-              backgroundColor: v.color + '22',
+              borderColor: v.color, backgroundColor: v.color + '22',
               borderWidth: 2, pointRadius: 3,
             })),
           },
@@ -252,7 +243,6 @@ export default function Notation() {
         });
       }
     }, 50);
-
     return () => {
       if (barChart.current)   { barChart.current.destroy();   barChart.current = null; }
       if (radarChart.current) { radarChart.current.destroy(); radarChart.current = null; }
@@ -260,21 +250,21 @@ export default function Notation() {
   }, [tab, session]);
 
   if (!marche) return (
-    <Layout title="March\u00e9 introuvable">
-      <div className="empty-state"><div className="empty-title">March\u00e9 introuvable</div></div>
+    <Layout title="Marché introuvable">
+      <div className="empty-state"><div className="empty-title">Marché introuvable</div></div>
     </Layout>
   );
 
-  const title = marche.reference + ' \u2014 ' + marche.nom;
+  const title = marche.reference + ' — ' + marche.nom;
 
   if (!session) {
     return (
-      <Layout title={title} sub="\u2014 Notation des offres">
+      <Layout title={title} sub="— Notation des offres">
         <div className="import-zone-wrapper">
           <MarcheNavTabs />
-        <div className="page-header">
-            <div className="page-title">Charger un fichier d'\u00e9valuation</div>
-            <div className="page-sub">Chargez le fichier Excel issu du template d'\u00e9valuation des fournisseurs</div>
+          <div className="page-header">
+            <div className="page-title">Charger un fichier d’évaluation</div>
+            <div className="page-sub">Chargez le fichier Excel issu du template d’évaluation des fournisseurs</div>
           </div>
           {importErr && <div className="info-box red" style={{ marginBottom: 16 }}>{importErr}</div>}
           <div
@@ -283,16 +273,16 @@ export default function Notation() {
             onDragLeave={() => setIsDrag(false)}
             onDrop={e => { e.preventDefault(); setIsDrag(false); loadFile(e.dataTransfer.files[0]); }}
           >
-            <div className="drop-icon">\ud83d\udcc2</div>
-            <div className="drop-title">Glissez-d\u00e9posez votre fichier ici</div>
-            <div className="drop-sub">Format .xlsx \u00b7 Template d'\u00e9valuation fournisseurs Unicancer</div>
+            <div className="drop-icon">{'\u{1F4C2}'[0] === '\\' ? '📂' : '📂'}</div>
+            <div className="drop-title">Glissez-déposez votre fichier ici</div>
+            <div className="drop-sub">Format .xlsx · Template d’évaluation fournisseurs Unicancer</div>
             <label className="btn btn-primary" style={{ marginTop: 16, cursor: 'pointer' }}>
-              Parcourir\u2026
+              Parcourir…
               <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
             </label>
           </div>
           <div className="info-box blue" style={{ marginTop: 16 }}>
-            <strong>Format attendu :</strong> feuille 1 \u2014 ligne 4 = en-t\u00eates fournisseurs (colonnes D\u2013I pour les r\u00e9ponses, J\u2013O pour les notes), lignes 5+ = questions/crit\u00e8res.
+            <strong>Format attendu :</strong> feuille 1 — ligne 4 = en-têtes fournisseurs (colonnes D–I pour les réponses, J–O pour les notes), lignes 5+ = questions/critères.
           </div>
         </div>
       </Layout>
@@ -310,18 +300,18 @@ export default function Notation() {
   return (
     <Layout
       title={title}
-      sub="\u2014 Notation des offres"
+      sub="— Notation des offres"
       actions={
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{totalNoted}/{questions.length} crit\u00e8res not\u00e9s</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{totalNoted}/{questions.length} critères notés</span>
           <button className="btn btn-success btn-sm" onClick={doExport} disabled={exporting || !origBin.current}>
-            \u2b07 Exporter XLSX
+            &#x2B07; Exporter XLSX
           </button>
           <button
             className="btn btn-outline btn-sm"
             onClick={() => { if (window.confirm('Supprimer la session de notation pour ' + marche.reference + ' ?')) { clearSession(id); origBin.current = null; } }}
           >
-            \ud83d\uddd1 R\u00e9initialiser
+            &#x1F5D1; Réinitialiser
           </button>
         </div>
       }
@@ -335,7 +325,7 @@ export default function Notation() {
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: v.color, flexShrink: 0 }}></div>
               <span style={{ fontWeight: 700, color: v.color }}>{v.label.split('(')[0].trim()}</span>
               <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 700, color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>
-                {a !== null ? a.toFixed(2) : '\u2014'}
+                {a !== null ? a.toFixed(2) : '—'}
               </span>
             </div>
           );
@@ -343,14 +333,14 @@ export default function Notation() {
       </div>
 
       <div className="tabs">
-        <div className={'tab' + (tab === 'notation' ? ' active' : '')} onClick={() => setTab('notation')}>\u270f\ufe0f Notation</div>
-        <div className={'tab' + (tab === 'synthese' ? ' active' : '')} onClick={() => setTab('synthese')}>\ud83d\udcca Synth\u00e8se</div>
+        <div className={'tab' + (tab === 'notation' ? ' active' : '')} onClick={() => setTab('notation')}>&#x270F;&#xFE0F; Notation</div>
+        <div className={'tab' + (tab === 'synthese' ? ' active' : '')} onClick={() => setTab('synthese')}>&#x1F4CA; Synthèse</div>
       </div>
 
       {tab === 'notation' && (
         <div className="fade-in">
           <div className="fq-nav-controls">
-            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>\u2190 Pr\u00e9c\u00e9dent</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>&#x2190; Précédent</button>
             <div className="fq-progress">
               <div style={{ marginBottom: 6 }}>Question {qi+1} / {questions.length}</div>
               <div className="fq-progress-dots">
@@ -358,9 +348,7 @@ export default function Notation() {
                   const done = vendors.every(v => qq.skipped[v.name] || (qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])));
                   return (
                     <div
-                      key={i}
-                      className="fq-dot"
-                      onClick={() => setActiveQ(i)}
+                      key={i} className="fq-dot" onClick={() => setActiveQ(i)}
                       style={{ background: i === qi ? 'var(--blue)' : done ? 'var(--green)' : 'var(--border)', color: (i === qi || done) ? '#fff' : 'var(--text-muted)' }}
                       title={'Question ' + (i+1)}
                     >{i+1}</div>
@@ -368,7 +356,7 @@ export default function Notation() {
                 })}
               </div>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant \u2192</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant &#x2192;</button>
           </div>
 
           <div className="fq-card">
@@ -376,7 +364,7 @@ export default function Notation() {
               <div className="fq-header-num">{q.num}</div>
               <div className="fq-header-text">
                 <div className="fq-header-q">{q.question}</div>
-                {q.methode && q.methode !== '\u2014' && <div className="fq-header-m">\ud83d\udcd0 M\u00e9thodologie : {q.methode}</div>}
+                {q.methode && q.methode !== '—' && <div className="fq-header-m">&#x1F4D0; Méthodologie : {q.methode}</div>}
               </div>
             </div>
             <div className="fq-body">
@@ -385,14 +373,14 @@ export default function Notation() {
                   <thead>
                     <tr>
                       <th>Fournisseur</th>
-                      <th style={{ textAlign: 'left' }}>R\u00e9ponse</th>
+                      <th style={{ textAlign: 'left' }}>Réponse</th>
                       <th>Note /5</th>
                       <th style={{ minWidth: 160 }}>Commentaire</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {vendors.map((v, vi) => {
-                      const ans = q.answers[v.name] || '\u2014';
+                    {vendors.map((v) => {
+                      const ans = q.answers[v.name] || '—';
                       const note = q.notes[v.name];
                       const hasNote = note !== null && note !== undefined && !isNaN(note);
                       const noteVal = hasNote ? note : 3;
@@ -405,39 +393,33 @@ export default function Notation() {
                             <div style={{ fontSize: 9, color: v.color, fontWeight: 700, marginTop: 3 }}>{v.label.split('(')[0].trim()}</div>
                           </td>
                           <td>
-                            <div className="fq-ans" title={ans}>{ans.length > 150 ? ans.substring(0,150) + '\u2026' : ans}</div>
+                            <div className="fq-ans" title={ans}>{ans.length > 150 ? ans.substring(0,150) + '…' : ans}</div>
                           </td>
                           <td className="fq-note-cell">
                             <button className={'skip-btn' + (isSkipped ? ' active' : '')} onClick={() => toggleSkip(qi, v.name)}>
-                              {isSkipped ? '\u21a9 R\u00e9activer' : '\u2014 Non not\u00e9'}
+                              {isSkipped ? '↩ Réactiver' : '— Non noté'}
                             </button>
                             {isSkipped
                               ? <div className="fq-score-disp" style={{ color: 'var(--text-muted)', marginTop: 4 }}>N/N</div>
                               : <>
                                   <div className="fq-score-disp" style={{ color: hasNote ? noteColor(noteVal) : 'var(--text-muted)' }}>
-                                    {hasNote ? noteVal.toFixed(2) : '\u2014'}
+                                    {hasNote ? noteVal.toFixed(2) : '—'}
                                   </div>
                                   <input
                                     type="range" className="fq-slider" min="0" max="5" step="0.25"
-                                    value={noteVal}
-                                    style={{ accentColor: v.color }}
+                                    value={noteVal} style={{ accentColor: v.color }}
                                     onChange={e => setNote(qi, v.name, parseFloat(e.target.value))}
                                   />
                                   <div className="fq-stars">
                                     {[1,2,3,4,5].map(n => (
-                                      <span key={n} className={'fq-star' + (hasNote && noteVal >= n ? ' on' : '')} onClick={() => setNote(qi, v.name, n)}>\u2605</span>
+                                      <span key={n} className={'fq-star' + (hasNote && noteVal >= n ? ' on' : '')} onClick={() => setNote(qi, v.name, n)}>&#x2605;</span>
                                     ))}
                                   </div>
                                 </>
                             }
                           </td>
                           <td style={{ verticalAlign: 'top', padding: 10 }}>
-                            <textarea
-                              className="fq-comment"
-                              placeholder="Commentaire\u2026"
-                              value={comment}
-                              onChange={e => setComment(qi, v.name, e.target.value)}
-                            />
+                            <textarea className="fq-comment" placeholder="Commentaire…" value={comment} onChange={e => setComment(qi, v.name, e.target.value)} />
                           </td>
                         </tr>
                       );
@@ -449,18 +431,18 @@ export default function Notation() {
           </div>
 
           <div className="fq-nav-controls" style={{ marginTop: 12 }}>
-            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>\u2190 Pr\u00e9c\u00e9dent</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>&#x2190; Précédent</button>
             <div style={{ fontSize: 11 }}>
               {vendors.map(v => {
                 const a = avg(v);
                 return (
                   <span key={v.name} style={{ margin: '0 6px', color: v.color, fontWeight: 700 }}>
-                    {v.initials}: <span style={{ fontFamily: 'DM Mono,monospace', color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>{a !== null ? a.toFixed(2) : '\u2014'}</span>
+                    {v.initials}: <span style={{ fontFamily: 'DM Mono,monospace', color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>{a !== null ? a.toFixed(2) : '—'}</span>
                   </span>
                 );
               })}
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant \u2192</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant &#x2192;</button>
           </div>
         </div>
       )}
@@ -469,14 +451,12 @@ export default function Notation() {
         <div className="fade-in">
           {ranking[0]?.avgScore !== null && ranking[0]?.avgScore !== undefined && (
             <div className="info-box green" style={{ marginBottom: 16 }}>
-              <strong>Meilleure offre provisoire \u2014 {ranking[0].label.split('(')[0].trim()}</strong>
+              <strong>Meilleure offre provisoire — {ranking[0].label.split('(')[0].trim()}</strong>
               <span style={{ marginLeft: 8, fontFamily: 'DM Mono,monospace', fontWeight: 700 }}>
                 {ranking[0].avgScore?.toFixed(3)} / 5
               </span>
             </div>
           )}
-
-          {/* Classement */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12, marginBottom: 20 }}>
             {ranking.map((v, r) => (
               <div key={v.name} className="card">
@@ -484,41 +464,32 @@ export default function Notation() {
                   <span style={{ fontSize: 20 }}>{MEDALS[r] || (r+1)}</span>
                   <div style={{ fontWeight: 700, fontSize: 13, color: '#fff' }}>{v.label.split('(')[0].trim()}</div>
                   <div style={{ marginLeft: 'auto', fontFamily: 'DM Mono,monospace', fontWeight: 800, fontSize: 18, color: '#fff' }}>
-                    {v.avgScore !== null && v.avgScore !== undefined ? v.avgScore.toFixed(3) : '\u2014'}
+                    {v.avgScore !== null && v.avgScore !== undefined ? v.avgScore.toFixed(3) : '—'}
                   </div>
                 </div>
                 <div className="card-body" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  {questions.filter(qq => !qq.skipped[v.name] && qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])).length} / {questions.length} crit\u00e8res not\u00e9s
+                  {questions.filter(qq => !qq.skipped[v.name] && qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])).length} / {questions.length} critères notés
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Graphiques */}
           <div className="charts-grid" style={{ marginBottom: 20 }}>
             <div className="card">
-              <div className="card-header"><span className="card-title">\ud83d\udcca Notes par crit\u00e8re</span></div>
-              <div className="card-body" style={{ height: 280 }}>
-                <canvas ref={barRef} />
-              </div>
+              <div className="card-header"><span className="card-title">&#x1F4CA; Notes par critère</span></div>
+              <div className="card-body" style={{ height: 280 }}><canvas ref={barRef} /></div>
             </div>
             <div className="card">
-              <div className="card-header"><span className="card-title">\ud83d\udd78 Radar multi-crit\u00e8res</span></div>
-              <div className="card-body" style={{ height: 280 }}>
-                <canvas ref={radarRef} />
-              </div>
+              <div className="card-header"><span className="card-title">&#x1F578; Radar multi-critères</span></div>
+              <div className="card-body" style={{ height: 280 }}><canvas ref={radarRef} /></div>
             </div>
           </div>
-
-          {/* D\u00e9tail par crit\u00e8re */}
           <div className="card">
-            <div className="card-header"><span className="card-title">D\u00e9tail par crit\u00e8re</span></div>
+            <div className="card-header"><span className="card-title">Détail par critère</span></div>
             <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
               <table>
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>Crit\u00e8re</th>
+                    <th>#</th><th>Critère</th>
                     {vendors.map(v => <th key={v.name} className="td-center" style={{ color: v.color }}>{v.initials}</th>)}
                   </tr>
                 </thead>
@@ -526,7 +497,7 @@ export default function Notation() {
                   {questions.map((qq, i) => (
                     <tr key={i}>
                       <td className="td-mono" style={{ fontSize: 11 }}>{qq.num}</td>
-                      <td style={{ fontSize: 11, maxWidth: 300 }}>{qq.question.length > 60 ? qq.question.substring(0,60) + '\u2026' : qq.question}</td>
+                      <td style={{ fontSize: 11, maxWidth: 300 }}>{qq.question.length > 60 ? qq.question.substring(0,60) + '…' : qq.question}</td>
                       {vendors.map(v => {
                         const isSkip = !!qq.skipped[v.name];
                         const n = qq.notes[v.name];
@@ -537,7 +508,7 @@ export default function Notation() {
                               ? <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>N/N</span>
                               : hasN
                                 ? <span className="score-chip" style={{ background: noteColor(n)+'18', color: noteColor(n), fontSize: 11 }}>{n.toFixed(2)}</span>
-                                : <span style={{ color: 'var(--text-muted)' }}>\u2014</span>
+                                : <span style={{ color: 'var(--text-muted)' }}>—</span>
                             }
                           </td>
                         );
