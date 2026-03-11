@@ -6,6 +6,7 @@ import Reponses     from './pages/Reponses';
 import MarcheInfos  from './pages/MarcheInfos';
 import Formations      from './pages/Formations';
 import FormationDetail from './pages/FormationDetail';
+import AnalyseMarche  from './pages/AnalyseMarche';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider } from './context/MarcheMetaContext';
 import { FormationsMetaProvider } from './context/FormationsMetaContext';
@@ -30,6 +31,7 @@ const router = createHashRouter([
   { path: '/marche/:id/notation',       element: <Notation /> },
   { path: '/marche/:id/reponses',       element: <Reponses /> },
   { path: '/marche/:id/infos',           element: <MarcheInfos /> },
+  { path: '/marche/:id/analyse',        element: <AnalyseMarche /> },
   { path: '/marche/:id',                element: <MarcheRedirect /> },
   { path: '*',                          element: <Navigate to="/" replace /> },
 ]);
