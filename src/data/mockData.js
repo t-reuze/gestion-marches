@@ -18,7 +18,7 @@ export const marches = [
     statut: 'analyse',
     dateOuverture: '', dateLimiteDepot: '', dateAttributionPrevue: '',
     responsable: '', service: '',
-    nbLots: 0, nbOffresRecues: 0, hasAnalyse: false, hasReporting: false,
+    nbLots: 0, nbOffresRecues: 0, hasAnalyse: true, hasReporting: false,
     budgetEstime: '', progression: 0,
     tags: [],
   },
