@@ -95,7 +95,7 @@ function parseAnalyseExcel(wb) {
   // Offres
   const rawOffres = toRows(findSheet(wb, ["Offres"]));
   const titre = String(rawOffres[0]?.[0] || "");
-  const marcheParts = titre.split("\u2014").map(s => s.trim());
+  const marcheParts = titre.split("—").map(s => s.trim());
   const marche = {
     reference: marcheParts[0] || "",
     lot:       marcheParts[1] || "",
@@ -112,7 +112,7 @@ function parseAnalyseExcel(wb) {
   const colors = Object.fromEntries(fournisseurs.map((f, i) => [f, PALETTE[i % PALETTE.length]]));
 
   // Notation_Synthese
-  const rawNote = toRows(findSheet(wb, ["Notation_Synth\u00e8se","Notation_Synthese","Notation_Synth\u00e9se"]));
+  const rawNote = toRows(findSheet(wb, ["Notation_Synthèse","Notation_Synthese","Notation_Synthése"]));
   const noteHdr = rawNote[1] || [];
   const noteEquipements = noteHdr.slice(2, -1).filter(Boolean).map(String);
   const sections = rawNote.slice(2, -1)
@@ -147,12 +147,12 @@ function parseAnalyseExcel(wb) {
   })).sort((a, b) => a.rang - b.rang);
 
   // Criteres_Detailles
-  const rawCrit = toRows(findSheet(wb, ["Crit\u00e8res_D\u00e9taill\u00e9s","Criteres_Detailles"]));
+  const rawCrit = toRows(findSheet(wb, ["Critères_Détaillés","Criteres_Detailles"]));
   const critHdr = rawCrit[0] || [];
   const critEquipements = [];
   for (let i = 5; i < critHdr.length; i += 2) {
     const h = String(critHdr[i] || "");
-    const name = h.includes("\n") ? h.split("\n")[1].trim() : h.replace(/^R\u00e9ponse\s*/u,"").trim();
+    const name = h.includes("\n") ? h.split("\n")[1].trim() : h.replace(/^Réponse\s*/u,"").trim();
     if (name) critEquipements.push(name);
   }
   const criteres = rawCrit.slice(1).filter(r => r[3]).map(r => {
@@ -189,7 +189,7 @@ function parseAnalyseExcel(wb) {
   });
 
   if (!offres.length) throw new Error("Feuille Offres vide ou non trouv\u00e9e");
-  if (!sections.length) throw new Error("Feuille Notation_Synth\u00e8se vide ou non trouv\u00e9e");
+  if (!sections.length) throw new Error("Feuille Notation_Synthèse vide ou non trouv\u00e9e");
 
   return { marche, offres, fournisseurs, colors, classement, sections, criteres, prixTCO, totalScores, noteEquipements };
 }
@@ -247,7 +247,7 @@ function ImportZone({ onImport, error }) {
         <p style={{ fontSize:12, fontWeight:700, color:"var(--text-secondary)", marginBottom:8 }}>
           Format attendu &mdash; feuilles obligatoires :
         </p>
-        {["Offres","Notation_Synth\u00e8se","Classement_Final","Crit\u00e8res_D\u00e9taill\u00e9s"].map(s => (
+        {["Offres","Notation_Synthèse","Classement_Final","Critères_Détaillés"].map(s => (
           <div key={s} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
             <span style={{ fontSize:10, color:"#16a34a" }}>&#10003;</span>
             <span style={{ fontSize:12, fontFamily:"monospace", color:"var(--text-secondary)" }}>{s}</span>
@@ -265,7 +265,7 @@ function OverviewTab({ data }) {
   const top5eq = classement.slice(0, 5).map(c => c.equipement);
 
   const radarData = sections.map(s => {
-    const row = { axe: s.name.length > 14 ? s.name.slice(0,14) + "\u2026" : s.name, fullName: s.name };
+    const row = { axe: s.name.length > 14 ? s.name.slice(0,14) + "…" : s.name, fullName: s.name };
     Object.entries(s.scoreParOffre).forEach(([eq, v]) => { row[eq] = v; });
     return row;
   });
@@ -298,7 +298,7 @@ function OverviewTab({ data }) {
                   <span style={{ fontSize:11, color:col, fontWeight:700 }}>{item.fournisseur}</span>
                   {b && item.recommandation && (
                     <span style={{ background:b.bg, color:b.text, border:"1px solid "+b.border, fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:6 }}>
-                      {item.recommandation.replace(/[\u2705\u2B50\u26A0\uFE0F\u274C]\s?/g,"").trim()}
+                      {item.recommandation.replace(/[✅⭐⚠️❌]\s?/g,"").trim()}
                     </span>
                   )}
                 </div>
@@ -375,7 +375,7 @@ function NoteSlider({ value, onChange, vendorColor }) {
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
         <span style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", minWidth:42 }}>Note :</span>
         <span style={{ fontWeight:900, fontSize:20, minWidth:36, color: hasNote ? bg.color : "#cbd5e1" }}>
-          {hasNote ? value.toFixed(1) : "\u2014"}
+          {hasNote ? value.toFixed(1) : "—"}
         </span>
         <span style={{ fontSize:11, color:"var(--text-muted)" }}>/5</span>
         {hasNote && (
@@ -407,11 +407,11 @@ function NoteSlider({ value, onChange, vendorColor }) {
 // STEP NOTATION VIEW
 
 function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
-  // Group by crit\u00e8re
+  // Group by critère
   const critGroups = useMemo(() => {
     const g = {};
     for (const c of criteres) {
-      const key = c.critere || "G\u00e9n\u00e9ral";
+      const key = c.critere || "Général";
       if (!g[key]) g[key] = [];
       g[key].push(c);
     }
@@ -431,7 +431,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
   function goTo(i)           { setQIdx(i); setExpanded({}); }
 
   if (!q) return (
-    <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucun crit\u00e8re disponible.</p>
+    <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucun critère disponible.</p>
   );
 
   const total      = currentGroup.length;
@@ -453,7 +453,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
       <div style={{ marginBottom:16 }}>
         <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase",
           letterSpacing:1, marginBottom:8 }}>
-          Cat\u00e9gories &mdash; {notedTotal}/{criteres.length} questions not\u00e9es au total
+          Catégories &mdash; {notedTotal}/{criteres.length} questions not\u00e9es au total
         </p>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {critNames.map(name => {
@@ -488,12 +488,12 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5, flexWrap:"wrap", gap:4 }}>
           <span style={{ fontSize:12, color:"var(--text-secondary)" }}>
             <strong style={{ color:"var(--color-primary)" }}>{selectedCrit}</strong>
-            {" \u2014 Question "}<strong>{safeIdx + 1}</strong>/{total}
-            {" \u2014 "}<strong style={{ color:"#16a34a" }}>{notedGroup}</strong>
+            {" — Question "}<strong>{safeIdx + 1}</strong>/{total}
+            {" — "}<strong style={{ color:"#16a34a" }}>{notedGroup}</strong>
             <span style={{ color:"var(--text-muted)" }}> not\u00e9es</span>
           </span>
           <span style={{ fontSize:11, color:"var(--text-muted)" }}>
-            {section.name} \u00b7 {section.poids}%
+            {section.name} · {section.poids}%
           </span>
         </div>
         <div style={{ height:5, background:"var(--color-border)", borderRadius:3, overflow:"hidden" }}>
@@ -501,7 +501,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
         </div>
       </div>
 
-      {/* ── Sous-crit\u00e8re breadcrumb ── */}
+      {/* ── Sous-critère breadcrumb ── */}
       {q.sousCritere && (
         <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:12 }}>
           <span style={{ fontSize:11, fontWeight:700, color:"var(--text-secondary)",
@@ -509,7 +509,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
             border:"1px solid var(--color-border)" }}>
             {selectedCrit}
           </span>
-          <span style={{ color:"var(--text-muted)", fontSize:13 }}>\u203a</span>
+          <span style={{ color:"var(--text-muted)", fontSize:13 }}>›</span>
           <span style={{ fontSize:11, color:"var(--text-muted)", background:"var(--surface-subtle)",
             padding:"2px 10px", borderRadius:12, border:"1px solid var(--color-border)" }}>
             {q.sousCritere}
@@ -528,7 +528,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
         {q.methodologie && (
           <div style={{ padding:"8px 12px", background:"#eff6ff", borderRadius:"var(--radius-md)", borderLeft:"3px solid var(--color-primary)" }}>
             <p style={{ fontSize:11, color:"var(--color-primary)", margin:0, lineHeight:1.5 }}>
-              \u2192 {q.methodologie}
+              → {q.methodologie}
             </p>
           </div>
         )}
@@ -541,7 +541,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
           const note    = q.notes[o.equipement];
           const rKey    = q.qKey + "||" + o.equipement;
           const isExp   = !!expanded[rKey];
-          const shortR  = resp && resp.length > TRUNC ? resp.slice(0, TRUNC) + "\u2026" : resp;
+          const shortR  = resp && resp.length > TRUNC ? resp.slice(0, TRUNC) + "…" : resp;
           const hasNote = note != null;
           return (
             <div key={o.equipement} style={{
@@ -580,7 +580,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
                     )}
                   </>
                 ) : (
-                  <p style={{ fontSize:11, color:"#cbd5e1", fontStyle:"italic", margin:0 }}>Pas de r\u00e9ponse</p>
+                  <p style={{ fontSize:11, color:"#cbd5e1", fontStyle:"italic", margin:0 }}>Pas de réponse</p>
                 )}
               </div>
               <NoteSlider
@@ -602,11 +602,11 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
           disabled={safeIdx === 0}
           style={{ minWidth:130 }}
         >
-          \u2190 Pr\u00e9c\u00e9dente
+          ← Pr\u00e9c\u00e9dente
         </button>
 
         <div style={{ display:"flex", gap:4, alignItems:"center", flexWrap:"wrap", justifyContent:"center" }}>
-          {winStart > 0 && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
+          {winStart > 0 && <span style={{ fontSize:11, color:"var(--text-muted)" }}>…</span>}
           {jumpIdxs.map(idx => {
             const hasN  = Object.keys(currentGroup[idx].notes).length > 0;
             const isCur = idx === safeIdx;
@@ -621,7 +621,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
               }}>{idx + 1}</button>
             );
           })}
-          {winEnd < total && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
+          {winEnd < total && <span style={{ fontSize:11, color:"var(--text-muted)" }}>…</span>}
         </div>
 
         <button
@@ -630,7 +630,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
             if (safeIdx < total - 1) {
               goTo(safeIdx + 1);
             } else {
-              // Passer au crit\u00e8re suivant
+              // Passer au critère suivant
               const nextIdx = critNames.indexOf(selectedCrit) + 1;
               if (nextIdx < critNames.length) selectCrit(critNames[nextIdx]);
             }
@@ -638,7 +638,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
           disabled={safeIdx === total - 1 && critNames.indexOf(selectedCrit) === critNames.length - 1}
           style={{ minWidth:130 }}
         >
-          {safeIdx < total - 1 ? "Suivante \u2192" : "Cat\u00e9gorie suivante \u2192"}
+          {safeIdx < total - 1 ? "Suivante →" : "Catégorie suivante →"}
         </button>
       </div>
     </div>
@@ -662,7 +662,7 @@ function SectionTab({ section, data, onSetNote }) {
   const critMoyData = notedCriteres.slice(0, 30).map(c => {
     const vals = Object.values(c.notes).filter(v => v != null);
     const moy  = vals.length ? parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)) : 0;
-    const short = c.question.length > 50 ? c.question.slice(0,50)+"\u2026" : c.question;
+    const short = c.question.length > 50 ? c.question.slice(0,50)+"…" : c.question;
     return { question:short, questionFull:c.question, moyenne:moy, methodologie:c.methodologie };
   });
 
@@ -678,7 +678,7 @@ function SectionTab({ section, data, onSetNote }) {
         {[
           { label:"Moyenne section", value:moyenne, sub:"sur 5", vc:scoreColor(parseFloat(moyenne)) },
           { label:"Poids", value:section.poids+"%", sub:"du score total", vc:"var(--color-primary)" },
-          { label:"Meilleure offre", value:offresNotes[0]?.equipement||"\u2014", sub:offresNotes[0]?.fournisseur||"", vc:colors[offresNotes[0]?.fournisseur]||"var(--text-primary)" },
+          { label:"Meilleure offre", value:offresNotes[0]?.equipement||"—", sub:offresNotes[0]?.fournisseur||"", vc:colors[offresNotes[0]?.fournisseur]||"var(--text-primary)" },
           { label:"Questions", value:sectionCriteres.length, sub:notedCriteres.length+" not\u00e9es", vc:"var(--text-primary)" },
         ].map((kpi, i) => (
           <div key={i} style={{ background:"var(--surface-subtle)", border:"1px solid var(--color-border)", borderRadius:"var(--radius-lg)", padding:"12px 14px" }}>
@@ -692,10 +692,10 @@ function SectionTab({ section, data, onSetNote }) {
       {/* Tabs */}
       <div className="tabs" style={{ marginBottom:20 }}>
         {[
-          ["notation","Notation / R\u00e9ponses"],
+          ["notation","Notation / Réponses"],
           ["graphique","Scores offres"],
-          ["criteres","Graphique crit\u00e8res"],
-          ["tableau","Tableau synth\u00e8se"],
+          ["criteres","Graphique critères"],
+          ["tableau","Tableau synthèse"],
         ].map(([v,label]) => (
           <div key={v} className={"tab"+(view===v?" active":"")} onClick={() => setView(v)}>{label}</div>
         ))}
@@ -703,7 +703,7 @@ function SectionTab({ section, data, onSetNote }) {
 
       {view === "notation" && (
         sectionCriteres.length === 0
-          ? <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucun crit\u00e8re disponible.</p>
+          ? <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucun critère disponible.</p>
           : <StepNotationView criteres={sectionCriteres} offresNotes={offresNotes} section={section} onSetNote={onSetNote} />
       )}
 
@@ -737,7 +737,7 @@ function SectionTab({ section, data, onSetNote }) {
         critMoyData.length === 0
           ? <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucune note disponible.</p>
           : <div>
-              <p style={{ color:"var(--text-muted)", fontSize:12, marginBottom:12 }}>Note moyenne par crit\u00e8re (toutes offres)</p>
+              <p style={{ color:"var(--text-muted)", fontSize:12, marginBottom:12 }}>Note moyenne par critère (toutes offres)</p>
               <ResponsiveContainer width="100%" height={critMoyData.length*46+40}>
                 <BarChart data={critMoyData} layout="vertical" margin={{ left:20, right:60, top:4, bottom:4 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
@@ -770,7 +770,7 @@ function SectionTab({ section, data, onSetNote }) {
               <table>
                 <thead>
                   <tr>
-                    <th style={{ minWidth:180 }}>Crit\u00e8re / Question</th>
+                    <th style={{ minWidth:180 }}>Critère / Question</th>
                     {offresNotes.map(o => (
                       <th key={o.equipement} className="td-center" style={{ color:o.color, fontSize:11, whiteSpace:"nowrap" }}>{o.equipement}</th>
                     ))}
@@ -828,14 +828,14 @@ function SectionTab({ section, data, onSetNote }) {
 
 function TCOTab({ data }) {
   const { prixTCO, offres, colors } = data;
-  if (!prixTCO.length) return <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Donn\u00e9es financi\u00e8res non disponibles.</p>;
+  if (!prixTCO.length) return <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Donn\u00e9es financières non disponibles.</p>;
 
   const equipements = Object.keys(prixTCO[0].values).filter(eq => offres.find(o => o.equipement === eq));
 
   const formatVal = v => {
-    if (v == null || v === "") return "\u2014";
+    if (v == null || v === "") return "—";
     if (typeof v === "number") {
-      if (v > 10000) return new Intl.NumberFormat("fr-FR").format(Math.round(v)) + " \u20ac";
+      if (v > 10000) return new Intl.NumberFormat("fr-FR").format(Math.round(v)) + " €";
       if (v < 1 && v > 0) return (v * 100).toFixed(1) + " %";
       return v.toFixed ? v.toFixed(2) : String(v);
     }
@@ -860,7 +860,7 @@ function TCOTab({ data }) {
             <BarChart data={chartData} layout="vertical" margin={{ left:20, right:100, top:4, bottom:4 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
               <XAxis type="number" tick={{ fontSize:10, fill:"#94a3b8" }} axisLine={false} tickLine={false}
-                tickFormatter={v => new Intl.NumberFormat("fr-FR",{notation:"compact"}).format(v)+" \u20ac"} />
+                tickFormatter={v => new Intl.NumberFormat("fr-FR",{notation:"compact"}).format(v)+" €"} />
               <YAxis type="category" dataKey="equipement" width={155} tick={{ fontSize:12, fill:"#334155", fontWeight:600 }} axisLine={false} tickLine={false} />
               <Tooltip content={({ active, payload, label }) => {
                 if (!active||!payload?.length) return null;
@@ -872,7 +872,7 @@ function TCOTab({ data }) {
                 );
               }} cursor={{ fill:"#f1f5f9" }} />
               <Bar dataKey="prix" radius={[0,6,6,0]} maxBarSize={28}
-                label={{ position:"right", formatter:v=>new Intl.NumberFormat("fr-FR",{notation:"compact"}).format(v)+" \u20ac", fontSize:11, fill:"#64748b" }}>
+                label={{ position:"right", formatter:v=>new Intl.NumberFormat("fr-FR",{notation:"compact"}).format(v)+" €", fontSize:11, fill:"#64748b" }}>
                 {chartData.map((e,i) => <Cell key={i} fill={e.color} />)}
               </Bar>
             </BarChart>
@@ -957,11 +957,11 @@ export default function AnalyseMarche() {
   }
 
   const layoutTitle = analysisData
-    ? (analysisData.marche.reference + " \u2014 " + analysisData.marche.lot)
-    : (marche ? marche.reference + " \u2014 " + marche.nom : "Analyse des offres");
+    ? (analysisData.marche.reference + " — " + analysisData.marche.lot)
+    : (marche ? marche.reference + " — " + marche.nom : "Analyse des offres");
 
   if (!analysisData) return (
-    <Layout title={layoutTitle} sub="\u2014 Analyse des offres">
+    <Layout title={layoutTitle} sub="— Analyse des offres">
       <MarcheNavTabs />
       <ImportZone onImport={handleImport} error={importErr} />
     </Layout>
@@ -980,7 +980,7 @@ export default function AnalyseMarche() {
   }, {});
 
   return (
-    <Layout title={layoutTitle} sub="\u2014 Analyse des offres"
+    <Layout title={layoutTitle} sub="— Analyse des offres"
       actions={
         <button className="btn btn-outline btn-sm" onClick={() => {
           if (window.confirm("Supprimer les donn\u00e9es import\u00e9es ?")) {
