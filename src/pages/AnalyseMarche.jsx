@@ -368,8 +368,25 @@ function OverviewTab({ data }) {
 // NOTE SLIDER
 
 function NoteSlider({ value, onChange, vendorColor }) {
-  const hasNote = value !== null && value !== undefined;
-  const bg = hasNote ? scoreBg(value) : null;
+  const isSkip   = value === "skip";
+  const hasNote  = value !== null && value !== undefined && !isSkip;
+  const bg       = hasNote ? scoreBg(value) : null;
+
+  if (isSkip) {
+    return (
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <span style={{
+          fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:8,
+          background:"#f1f5f9", color:"#64748b", border:"1px solid #cbd5e1",
+        }}>Non noté</span>
+        <button onClick={() => onChange(null)} style={{
+          fontSize:10, color:"var(--color-primary)", background:"none",
+          border:"none", cursor:"pointer", textDecoration:"underline",
+        }}>Remettre</button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
@@ -378,12 +395,18 @@ function NoteSlider({ value, onChange, vendorColor }) {
           {hasNote ? value.toFixed(1) : "—"}
         </span>
         <span style={{ fontSize:11, color:"var(--text-muted)" }}>/5</span>
-        {hasNote && (
-          <button onClick={() => onChange(null)} style={{
-            marginLeft:"auto", fontSize:10, color:"var(--text-muted)", background:"none",
-            border:"none", cursor:"pointer", textDecoration:"underline",
-          }}>Effacer</button>
-        )}
+        <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
+          {hasNote && (
+            <button onClick={() => onChange(null)} style={{
+              fontSize:10, color:"var(--text-muted)", background:"none",
+              border:"none", cursor:"pointer", textDecoration:"underline",
+            }}>Effacer</button>
+          )}
+          <button onClick={() => onChange("skip")} style={{
+            fontSize:10, color:"#64748b", background:"#f1f5f9",
+            border:"1px solid #cbd5e1", borderRadius:6, cursor:"pointer", padding:"2px 8px",
+          }}>Non noté</button>
+        </div>
       </div>
       <input
         type="range" min="0" max="5" step="0.5"
@@ -435,8 +458,8 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
   );
 
   const total      = currentGroup.length;
-  const notedGroup = currentGroup.filter(c => Object.keys(c.notes).length > 0).length;
-  const notedTotal = criteres.filter(c => Object.keys(c.notes).length > 0).length;
+  const notedGroup = currentGroup.filter(c => Object.values(c.notes).some(v => typeof v === "number")).length;
+  const notedTotal = criteres.filter(c => Object.values(c.notes).some(v => typeof v === "number")).length;
   const pct        = ((safeIdx + 1) / total * 100).toFixed(1);
   const TRUNC      = 320;
 
@@ -458,7 +481,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {critNames.map(name => {
             const grp     = critGroups[name];
-            const noted   = grp.filter(c => Object.keys(c.notes).length > 0).length;
+            const noted   = grp.filter(c => Object.values(c.notes).some(v => typeof v === "number")).length;
             const isActive = name === selectedCrit;
             const allNoted = noted === grp.length;
             return (
@@ -657,10 +680,10 @@ function SectionTab({ section, data, onSetNote }) {
     .sort((a,b) => (b.score||0) - (a.score||0));
 
   const sectionCriteres = criteres.filter(c => c.axe === section.axe);
-  const notedCriteres   = sectionCriteres.filter(c => Object.keys(c.notes).length > 0);
+  const notedCriteres   = sectionCriteres.filter(c => Object.values(c.notes).some(v => typeof v === "number"));
 
   const critMoyData = notedCriteres.slice(0, 30).map(c => {
-    const vals = Object.values(c.notes).filter(v => v != null);
+    const vals = Object.values(c.notes).filter(v => typeof v === "number");
     const moy  = vals.length ? parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)) : 0;
     const short = c.question.length > 50 ? c.question.slice(0,50)+"…" : c.question;
     return { question:short, questionFull:c.question, moyenne:moy, methodologie:c.methodologie };
@@ -779,7 +802,7 @@ function SectionTab({ section, data, onSetNote }) {
                 </thead>
                 <tbody>
                   {notedCriteres.map((c, i) => {
-                    const nv  = offresNotes.map(o=>c.notes[o.equipement]).filter(v=>v!=null);
+                    const nv  = offresNotes.map(o=>c.notes[o.equipement]).filter(v=>typeof v === "number");
                     const moy = nv.length ? nv.reduce((a,b)=>a+b,0)/nv.length : null;
                     return (
                       <tr key={i}>
@@ -792,9 +815,11 @@ function SectionTab({ section, data, onSetNote }) {
                           const n = c.notes[o.equipement];
                           return (
                             <td key={o.equipement} className="td-center">
-                              {n != null
+                              {typeof n === "number"
                                 ? <span className="score-chip" style={{ ...scoreBg(n), fontWeight:700, fontSize:12 }}>{n}</span>
-                                : <span style={{ color:"#cbd5e1",fontSize:11 }}>&mdash;</span>
+                                : n === "skip"
+                                  ? <span style={{ fontSize:10, color:"#94a3b8", background:"#f1f5f9", padding:"2px 6px", borderRadius:4 }}>N/A</span>
+                                  : <span style={{ color:"#cbd5e1",fontSize:11 }}>&mdash;</span>
                               }
                             </td>
                           );
@@ -940,7 +965,7 @@ export default function AnalyseMarche() {
         if (!overrides) return c;
         const merged = { ...c.notes };
         for (const [eq, val] of Object.entries(overrides)) {
-          if (val != null) merged[eq] = val;
+          if (val === "skip" || (val != null && val !== undefined)) merged[eq] = val;
           else delete merged[eq];
         }
         return { ...c, notes: merged };
@@ -969,7 +994,7 @@ export default function AnalyseMarche() {
 
   const tabs = [
     { id:"__overview__", label:"Vue d'ensemble", icon:"\u{1F3E0}" },
-    ...analysisData.sections.map(s => ({ id:s.name, label:s.name.split(" ")[0], icon:s.icon })),
+    ...analysisData.sections.map(s => ({ id:s.name, label:s.name, icon:s.icon })),
     { id:"__tco__", label:"Finances", icon:"\u{1F4B0}" },
   ];
 
