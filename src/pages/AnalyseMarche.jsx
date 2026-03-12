@@ -407,38 +407,89 @@ function NoteSlider({ value, onChange, vendorColor }) {
 // STEP NOTATION VIEW
 
 function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
-  const [qIdx, setQIdx]       = useState(0);
-  const [expanded, setExpanded] = useState({});
+  // Group by crit\u00e8re
+  const critGroups = useMemo(() => {
+    const g = {};
+    for (const c of criteres) {
+      const key = c.critere || "G\u00e9n\u00e9ral";
+      if (!g[key]) g[key] = [];
+      g[key].push(c);
+    }
+    return g;
+  }, [criteres]);
 
-  const total = criteres.length;
-  const q     = criteres[Math.min(qIdx, total - 1)];
+  const critNames = Object.keys(critGroups);
+  const [selectedCrit, setSelectedCrit] = useState(() => critNames[0] || "");
+  const [qIdx, setQIdx]                 = useState(0);
+  const [expanded, setExpanded]         = useState({});
 
-  if (!q || total === 0) return (
+  const currentGroup = critGroups[selectedCrit] || [];
+  const safeIdx      = Math.min(qIdx, currentGroup.length - 1);
+  const q            = currentGroup[safeIdx];
+
+  function selectCrit(name) { setSelectedCrit(name); setQIdx(0); setExpanded({}); }
+  function goTo(i)           { setQIdx(i); setExpanded({}); }
+
+  if (!q) return (
     <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucun crit\u00e8re disponible.</p>
   );
 
-  const notedCount = criteres.filter(c => Object.keys(c.notes).length > 0).length;
+  const total      = currentGroup.length;
+  const notedGroup = currentGroup.filter(c => Object.keys(c.notes).length > 0).length;
+  const notedTotal = criteres.filter(c => Object.keys(c.notes).length > 0).length;
+  const pct        = ((safeIdx + 1) / total * 100).toFixed(1);
   const TRUNC      = 320;
-  const pct        = ((qIdx + 1) / total * 100).toFixed(1);
 
-  function goTo(i) { setQIdx(i); setExpanded({}); }
-
-  // Build jump dots (max 9 visible)
-  const winSize = 9;
-  const half    = Math.floor(winSize / 2);
-  const start   = Math.max(0, Math.min(qIdx - half, total - winSize));
-  const end     = Math.min(total, start + winSize);
-  const jumpIdxs = Array.from({ length: end - start }, (_, i) => start + i);
+  // Jump window
+  const winSize  = 9;
+  const half     = Math.floor(winSize / 2);
+  const winStart = Math.max(0, Math.min(safeIdx - half, total - winSize));
+  const winEnd   = Math.min(total, winStart + winSize);
+  const jumpIdxs = Array.from({ length: winEnd - winStart }, (_, i) => winStart + i);
 
   return (
     <div>
-      {/* Progress bar */}
+      {/* ── Critère selector ── */}
       <div style={{ marginBottom:16 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6, flexWrap:"wrap", gap:4 }}>
+        <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase",
+          letterSpacing:1, marginBottom:8 }}>
+          Cat\u00e9gories &mdash; {notedTotal}/{criteres.length} questions not\u00e9es au total
+        </p>
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+          {critNames.map(name => {
+            const grp     = critGroups[name];
+            const noted   = grp.filter(c => Object.keys(c.notes).length > 0).length;
+            const isActive = name === selectedCrit;
+            const allNoted = noted === grp.length;
+            return (
+              <button key={name} onClick={() => selectCrit(name)} style={{
+                padding:"6px 14px", borderRadius:"var(--radius-lg)", cursor:"pointer",
+                border: isActive ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
+                background: isActive ? "var(--color-primary-bg)" : allNoted ? "#f0fdf4" : "var(--surface-subtle)",
+                color: isActive ? "var(--color-primary)" : allNoted ? "#166534" : "var(--text-secondary)",
+                fontWeight: isActive ? 700 : 500, fontSize:12,
+                display:"flex", alignItems:"center", gap:6,
+              }}>
+                <span>{name}</span>
+                <span style={{
+                  fontSize:10, padding:"1px 7px", borderRadius:10,
+                  background: isActive ? "var(--color-primary)" : allNoted ? "#bbf7d0" : "var(--color-border)",
+                  color: isActive ? "#fff" : allNoted ? "#166534" : "var(--text-muted)",
+                  fontWeight:700,
+                }}>{noted}/{grp.length}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Progress bar ── */}
+      <div style={{ marginBottom:14 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5, flexWrap:"wrap", gap:4 }}>
           <span style={{ fontSize:12, color:"var(--text-secondary)" }}>
-            Question <strong>{qIdx + 1}</strong>\u00a0/\u00a0{total}
-            {" \u2014 "}
-            <strong style={{ color:"var(--color-primary)" }}>{notedCount}</strong>
+            <strong style={{ color:"var(--color-primary)" }}>{selectedCrit}</strong>
+            {" \u2014 Question "}<strong>{safeIdx + 1}</strong>/{total}
+            {" \u2014 "}<strong style={{ color:"#16a34a" }}>{notedGroup}</strong>
             <span style={{ color:"var(--text-muted)" }}> not\u00e9es</span>
           </span>
           <span style={{ fontSize:11, color:"var(--text-muted)" }}>
@@ -450,33 +501,26 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
         </div>
       </div>
 
-      {/* Breadcrumb */}
-      {(q.critere || q.sousCritere) && (
+      {/* ── Sous-crit\u00e8re breadcrumb ── */}
+      {q.sousCritere && (
         <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:12 }}>
-          {q.critere && (
-            <span style={{ fontSize:11, fontWeight:700, color:"var(--text-secondary)",
-              background:"var(--surface-subtle)", padding:"2px 10px", borderRadius:12,
-              border:"1px solid var(--color-border)" }}>
-              {q.critere}
-            </span>
-          )}
-          {q.critere && q.sousCritere && <span style={{ color:"var(--text-muted)", fontSize:13 }}>\u203a</span>}
-          {q.sousCritere && (
-            <span style={{ fontSize:11, color:"var(--text-muted)", background:"var(--surface-subtle)",
-              padding:"2px 10px", borderRadius:12, border:"1px solid var(--color-border)" }}>
-              {q.sousCritere}
-            </span>
-          )}
+          <span style={{ fontSize:11, fontWeight:700, color:"var(--text-secondary)",
+            background:"var(--surface-subtle)", padding:"2px 10px", borderRadius:12,
+            border:"1px solid var(--color-border)" }}>
+            {selectedCrit}
+          </span>
+          <span style={{ color:"var(--text-muted)", fontSize:13 }}>\u203a</span>
+          <span style={{ fontSize:11, color:"var(--text-muted)", background:"var(--surface-subtle)",
+            padding:"2px 10px", borderRadius:12, border:"1px solid var(--color-border)" }}>
+            {q.sousCritere}
+          </span>
         </div>
       )}
 
-      {/* Question card */}
+      {/* ── Question card ── */}
       <div style={{
-        background:"var(--surface-subtle)",
-        border:"2px solid var(--color-border)",
-        borderRadius:"var(--radius-xl)",
-        padding:"18px 22px",
-        marginBottom:20,
+        background:"var(--surface-subtle)", border:"2px solid var(--color-border)",
+        borderRadius:"var(--radius-xl)", padding:"18px 22px", marginBottom:20,
       }}>
         <p style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", lineHeight:1.65, margin:"0 0 10px 0" }}>
           {q.question}
@@ -490,25 +534,23 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
         )}
       </div>
 
-      {/* Vendors grid */}
+      {/* ── Vendor cards ── */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(270px, 1fr))", gap:14, marginBottom:24 }}>
         {offresNotes.map((o) => {
-          const resp = q.reponses[o.equipement];
-          const note = q.notes[o.equipement];
-          const rKey = q.qKey + "||" + o.equipement;
-          const isExp = !!expanded[rKey];
-          const shortR = resp && resp.length > TRUNC ? resp.slice(0, TRUNC) + "\u2026" : resp;
+          const resp    = q.reponses[o.equipement];
+          const note    = q.notes[o.equipement];
+          const rKey    = q.qKey + "||" + o.equipement;
+          const isExp   = !!expanded[rKey];
+          const shortR  = resp && resp.length > TRUNC ? resp.slice(0, TRUNC) + "\u2026" : resp;
           const hasNote = note != null;
           return (
             <div key={o.equipement} style={{
               border:`2px solid ${hasNote ? o.color : "var(--color-border)"}`,
-              borderRadius:"var(--radius-lg)",
-              padding:"14px 16px",
+              borderRadius:"var(--radius-lg)", padding:"14px 16px",
               background: hasNote ? o.color + "0d" : "#fff",
               display:"flex", flexDirection:"column", gap:12,
               transition:"border-color 0.2s, background 0.2s",
             }}>
-              {/* Vendor header */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                 <div>
                   <div style={{ fontWeight:700, fontSize:13, color:o.color }}>{o.equipement}</div>
@@ -522,8 +564,6 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
                   </span>
                 )}
               </div>
-
-              {/* Response */}
               <div style={{ flex:1, minHeight:40 }}>
                 {resp ? (
                   <>
@@ -543,8 +583,6 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
                   <p style={{ fontSize:11, color:"#cbd5e1", fontStyle:"italic", margin:0 }}>Pas de r\u00e9ponse</p>
                 )}
               </div>
-
-              {/* Slider */}
               <NoteSlider
                 value={note ?? null}
                 onChange={val => onSetNote(q.qKey, o.equipement, val)}
@@ -555,24 +593,23 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
         })}
       </div>
 
-      {/* Navigation */}
+      {/* ── Navigation ── */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
         padding:"16px 0", borderTop:"1px solid var(--color-border)", gap:12 }}>
         <button
           className="btn btn-outline"
-          onClick={() => goTo(Math.max(0, qIdx - 1))}
-          disabled={qIdx === 0}
-          style={{ minWidth:120 }}
+          onClick={() => goTo(Math.max(0, safeIdx - 1))}
+          disabled={safeIdx === 0}
+          style={{ minWidth:130 }}
         >
           \u2190 Pr\u00e9c\u00e9dente
         </button>
 
-        {/* Jump dots */}
         <div style={{ display:"flex", gap:4, alignItems:"center", flexWrap:"wrap", justifyContent:"center" }}>
-          {start > 0 && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
+          {winStart > 0 && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
           {jumpIdxs.map(idx => {
-            const hasN = Object.keys(criteres[idx].notes).length > 0;
-            const isCur = idx === qIdx;
+            const hasN  = Object.keys(currentGroup[idx].notes).length > 0;
+            const isCur = idx === safeIdx;
             return (
               <button key={idx} onClick={() => goTo(idx)} style={{
                 width:26, height:26, borderRadius:"50%",
@@ -580,21 +617,28 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
                 background: isCur ? "var(--color-primary)" : hasN ? "#dcfce7" : "var(--surface-subtle)",
                 color: isCur ? "#fff" : hasN ? "#166534" : "var(--text-muted)",
                 cursor:"pointer", fontSize:10, fontWeight: isCur ? 700 : 400,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                flexShrink:0,
+                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
               }}>{idx + 1}</button>
             );
           })}
-          {end < total && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
+          {winEnd < total && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
         </div>
 
         <button
           className="btn btn-primary"
-          onClick={() => goTo(Math.min(total - 1, qIdx + 1))}
-          disabled={qIdx === total - 1}
-          style={{ minWidth:120 }}
+          onClick={() => {
+            if (safeIdx < total - 1) {
+              goTo(safeIdx + 1);
+            } else {
+              // Passer au crit\u00e8re suivant
+              const nextIdx = critNames.indexOf(selectedCrit) + 1;
+              if (nextIdx < critNames.length) selectCrit(critNames[nextIdx]);
+            }
+          }}
+          disabled={safeIdx === total - 1 && critNames.indexOf(selectedCrit) === critNames.length - 1}
+          style={{ minWidth:130 }}
         >
-          Suivante \u2192
+          {safeIdx < total - 1 ? "Suivante \u2192" : "Cat\u00e9gorie suivante \u2192"}
         </button>
       </div>
     </div>
