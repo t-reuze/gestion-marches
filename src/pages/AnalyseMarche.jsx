@@ -365,214 +365,238 @@ function OverviewTab({ data }) {
   );
 }
 
-// NOTE INPUT
+// NOTE SLIDER
 
-function NoteInput({ value, onChange }) {
-  const steps = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
-  const bg = value != null ? scoreBg(value) : null;
+function NoteSlider({ value, onChange, vendorColor }) {
+  const hasNote = value !== null && value !== undefined;
+  const bg = hasNote ? scoreBg(value) : null;
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-      <button
-        onClick={() => {
-          const idx = steps.indexOf(value);
-          if (idx > 0) onChange(steps[idx - 1]);
-        }}
-        style={{ width:18, height:18, borderRadius:4, border:"1px solid var(--color-border)", background:"var(--surface-subtle)", cursor:"pointer", fontSize:12, color:"var(--text-muted)", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}
-      >&minus;</button>
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+        <span style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", minWidth:42 }}>Note :</span>
+        <span style={{ fontWeight:900, fontSize:20, minWidth:36, color: hasNote ? bg.color : "#cbd5e1" }}>
+          {hasNote ? value.toFixed(1) : "\u2014"}
+        </span>
+        <span style={{ fontSize:11, color:"var(--text-muted)" }}>/5</span>
+        {hasNote && (
+          <button onClick={() => onChange(null)} style={{
+            marginLeft:"auto", fontSize:10, color:"var(--text-muted)", background:"none",
+            border:"none", cursor:"pointer", textDecoration:"underline",
+          }}>Effacer</button>
+        )}
+      </div>
       <input
-        type="number" min="0" max="5" step="0.5"
-        value={value ?? ""}
-        onChange={e => {
-          const v = e.target.value === "" ? null : parseFloat(e.target.value);
-          if (v === null || (v >= 0 && v <= 5)) onChange(v);
-        }}
+        type="range" min="0" max="5" step="0.5"
+        value={hasNote ? value : 0}
+        onChange={e => onChange(parseFloat(e.target.value))}
         style={{
-          width:48, textAlign:"center", fontWeight:700, fontSize:13,
-          border:`2px solid ${value != null ? "var(--color-primary)" : "var(--color-border)"}`,
-          borderRadius:"var(--radius-sm)", padding:"3px 4px",
-          background: bg ? bg.background : "#fff",
-          color: bg ? bg.color : "var(--text-muted)",
-          outline:"none",
+          width:"100%", cursor:"pointer",
+          opacity: hasNote ? 1 : 0.35,
+          accentColor: vendorColor || "var(--color-primary)",
         }}
-        placeholder="&mdash;"
       />
-      <button
-        onClick={() => {
-          const idx = steps.indexOf(value);
-          if (idx === -1) onChange(0);
-          else if (idx < steps.length - 1) onChange(steps[idx + 1]);
-        }}
-        style={{ width:18, height:18, borderRadius:4, border:"1px solid var(--color-border)", background:"var(--surface-subtle)", cursor:"pointer", fontSize:12, color:"var(--text-muted)", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}
-      >+</button>
+      <div style={{ display:"flex", justifyContent:"space-between", padding:"0 1px" }}>
+        {[0,1,2,3,4,5].map(v => (
+          <span key={v} style={{ fontSize:9, color:"var(--text-muted)" }}>{v}</span>
+        ))}
+      </div>
     </div>
   );
 }
 
-// NOTATION VIEW
+// STEP NOTATION VIEW
 
-function NotationView({ criteres, offresNotes, section, onSetNote }) {
-  const grouped = useMemo(() => {
-    const g = {};
-    for (const c of criteres) {
-      const crit = c.critere || "G\u00e9n\u00e9ral";
-      if (!g[crit]) g[crit] = {};
-      const sc = c.sousCritere || "";
-      if (!g[crit][sc]) g[crit][sc] = [];
-      g[crit][sc].push(c);
-    }
-    return g;
-  }, [criteres]);
+function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
+  const [qIdx, setQIdx]       = useState(0);
+  const [expanded, setExpanded] = useState({});
 
-  const critNames = Object.keys(grouped);
-  const [openCriteres, setOpenCriteres] = useState(() => new Set(critNames.slice(0, 1)));
-  const [expandedResp, setExpandedResp] = useState(new Set());
+  const total = criteres.length;
+  const q     = criteres[Math.min(qIdx, total - 1)];
 
-  const toggleCritere = useCallback(crit => {
-    setOpenCriteres(prev => {
-      const next = new Set(prev);
-      if (next.has(crit)) next.delete(crit); else next.add(crit);
-      return next;
-    });
-  }, []);
+  if (!q || total === 0) return (
+    <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucun crit\u00e8re disponible.</p>
+  );
 
-  const totalQ  = criteres.length;
-  const notedQ  = criteres.filter(c => Object.keys(c.notes).length > 0).length;
-  const hasResp = criteres.filter(c => Object.keys(c.reponses).length > 0).length;
+  const notedCount = criteres.filter(c => Object.keys(c.notes).length > 0).length;
+  const TRUNC      = 320;
+  const pct        = ((qIdx + 1) / total * 100).toFixed(1);
 
-  const VBG = ["#dbeafe","#dcfce7","#fce7f3","#fef9c3","#ede9fe","#ffedd5"];
-  const TRUNC = 160;
+  function goTo(i) { setQIdx(i); setExpanded({}); }
+
+  // Build jump dots (max 9 visible)
+  const winSize = 9;
+  const half    = Math.floor(winSize / 2);
+  const start   = Math.max(0, Math.min(qIdx - half, total - winSize));
+  const end     = Math.min(total, start + winSize);
+  const jumpIdxs = Array.from({ length: end - start }, (_, i) => start + i);
 
   return (
     <div>
-      {/* Stats + actions */}
-      <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:14, padding:"10px 14px", background:"var(--surface-subtle)", borderRadius:"var(--radius-md)", flexWrap:"wrap" }}>
-        <span style={{ fontSize:12, color:"var(--text-secondary)" }}>
-          Section <strong>{section.name}</strong> &mdash; poids <strong style={{ color:"var(--color-primary)" }}>{section.poids}%</strong>
-        </span>
-        <span style={{ fontSize:12, color:"var(--text-muted)" }}>{notedQ}/{totalQ} not\u00e9es</span>
-        <span style={{ fontSize:12, color:"var(--text-muted)" }}>{hasResp} r\u00e9ponses disponibles</span>
-        <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
-          <button className="btn btn-sm btn-outline" onClick={() => setOpenCriteres(new Set(critNames))}>Tout ouvrir</button>
-          <button className="btn btn-sm btn-outline" onClick={() => setOpenCriteres(new Set())}>R\u00e9duire</button>
+      {/* Progress bar */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6, flexWrap:"wrap", gap:4 }}>
+          <span style={{ fontSize:12, color:"var(--text-secondary)" }}>
+            Question <strong>{qIdx + 1}</strong>\u00a0/\u00a0{total}
+            {" \u2014 "}
+            <strong style={{ color:"var(--color-primary)" }}>{notedCount}</strong>
+            <span style={{ color:"var(--text-muted)" }}> not\u00e9es</span>
+          </span>
+          <span style={{ fontSize:11, color:"var(--text-muted)" }}>
+            {section.name} \u00b7 {section.poids}%
+          </span>
+        </div>
+        <div style={{ height:5, background:"var(--color-border)", borderRadius:3, overflow:"hidden" }}>
+          <div style={{ height:"100%", width:pct+"%", background:"var(--color-primary)", borderRadius:3, transition:"width 0.25s" }} />
         </div>
       </div>
 
-      {/* Header fournisseurs fixe */}
+      {/* Breadcrumb */}
+      {(q.critere || q.sousCritere) && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:12 }}>
+          {q.critere && (
+            <span style={{ fontSize:11, fontWeight:700, color:"var(--text-secondary)",
+              background:"var(--surface-subtle)", padding:"2px 10px", borderRadius:12,
+              border:"1px solid var(--color-border)" }}>
+              {q.critere}
+            </span>
+          )}
+          {q.critere && q.sousCritere && <span style={{ color:"var(--text-muted)", fontSize:13 }}>\u203a</span>}
+          {q.sousCritere && (
+            <span style={{ fontSize:11, color:"var(--text-muted)", background:"var(--surface-subtle)",
+              padding:"2px 10px", borderRadius:12, border:"1px solid var(--color-border)" }}>
+              {q.sousCritere}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Question card */}
       <div style={{
-        display:"grid",
-        gridTemplateColumns:`minmax(200px,280px) repeat(${offresNotes.length}, 1fr)`,
-        marginBottom:6, borderRadius:"var(--radius-md)", overflow:"hidden",
-        border:"1px solid var(--color-border)",
+        background:"var(--surface-subtle)",
+        border:"2px solid var(--color-border)",
+        borderRadius:"var(--radius-xl)",
+        padding:"18px 22px",
+        marginBottom:20,
       }}>
-        <div style={{ padding:"10px 14px", background:"var(--color-sidebar-bg)" }}>
-          <span style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.6)" }}>Question / M\u00e9thodologie</span>
-        </div>
-        {offresNotes.map((o, i) => (
-          <div key={o.equipement} style={{ padding:"8px 10px", background:"var(--color-sidebar-bg)", borderLeft:"1px solid rgba(255,255,255,0.1)", textAlign:"center" }}>
-            <div style={{ fontSize:11, fontWeight:700, color:"#fff" }}>{o.equipement}</div>
-            <div style={{ fontSize:9, color:"rgba(255,255,255,0.5)", marginTop:1 }}>{o.fournisseur}</div>
-            {o.score != null && <div style={{ fontSize:10, fontWeight:700, color:scoreColor(o.score), marginTop:2 }}>{o.score.toFixed(2)}/5</div>}
+        <p style={{ fontSize:15, fontWeight:700, color:"var(--text-primary)", lineHeight:1.65, margin:"0 0 10px 0" }}>
+          {q.question}
+        </p>
+        {q.methodologie && (
+          <div style={{ padding:"8px 12px", background:"#eff6ff", borderRadius:"var(--radius-md)", borderLeft:"3px solid var(--color-primary)" }}>
+            <p style={{ fontSize:11, color:"var(--color-primary)", margin:0, lineHeight:1.5 }}>
+              \u2192 {q.methodologie}
+            </p>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Criteres accordeons */}
-      {critNames.map(crit => {
-        const isOpen = openCriteres.has(crit);
-        const allQ   = Object.values(grouped[crit]).flat();
-        const noted  = allQ.filter(q => Object.keys(q.notes).length > 0).length;
-        return (
-          <div key={crit} style={{ marginBottom:6, border:"1px solid var(--color-border)", borderRadius:"var(--radius-lg)", overflow:"hidden" }}>
-            <button
-              onClick={() => toggleCritere(crit)}
-              style={{
-                width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between",
-                padding:"10px 16px",
-                background: isOpen ? "var(--color-primary-bg)" : "var(--surface-subtle)",
-                border:"none", cursor:"pointer", textAlign:"left",
-                borderBottom: isOpen ? "1px solid var(--color-border)" : "none",
-              }}
-            >
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontWeight:700, fontSize:13, color: isOpen ? "var(--color-primary)" : "var(--text-primary)" }}>{crit}</span>
-                <span style={{ fontSize:11, color:"var(--text-muted)", background:"var(--surface)", padding:"1px 8px", borderRadius:10, border:"1px solid var(--color-border)" }}>
-                  {noted}/{allQ.length} not\u00e9es
-                </span>
-              </div>
-              <span style={{ fontSize:11, color:"var(--text-muted)" }}>{isOpen ? "\u25B2" : "\u25BC"}</span>
-            </button>
-
-            {isOpen && Object.entries(grouped[crit]).map(([sc, questions]) => (
-              <div key={sc}>
-                {sc && (
-                  <div style={{ padding:"5px 16px 5px 20px", background:"#eff6ff", borderBottom:"1px solid #dbeafe" }}>
-                    <span style={{ fontSize:10, fontWeight:700, color:"var(--color-primary)", textTransform:"uppercase", letterSpacing:0.5 }}>{sc}</span>
-                  </div>
+      {/* Vendors grid */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(270px, 1fr))", gap:14, marginBottom:24 }}>
+        {offresNotes.map((o) => {
+          const resp = q.reponses[o.equipement];
+          const note = q.notes[o.equipement];
+          const rKey = q.qKey + "||" + o.equipement;
+          const isExp = !!expanded[rKey];
+          const shortR = resp && resp.length > TRUNC ? resp.slice(0, TRUNC) + "\u2026" : resp;
+          const hasNote = note != null;
+          return (
+            <div key={o.equipement} style={{
+              border:`2px solid ${hasNote ? o.color : "var(--color-border)"}`,
+              borderRadius:"var(--radius-lg)",
+              padding:"14px 16px",
+              background: hasNote ? o.color + "0d" : "#fff",
+              display:"flex", flexDirection:"column", gap:12,
+              transition:"border-color 0.2s, background 0.2s",
+            }}>
+              {/* Vendor header */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:13, color:o.color }}>{o.equipement}</div>
+                  <div style={{ fontSize:10, color:"var(--text-muted)", marginTop:1 }}>{o.fournisseur}</div>
+                </div>
+                {o.score != null && (
+                  <span style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)",
+                    background:"var(--surface-subtle)", padding:"2px 8px", borderRadius:6,
+                    border:"1px solid var(--color-border)", flexShrink:0 }}>
+                    moy. {o.score.toFixed(2)}/5
+                  </span>
                 )}
-                {questions.map((q, qi) => (
-                  <div key={qi} style={{
-                    display:"grid",
-                    gridTemplateColumns:`minmax(200px,280px) repeat(${offresNotes.length}, 1fr)`,
-                    borderBottom: qi < questions.length - 1 ? "1px solid var(--color-border-subtle)" : "none",
-                    background: qi % 2 === 0 ? "#fff" : "var(--surface-subtle)",
-                  }}>
-                    {/* Question */}
-                    <div style={{ padding:"10px 12px 10px 20px", borderRight:"1px solid var(--color-border-subtle)" }}>
-                      <p style={{ fontSize:11, fontWeight:600, color:"var(--text-primary)", lineHeight:1.5, margin:"0 0 4px 0" }}>
-                        {q.question}
-                      </p>
-                      {q.methodologie && (
-                        <p style={{ fontSize:9, color:"var(--color-primary)", fontStyle:"italic", margin:0, lineHeight:1.4 }}>
-                          &#8594; {q.methodologie}
-                        </p>
-                      )}
-                    </div>
-                    {/* Reponse + note par fournisseur */}
-                    {offresNotes.map((o, oi) => {
-                      const resp    = q.reponses[o.equipement];
-                      const note    = q.notes[o.equipement];
-                      const rKey    = q.qKey + "||" + o.equipement;
-                      const isExp   = expandedResp.has(rKey);
-                      const shortR  = resp && resp.length > TRUNC ? resp.slice(0, TRUNC) + "\u2026" : resp;
-                      return (
-                        <div key={o.equipement} style={{
-                          padding:"8px 10px",
-                          borderRight: oi < offresNotes.length - 1 ? "1px solid var(--color-border-subtle)" : "none",
-                          display:"flex", flexDirection:"column", gap:5,
-                          background: note != null ? VBG[oi % VBG.length] + "50" : "transparent",
-                        }}>
-                          {resp ? (
-                            <div>
-                              <p style={{ fontSize:10, color:"var(--text-secondary)", lineHeight:1.5, margin:0 }}>
-                                {isExp ? resp : shortR}
-                              </p>
-                              {resp.length > TRUNC && (
-                                <button
-                                  onClick={() => setExpandedResp(prev => {
-                                    const next = new Set(prev);
-                                    if (next.has(rKey)) next.delete(rKey); else next.add(rKey);
-                                    return next;
-                                  })}
-                                  style={{ fontSize:9, color:"var(--color-primary)", background:"none", border:"none", cursor:"pointer", padding:"2px 0", textDecoration:"underline" }}
-                                >
-                                  {isExp ? "Voir moins" : "Voir plus"}
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <p style={{ fontSize:10, color:"#cbd5e1", fontStyle:"italic", margin:0 }}>Pas de r\u00e9ponse</p>
-                          )}
-                          <NoteInput value={note ?? null} onChange={val => onSetNote(q.qKey, o.equipement, val)} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
               </div>
-            ))}
-          </div>
-        );
-      })}
+
+              {/* Response */}
+              <div style={{ flex:1, minHeight:40 }}>
+                {resp ? (
+                  <>
+                    <p style={{ fontSize:11, color:"var(--text-secondary)", lineHeight:1.6, margin:0 }}>
+                      {isExp ? resp : shortR}
+                    </p>
+                    {resp.length > TRUNC && (
+                      <button
+                        onClick={() => setExpanded(prev => ({ ...prev, [rKey]: !isExp }))}
+                        style={{ fontSize:10, color:"var(--color-primary)", background:"none", border:"none",
+                          cursor:"pointer", padding:"4px 0", textDecoration:"underline" }}>
+                        {isExp ? "Voir moins" : "Voir plus"}
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <p style={{ fontSize:11, color:"#cbd5e1", fontStyle:"italic", margin:0 }}>Pas de r\u00e9ponse</p>
+                )}
+              </div>
+
+              {/* Slider */}
+              <NoteSlider
+                value={note ?? null}
+                onChange={val => onSetNote(q.qKey, o.equipement, val)}
+                vendorColor={o.color}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Navigation */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+        padding:"16px 0", borderTop:"1px solid var(--color-border)", gap:12 }}>
+        <button
+          className="btn btn-outline"
+          onClick={() => goTo(Math.max(0, qIdx - 1))}
+          disabled={qIdx === 0}
+          style={{ minWidth:120 }}
+        >
+          \u2190 Pr\u00e9c\u00e9dente
+        </button>
+
+        {/* Jump dots */}
+        <div style={{ display:"flex", gap:4, alignItems:"center", flexWrap:"wrap", justifyContent:"center" }}>
+          {start > 0 && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
+          {jumpIdxs.map(idx => {
+            const hasN = Object.keys(criteres[idx].notes).length > 0;
+            const isCur = idx === qIdx;
+            return (
+              <button key={idx} onClick={() => goTo(idx)} style={{
+                width:26, height:26, borderRadius:"50%",
+                border: isCur ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
+                background: isCur ? "var(--color-primary)" : hasN ? "#dcfce7" : "var(--surface-subtle)",
+                color: isCur ? "#fff" : hasN ? "#166534" : "var(--text-muted)",
+                cursor:"pointer", fontSize:10, fontWeight: isCur ? 700 : 400,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                flexShrink:0,
+              }}>{idx + 1}</button>
+            );
+          })}
+          {end < total && <span style={{ fontSize:11, color:"var(--text-muted)" }}>\u2026</span>}
+        </div>
+
+        <button
+          className="btn btn-primary"
+          onClick={() => goTo(Math.min(total - 1, qIdx + 1))}
+          disabled={qIdx === total - 1}
+          style={{ minWidth:120 }}
+        >
+          Suivante \u2192
+        </button>
+      </div>
     </div>
   );
 }
@@ -636,7 +660,7 @@ function SectionTab({ section, data, onSetNote }) {
       {view === "notation" && (
         sectionCriteres.length === 0
           ? <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucun crit\u00e8re disponible.</p>
-          : <NotationView criteres={sectionCriteres} offresNotes={offresNotes} section={section} onSetNote={onSetNote} />
+          : <StepNotationView criteres={sectionCriteres} offresNotes={offresNotes} section={section} onSetNote={onSetNote} />
       )}
 
       {view === "graphique" && (
