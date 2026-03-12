@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
@@ -361,6 +361,41 @@ function OverviewTab({ data }) {
           <Tooltip content={<CustomTooltip />} />
         </RadarChart>
       </ResponsiveContainer>
+
+      <h3 style={{ fontSize:15, fontWeight:800, color:"var(--text-primary)", marginBottom:16, marginTop:32 }}>
+        Histogrammes de préférences par section
+      </h3>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(360px, 1fr))", gap:20, marginBottom:16 }}>
+        {sections.map(s => {
+          const barData = Object.entries(s.scoreParOffre)
+            .filter(([, v]) => v != null)
+            .sort(([, a], [, b]) => b - a)
+            .map(([eq, v]) => {
+              const offre = offres.find(o => o.equipement === eq);
+              return { name: eq, score: parseFloat(v.toFixed(3)), color: colors[offre?.fournisseur] || "#64748b" };
+            });
+          if (!barData.length) return null;
+          return (
+            <div key={s.name} style={{ background:"var(--surface-subtle)", border:"1px solid var(--color-border)", borderRadius:"var(--radius-lg)", padding:"16px 16px 8px 16px" }}>
+              <p style={{ fontSize:12, fontWeight:700, color:"var(--text-secondary)", marginBottom:10 }}>
+                {s.icon} {s.name}
+                <span style={{ fontWeight:400, color:"var(--text-muted)", marginLeft:6 }}>({s.poids}%)</span>
+              </p>
+              <ResponsiveContainer width="100%" height={Math.max(80, barData.length * 30)}>
+                <BarChart layout="vertical" data={barData} margin={{ top:0, right:50, bottom:0, left:0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
+                  <XAxis type="number" domain={[0, 5]} tick={{ fontSize:10, fill:"#94a3b8" }} tickCount={6} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize:10, fill:"#475569" }} width={100} />
+                  <Tooltip formatter={(v) => [v.toFixed(3), "Score /5"]} />
+                  <Bar dataKey="score" radius={[0, 3, 3, 0]}>
+                    {barData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -789,61 +824,93 @@ function SectionTab({ section, data, onSetNote }) {
       {view === "tableau" && (
         notedCriteres.length === 0
           ? <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Aucune note disponible.</p>
-          : <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ minWidth:180 }}>Critère / Question</th>
-                    {offresNotes.map(o => (
-                      <th key={o.equipement} className="td-center" style={{ color:o.color, fontSize:11, whiteSpace:"nowrap" }}>{o.equipement}</th>
-                    ))}
-                    <th className="td-center" style={{ background:"#f0f4ff", minWidth:60 }}>Moy.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {notedCriteres.map((c, i) => {
-                    const nv  = offresNotes.map(o=>c.notes[o.equipement]).filter(v=>typeof v === "number");
-                    const moy = nv.length ? nv.reduce((a,b)=>a+b,0)/nv.length : null;
-                    return (
-                      <tr key={i}>
-                        <td>
-                          {c.sousCritere && <div style={{ fontSize:10, color:"var(--text-muted)", marginBottom:2 }}>{c.sousCritere}</div>}
-                          <div style={{ fontWeight:500, fontSize:12, color:"var(--text-primary)" }}>{c.question}</div>
-                          {c.methodologie && <div style={{ fontSize:10, color:"var(--text-muted)", marginTop:2, fontStyle:"italic" }}>{c.methodologie}</div>}
-                        </td>
-                        {offresNotes.map(o => {
-                          const n = c.notes[o.equipement];
-                          return (
-                            <td key={o.equipement} className="td-center">
-                              {typeof n === "number"
-                                ? <span className="score-chip" style={{ ...scoreBg(n), fontWeight:700, fontSize:12 }}>{n}</span>
-                                : n === "skip"
-                                  ? <span style={{ fontSize:10, color:"#94a3b8", background:"#f1f5f9", padding:"2px 6px", borderRadius:4 }}>N/A</span>
-                                  : <span style={{ color:"#cbd5e1",fontSize:11 }}>&mdash;</span>
-                              }
+          : (() => {
+              // Group by critère then sous-critère
+              const groups = {};
+              for (const c of notedCriteres) {
+                const crit = c.critere || "Général";
+                if (!groups[crit]) groups[crit] = {};
+                const sub = c.sousCritere || "";
+                if (!groups[crit][sub]) groups[crit][sub] = [];
+                groups[crit][sub].push(c);
+              }
+              return (
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style={{ minWidth:200 }}>Critère / Question</th>
+                        {offresNotes.map(o => (
+                          <th key={o.equipement} className="td-center" style={{ color:o.color, fontSize:11, whiteSpace:"nowrap" }}>{o.equipement}</th>
+                        ))}
+                        <th className="td-center" style={{ background:"#f0f4ff", minWidth:60 }}>Moy.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(groups).map(([crit, subGroups]) => (
+                        <React.Fragment key={"crit-"+crit}>
+                          <tr style={{ background:"#dbeafe" }}>
+                            <td colSpan={offresNotes.length + 2} style={{ fontWeight:800, fontSize:13, color:"#1d4ed8", padding:"8px 14px", borderLeft:"4px solid #2563eb" }}>
+                              {crit}
                             </td>
-                          );
-                        })}
-                        <td className="td-center" style={{ background:"#f0f4ff" }}>
-                          {moy != null && <span style={{ fontWeight:800, fontSize:12, color:scoreColor(moy) }}>{moy.toFixed(2)}</span>}
+                          </tr>
+                          {Object.entries(subGroups).map(([sub, rows]) => (
+                            <React.Fragment key={"sub-"+sub}>
+                              {sub && (
+                                <tr style={{ background:"#eff6ff" }}>
+                                  <td colSpan={offresNotes.length + 2} style={{ fontWeight:600, fontSize:11, color:"var(--text-secondary)", padding:"5px 14px 5px 28px", borderLeft:"4px solid #93c5fd" }}>
+                                    {sub}
+                                  </td>
+                                </tr>
+                              )}
+                              {rows.map((c, i) => {
+                                const nv  = offresNotes.map(o=>c.notes[o.equipement]).filter(v=>typeof v === "number");
+                                const moy = nv.length ? nv.reduce((a,b)=>a+b,0)/nv.length : null;
+                                return (
+                                  <tr key={i}>
+                                    <td style={{ paddingLeft: sub ? 28 : 14 }}>
+                                      <div style={{ fontWeight:500, fontSize:12, color:"var(--text-primary)" }}>{c.question}</div>
+                                      {c.methodologie && <div style={{ fontSize:10, color:"var(--text-muted)", marginTop:2, fontStyle:"italic" }}>{c.methodologie}</div>}
+                                    </td>
+                                    {offresNotes.map(o => {
+                                      const n = c.notes[o.equipement];
+                                      return (
+                                        <td key={o.equipement} className="td-center">
+                                          {typeof n === "number"
+                                            ? <span className="score-chip" style={{ ...scoreBg(n), fontWeight:700, fontSize:12 }}>{n}</span>
+                                            : n === "skip"
+                                              ? <span style={{ fontSize:10, color:"#94a3b8", background:"#f1f5f9", padding:"2px 6px", borderRadius:4 }}>N/A</span>
+                                              : <span style={{ color:"#cbd5e1",fontSize:11 }}>&mdash;</span>
+                                          }
+                                        </td>
+                                      );
+                                    })}
+                                    <td className="td-center" style={{ background:"#f0f4ff" }}>
+                                      {moy != null && <span style={{ fontWeight:800, fontSize:12, color:scoreColor(moy) }}>{moy.toFixed(2)}</span>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </React.Fragment>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                      <tr style={{ borderTop:"2px solid var(--color-border)", background:"var(--surface-subtle)" }}>
+                        <td style={{ fontWeight:800, color:"var(--text-primary)", fontSize:13 }}>Score section /5</td>
+                        {offresNotes.map(o => (
+                          <td key={o.equipement} className="td-center">
+                            <span style={{ fontWeight:800, fontSize:14, color:scoreColor(o.score) }}>{o.score?.toFixed(3)}</span>
+                          </td>
+                        ))}
+                        <td className="td-center" style={{ background:"#e8edff" }}>
+                          <span style={{ fontWeight:800, fontSize:14, color:"var(--color-primary)" }}>{moyenne}</span>
                         </td>
                       </tr>
-                    );
-                  })}
-                  <tr style={{ borderTop:"2px solid var(--color-border)", background:"var(--surface-subtle)" }}>
-                    <td style={{ fontWeight:800, color:"var(--text-primary)", fontSize:13 }}>Score section /5</td>
-                    {offresNotes.map(o => (
-                      <td key={o.equipement} className="td-center">
-                        <span style={{ fontWeight:800, fontSize:14, color:scoreColor(o.score) }}>{o.score?.toFixed(3)}</span>
-                      </td>
-                    ))}
-                    <td className="td-center" style={{ background:"#e8edff" }}>
-                      <span style={{ fontWeight:800, fontSize:14, color:"var(--color-primary)" }}>{moyenne}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()
       )}
     </div>
   );
@@ -1022,7 +1089,6 @@ export default function AnalyseMarche() {
       <div style={{ display:"flex", gap:0, overflowX:"auto", borderBottom:"1px solid var(--color-border)", marginBottom:24 }}>
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
-          const moy = (tab.id !== "__overview__" && tab.id !== "__tco__") ? sectionMoyennes[tab.id] : null;
           return (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
               padding:"10px 16px", border:"none", cursor:"pointer", background:"transparent",
@@ -1033,11 +1099,6 @@ export default function AnalyseMarche() {
               transition:"all 0.15s", whiteSpace:"nowrap", flexShrink:0,
             }}>
               <span>{tab.icon} {tab.label}</span>
-              {moy != null && (
-                <span style={{ fontSize:10, fontWeight:800, color: isActive ? scoreColor(moy) : "var(--text-muted)" }}>
-                  {moy.toFixed(2)}/5
-                </span>
-              )}
             </button>
           );
         })}
