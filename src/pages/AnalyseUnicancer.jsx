@@ -271,11 +271,11 @@ function buildQTXlsx(qtData) {
   const wb = XLSX.utils.book_new();
 
   const recapAoa = [['Lot', 'Fournisseur', 'Statut', 'Questions répondues']];
-  for (const [lot, { supStatus, questions }] of Object.entries(qtData)) {
-    for (const [sup, status] of Object.entries(supStatus)) {
+  for (const [lot, { supStatus }] of Object.entries(qtData)) {
+    for (const [sup, { status, filled, total }] of Object.entries(supStatus)) {
       recapAoa.push([`LOT ${lot}`, sup,
         status === 'ok' ? 'Complet ✓' : status === 'partial' ? 'Partiel' : 'Vide',
-        status === 'ok' ? `${questions.length}/${questions.length}` : '?',
+        `${filled}/${total}`,
       ]);
     }
   }
@@ -538,7 +538,8 @@ export default function AnalyseUnicancer() {
         const supStatus = {};
         supNames.forEach(sup => {
           const filled = realQIdx.filter(qi => supData[sup][qi]?.a).length;
-          supStatus[sup] = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
+          const status = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
+          supStatus[sup] = { status, filled, total: totalReal };
         });
 
         result[lot] = { compiled, supStatus, questions, supData };
@@ -956,11 +957,12 @@ export default function AnalyseUnicancer() {
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{questions.length} questions</span>
                   </div>
                   <div className="card-body">
-                    {Object.entries(supStatus).map(([sup, status]) => (
+                    {Object.entries(supStatus).map(([sup, { status, filled, total }]) => (
                       <div key={sup} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontWeight: 500 }}>{sup}</span>
                         <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600 }}>
                           {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
+                          <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>
                         </span>
                       </div>
                     ))}
@@ -1211,13 +1213,14 @@ export default function AnalyseUnicancer() {
                 </thead>
                 <tbody>
                   {Object.entries(qtData).flatMap(([lot, { supStatus }]) =>
-                    Object.entries(supStatus).map(([sup, status]) => (
+                    Object.entries(supStatus).map(([sup, { status, filled, total }]) => (
                       <tr key={lot + sup}>
                         <td style={{ fontWeight: 600, fontSize: 12 }}>{sup}</td>
                         <td className="td-center"><span className="score-chip" style={{ background: '#e0e7ff', color: '#3730a3' }}>LOT {lot}</span></td>
                         <td className="td-center">
                           <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600, fontSize: 12 }}>
                             {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
+                            <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>
                           </span>
                         </td>
                       </tr>
