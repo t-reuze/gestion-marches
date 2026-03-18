@@ -133,35 +133,40 @@ async function findQTFile(dirHandle, lot) {
   });
   if (withLotQt.length) return { ...withLotQt[0], lotSheet: null };
 
-  // 2. Fichier Annexe 1 / CCTP sans numéro de lot (fichier unique multi-lots)
+  // 2. Fichier Annexe 1 / CCTP / QT sans numéro de lot (fichier unique multi-lots)
   const annexe1 = xlsx.filter(f => {
     const n = f.path.toLowerCase();
     return (n.includes('annexe') && (n.includes('1') || n.includes('cctp'))) || n.includes('qt');
   });
   if (annexe1.length) return { ...annexe1[0], lotSheet: lot };
 
+  // 3. Fallback : unique fichier xlsx du dossier
+  if (xlsx.length === 1) return { ...xlsx[0], lotSheet: lot };
+
   return null;
 }
 
-// Trouve la feuille correspondant au lot dans un classeur
+// Trouve la feuille "QT LOT X" dans un classeur
 function findLotSheet(wb, lot) {
   const match = wb.SheetNames.find(s => {
     const n = s.toLowerCase();
-    return n.includes(`lot ${lot}`) || n.includes(`lot_${lot}`) || n.includes(`lot${lot}`) || n === `lot${lot}`;
+    return n.includes(`lot ${lot}`) || n.includes(`lot_${lot}`) || n.includes(`lot${lot}`);
   });
   return match || wb.SheetNames[0];
 }
 
-// Détecte dynamiquement la colonne réponse (colonne avec le plus de contenu hors col 0)
+// Trouve la colonne réponse en cherchant "réponse"/"candidat" dans les en-têtes, sinon col C (index 2)
 function findAnswerCol(data) {
-  const counts = {};
-  data.forEach(row => {
-    for (let c = 1; c < row.length; c++) {
-      if (row[c] && String(row[c]).trim()) counts[c] = (counts[c] || 0) + 1;
+  for (let ri = 0; ri < Math.min(8, data.length); ri++) {
+    const row = data[ri];
+    for (let ci = 1; ci < row.length; ci++) {
+      const cell = String(row[ci] || '').toLowerCase();
+      if (cell.includes('r\u00e9ponse') || cell.includes('reponse') || cell.includes('candidat')) {
+        return ci;
+      }
     }
-  });
-  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  return best ? parseInt(best[0]) : 1;
+  }
+  return 2; // Col C par défaut (structure standard des QT Unicancer)
 }
 
 function buildXlsx(rows) {
