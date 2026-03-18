@@ -50,6 +50,16 @@ async function getSubdirs(dirHandle) {
   return dirs.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// Trouve le sous-dossier "Reponses" (insensible à la casse) dans un répertoire
+async function findReponsesDir(rootHandle) {
+  for await (const [name, handle] of rootHandle.entries()) {
+    if (handle.kind === 'directory' && name.toLowerCase() === 'reponses') {
+      return { handle, name };
+    }
+  }
+  return null;
+}
+
 async function detectSupplier(dirHandle) {
   const files = await getAllFiles(dirHandle);
 
@@ -155,8 +165,9 @@ function download(data, filename) {
 
 export default function AnalyseUnicancer() {
   const [tab, setTab] = useState(0);
-  const [reponsesDir, setReponsesDir] = useState(null);
-  const [reponsesDirName, setReponsesDirName] = useState('');
+  const [rootDirName, setRootDirName] = useState('');
+  const [reponsesDirHandle, setReponsesDirHandle] = useState(null);
+  const [reponsesDirPath, setReponsesDirPath] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState('');
   const [annuaire, setAnnuaire] = useState([]);
@@ -166,16 +177,30 @@ export default function AnalyseUnicancer() {
   const [lotsSelected, setLotsSelected] = useState([1, 2, 3]);
   const [compilingQt, setCompilingQt] = useState(false);
   const [qtData, setQtData] = useState({});
+  const [dirWarning, setDirWarning] = useState('');
 
   const supportsApi = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
   async function pickDir() {
     try {
-      const dir = await window.showDirectoryPicker();
-      setReponsesDir(dir);
-      setReponsesDirName(dir.name);
+      const root = await window.showDirectoryPicker();
+      setRootDirName(root.name);
       setAnnuaire([]);
       setEdits({});
+      setDirWarning('');
+
+      // Cherche automatiquement le sous-dossier "Reponses"
+      const found = await findReponsesDir(root);
+      if (found) {
+        setReponsesDirHandle(found.handle);
+        setReponsesDirPath(`${root.name} / ${found.name}`);
+        setDirWarning('');
+      } else {
+        // Pas de sous-dossier Reponses : utiliser la racine directement
+        setReponsesDirHandle(root);
+        setReponsesDirPath(root.name);
+        setDirWarning('Sous-dossier "Reponses" non trouvé — scan depuis la racine.');
+      }
     } catch (e) { if (e.name !== 'AbortError') console.error(e); }
   }
 
@@ -190,12 +215,12 @@ export default function AnalyseUnicancer() {
   }
 
   async function scan() {
-    if (!reponsesDir) return;
+    if (!reponsesDirHandle) return;
     setScanning(true);
     setAnnuaire([]);
     setEdits({});
     try {
-      const subdirs = await getSubdirs(reponsesDir);
+      const subdirs = await getSubdirs(reponsesDirHandle);
       const rows = [];
       for (let i = 0; i < subdirs.length; i++) {
         const { name, handle } = subdirs[i];
@@ -218,11 +243,11 @@ export default function AnalyseUnicancer() {
   }
 
   async function compileQT() {
-    if (!reponsesDir || !dceHandle || !lotsSelected.length) return;
+    if (!reponsesDirHandle || !dceHandle || !lotsSelected.length) return;
     setCompilingQt(true);
     try {
       const dceWb = await readXlsxHandle(dceHandle);
-      const subdirs = await getSubdirs(reponsesDir);
+      const subdirs = await getSubdirs(reponsesDirHandle);
       const result = {};
       for (const lot of lotsSelected) {
         const ws = dceWb.Sheets[`QT LOT ${lot}`];
@@ -265,49 +290,53 @@ export default function AnalyseUnicancer() {
 
       {/* Bandeau */}
       <div style={{ background: 'linear-gradient(135deg,#1B3A5C 0%,#2A5C8A 100%)', borderRadius: 10, padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 32 }}>&#x1F4CB;</span>
+        <span style={{ fontSize: 32 }}>📋</span>
         <div>
           <div style={{ color: '#E87722', fontWeight: 700, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Unicancer</div>
           <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>Traçabilité &amp; Compilation — AO Recrutement de Personnel 2026</div>
-          <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, marginTop: 4 }}>Détection automatique des documents fournisseurs &middot; Compilation des QT</div>
+          <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, marginTop: 4 }}>Détection automatique des documents fournisseurs · Compilation des QT</div>
         </div>
       </div>
 
       {!supportsApi && (
         <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>
-          <strong>&#x26A0;&#xFE0F; Navigateur non compatible</strong> — Cette fonctionnalité nécessite Chrome ou Edge.
+          ⚠️ <strong>Navigateur non compatible</strong> — Cette fonctionnalité nécessite Chrome ou Edge.
         </div>
       )}
 
       {/* Dossier source */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header"><span className="card-title">&#x1F4C1; Dossier Réponses</span></div>
-        <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <button className="btn btn-outline" onClick={pickDir} disabled={!supportsApi}>
-            &#x1F4C2; Sélectionner le dossier…
-          </button>
-          {reponsesDirName && (
-            <>
-              <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{reponsesDirName}</code>
-              <button className="btn btn-primary" onClick={scan} disabled={scanning}>
-                {scanning ? `&#x23F3; ${scanProgress}` : '&#x1F50D; Analyser'}
-              </button>
-            </>
-          )}
-          {nbF > 0 && !scanning && (
-            <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>&#x2705; {nbF} fournisseur{nbF > 1 ? 's' : ''} détecté{nbF > 1 ? 's' : ''}</span>
+        <div className="card-header"><span className="card-title">📁 Dossier de l&apos;AO</span></div>
+        <div className="card-body">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button className="btn btn-outline" onClick={pickDir} disabled={!supportsApi}>
+              📂 Sélectionner le dossier…
+            </button>
+            {reponsesDirPath && (
+              <>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Dossier fournisseurs détecté :</div>
+                  <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{reponsesDirPath}</code>
+                </div>
+                <button className="btn btn-primary" onClick={scan} disabled={scanning}>
+                  {scanning ? `⏳ ${scanProgress}` : '🔍 Analyser'}
+                </button>
+              </>
+            )}
+            {nbF > 0 && !scanning && (
+              <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✅ {nbF} fournisseur{nbF > 1 ? 's' : ''} détecté{nbF > 1 ? 's' : ''}</span>
+            )}
+          </div>
+          {dirWarning && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#d97706' }}>⚠️ {dirWarning}</div>
           )}
         </div>
       </div>
 
       {/* Onglets */}
       <div className="tabs" style={{ marginBottom: 16 }}>
-        {[
-          '&#x1F4CA; Annuaire documents',
-          '&#x1F4CB; Compilation QT',
-          '&#x1F50D; Détail QT',
-        ].map((t, i) => (
-          <div key={i} className={'tab' + (tab === i ? ' active' : '')} onClick={() => setTab(i)} dangerouslySetInnerHTML={{ __html: t }} />
+        {['📊 Annuaire documents', '📋 Compilation QT', '🔍 Détail QT'].map((t, i) => (
+          <div key={i} className={'tab' + (tab === i ? ' active' : '')} onClick={() => setTab(i)}>{t}</div>
         ))}
       </div>
 
@@ -318,7 +347,7 @@ export default function AnalyseUnicancer() {
             <>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
                 <button className="btn btn-primary btn-sm" onClick={() => download(buildXlsx(rows), 'ANNUAIRE_documents_fournisseurs.xlsx')}>
-                  &#x1F4E5; Exporter Excel
+                  📥 Exporter Excel
                 </button>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tapez <strong>x</strong> si présent, laissez vide sinon.</span>
               </div>
@@ -389,9 +418,9 @@ export default function AnalyseUnicancer() {
             </>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">&#x1F4C1;</div>
+              <div className="empty-icon">📁</div>
               <div className="empty-title">Aucune donnée</div>
-              <div className="empty-sub">Sélectionnez le dossier Réponses et cliquez sur Analyser.</div>
+              <div className="empty-sub">Sélectionnez le dossier de l&apos;AO et cliquez sur Analyser.</div>
             </div>
           )}
         </div>
@@ -401,15 +430,15 @@ export default function AnalyseUnicancer() {
       {tab === 1 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">&#x1F4C4; Fichier DCE template (Annexe 1 CCTP)</span></div>
+            <div className="card-header"><span className="card-title">📄 Fichier DCE template (Annexe 1 CCTP)</span></div>
             <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <button className="btn btn-outline" onClick={pickDce} disabled={!supportsApi}>&#x1F4C2; Sélectionner le fichier DCE…</button>
+              <button className="btn btn-outline" onClick={pickDce} disabled={!supportsApi}>📂 Sélectionner le fichier DCE…</button>
               {dceName && <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{dceName}</code>}
             </div>
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">&#x2699;&#xFE0F; Lots à compiler</span></div>
+            <div className="card-header"><span className="card-title">⚙️ Lots à compiler</span></div>
             <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
               {[1, 2, 3].map(lot => (
                 <label key={lot} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
@@ -425,13 +454,13 @@ export default function AnalyseUnicancer() {
                 className="btn btn-primary"
                 style={{ marginLeft: 8 }}
                 onClick={compileQT}
-                disabled={compilingQt || !reponsesDir || !dceHandle || !lotsSelected.length}
+                disabled={compilingQt || !reponsesDirHandle || !dceHandle || !lotsSelected.length}
               >
-                {compilingQt ? 'Compilation…' : '&#x2699;&#xFE0F; Compiler les QT'}
+                {compilingQt ? 'Compilation…' : '⚙️ Compiler les QT'}
               </button>
               {Object.keys(qtData).length > 0 && (
                 <button className="btn btn-outline" onClick={() => download(buildQTXlsx(qtData), 'Compilation_QT_recrutement.xlsx')}>
-                  &#x1F4E5; Exporter Excel
+                  📥 Exporter Excel
                 </button>
               )}
             </div>
@@ -450,7 +479,7 @@ export default function AnalyseUnicancer() {
                       <div key={sup} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontWeight: 500 }}>{sup}</span>
                         <span style={{ color: status === 'ok' ? '#15803d' : status === 'absent' ? '#dc2626' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600 }}>
-                          {status === 'ok' ? 'Complet' : status === 'absent' ? 'Absent' : status === 'partial' ? 'Partiel' : 'Vide'}
+                          {status === 'ok' ? '✅ Complet' : status === 'absent' ? '❌ Absent' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
                         </span>
                       </div>
                     ))}
@@ -460,9 +489,9 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">&#x1F4CB;</div>
+              <div className="empty-icon">📋</div>
               <div className="empty-title">Aucune compilation</div>
-              <div className="empty-sub">Sélectionnez le dossier Réponses, le fichier DCE, puis compilez.</div>
+              <div className="empty-sub">Sélectionnez le dossier de l&apos;AO, le fichier DCE, puis compilez.</div>
             </div>
           )}
         </div>
@@ -491,7 +520,7 @@ export default function AnalyseUnicancer() {
                         </td>
                         <td className="td-center">
                           <span style={{ color: status === 'ok' ? '#15803d' : status === 'absent' ? '#dc2626' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600, fontSize: 12 }}>
-                            {status === 'ok' ? 'Complet' : status === 'absent' ? 'Absent' : status === 'partial' ? 'Partiel' : 'Vide'}
+                            {status === 'ok' ? '✅ Complet' : status === 'absent' ? '❌ Absent' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
                           </span>
                         </td>
                       </tr>
@@ -502,7 +531,7 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">&#x1F50D;</div>
+              <div className="empty-icon">🔍</div>
               <div className="empty-title">Aucune donnée QT</div>
               <div className="empty-sub">Lancez d&apos;abord la compilation QT.</div>
             </div>
