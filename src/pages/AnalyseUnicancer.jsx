@@ -60,18 +60,6 @@ async function findReponsesDir(rootHandle) {
   return null;
 }
 
-// Trouve l'Annexe 1 CCTP (template QT) directement dans le dossier Réponses
-async function findDceTemplate(reponsesDirHandle) {
-  for await (const [fname, fhandle] of reponsesDirHandle.entries()) {
-    if (fhandle.kind !== 'file') continue;
-    const n = fname.toLowerCase();
-    if (/\.(xls|xlsx)$/i.test(fname) && n.includes('annexe') && n.includes('1') && n.includes('cctp')) {
-      return { handle: fhandle, name: fname };
-    }
-  }
-  return null;
-}
-
 async function detectSupplier(dirHandle) {
   const files = await getAllFiles(dirHandle);
 
@@ -102,8 +90,8 @@ async function detectSupplier(dirHandle) {
   const rse = fn.some(n => n.includes('rse'));
   const ccap = fn.some(n => n.includes('ccap') && !n.includes('bpu') && !n.includes('annexe 5') && (n.endsWith('.pdf') || n.endsWith('.p7m')));
   const cctp = fn.some(n => n.includes('cctp') && !n.includes('annexe 1') && !n.includes('qt') && (n.endsWith('.pdf') || n.endsWith('.p7m')));
-  const dc1 = fn.some(n => /(^|\/)dc1/.test(n));
-  const dc2 = fn.some(n => /(^|\/)dc2/.test(n));
+  const dc1 = fn.some(n => /(^\/|\/)dc1/.test(n));
+  const dc2 = fn.some(n => /(^\/|\/)dc2/.test(n));
   const attri = fn.some(n => n.includes('attri1') || (n.includes('attri') && n.includes('sign')));
   const contacts = fn.some(n => n.includes('contact') || n.includes('annexe 4'));
 
@@ -184,8 +172,6 @@ export default function AnalyseUnicancer() {
   const [scanProgress, setScanProgress] = useState('');
   const [annuaire, setAnnuaire] = useState([]);
   const [edits, setEdits] = useState({});
-  const [dceHandle, setDceHandle] = useState(null);
-  const [dceName, setDceName] = useState('');
   const [lotsSelected, setLotsSelected] = useState([1, 2, 3]);
   const [compilingQt, setCompilingQt] = useState(false);
   const [qtData, setQtData] = useState({});
@@ -212,26 +198,6 @@ export default function AnalyseUnicancer() {
         setReponsesDirPath(root.name);
         setDirWarning('Sous-dossier "Reponses" non trouvé — scan depuis la racine.');
       }
-
-      // Cherche automatiquement l'Annexe 1 CCTP dans le dossier Réponses
-      const dce = await findDceTemplate(found ? found.handle : root);
-      if (dce) {
-        setDceHandle(dce.handle);
-        setDceName(dce.name);
-      } else {
-        setDceHandle(null);
-        setDceName('');
-      }
-    } catch (e) { if (e.name !== 'AbortError') console.error(e); }
-  }
-
-  async function pickDce() {
-    try {
-      const [h] = await window.showOpenFilePicker({
-        types: [{ description: 'Fichier Excel DCE', accept: { 'application/vnd.ms-excel': ['.xls', '.xlsx'] } }],
-      });
-      setDceHandle(h);
-      setDceName(h.name);
     } catch (e) { if (e.name !== 'AbortError') console.error(e); }
   }
 
@@ -264,20 +230,29 @@ export default function AnalyseUnicancer() {
   }
 
   async function compileQT() {
-    if (!reponsesDirHandle || !dceHandle || !lotsSelected.length) return;
+    if (!reponsesDirHandle || !lotsSelected.length) return;
     setCompilingQt(true);
     try {
-      const dceWb = await readXlsxHandle(dceHandle);
       const subdirs = await getSubdirs(reponsesDirHandle);
       const result = {};
       for (const lot of lotsSelected) {
-        const ws = dceWb.Sheets[`QT LOT ${lot}`];
-        if (!ws) continue;
-        const template = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-        const questions = template.filter(r => r[0] && String(r[0]).trim()).map(r => String(r[0]).trim());
+        // Extraire les questions depuis le premier fichier Annexe 1 trouvé dans un dossier fournisseur
+        let questions = null;
+        for (const { handle } of subdirs) {
+          const qtFile = await findQTFile(handle, lot);
+          if (!qtFile) continue;
+          try {
+            const wb = await readXlsxHandle(qtFile.handle);
+            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+            const qs = data.filter(r => r[0] && String(r[0]).trim()).map(r => String(r[0]).trim());
+            if (qs.length > 0) { questions = qs; break; }
+          } catch { continue; }
+        }
+        if (!questions || !questions.length) continue;
+
+        const compiled = [['Question', ...subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase())]];
         const supStatus = {};
         const allAnswers = {};
-        const compiled = [['Question', ...subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase())]];
         for (const { name, handle } of subdirs) {
           const sup = name.replace(/ ok$/i, '').trim().toUpperCase();
           const qtFile = await findQTFile(handle, lot);
@@ -450,13 +425,6 @@ export default function AnalyseUnicancer() {
       {/* Onglet 1 : Compilation QT */}
       {tab === 1 && (
         <div className="fade-in">
-          {!dceName && (
-            <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span>⚠️ Fichier DCE (Annexe 1 CCTP) non trouvé dans le dossier <code>DCE/</code>.</span>
-              <button className="btn btn-outline btn-sm" onClick={pickDce} disabled={!supportsApi}>📂 Sélectionner manuellement…</button>
-            </div>
-          )}
-
           <div className="card" style={{ marginBottom: 16 }}>
             <div className="card-header"><span className="card-title">⚙️ Lots à compiler</span></div>
             <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -474,7 +442,7 @@ export default function AnalyseUnicancer() {
                 className="btn btn-primary"
                 style={{ marginLeft: 8 }}
                 onClick={compileQT}
-                disabled={compilingQt || !reponsesDirHandle || !dceHandle || !lotsSelected.length}
+                disabled={compilingQt || !reponsesDirHandle || !lotsSelected.length}
               >
                 {compilingQt ? 'Compilation…' : '⚙️ Compiler les QT'}
               </button>
@@ -511,7 +479,7 @@ export default function AnalyseUnicancer() {
             <div className="empty-state">
               <div className="empty-icon">📋</div>
               <div className="empty-title">Aucune compilation</div>
-              <div className="empty-sub">Sélectionnez le dossier de l&apos;AO, le fichier DCE, puis compilez.</div>
+              <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez.</div>
             </div>
           )}
         </div>
