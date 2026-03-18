@@ -62,6 +62,25 @@ async function findStandardisesDir(reponsesDirHandle) {
   return null;
 }
 
+async function findSubdirByName(dirHandle, name) {
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for await (const [n, h] of dirHandle.entries()) {
+    if (h.kind === 'directory' && norm(n) === norm(name)) return h;
+  }
+  return null;
+}
+
+async function listXlsxFiles(dirHandle, suffixRe) {
+  const files = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'file' && /\.xlsx$/i.test(name) && !name.startsWith('~')) {
+      const supName = name.replace(suffixRe, '').trim();
+      files.push({ name, handle, supName });
+    }
+  }
+  return files.sort((a, b) => a.supName.localeCompare(b.supName));
+}
+
 async function readXlsxHandle(fileHandle) {
   const file = await fileHandle.getFile();
   const buf = await file.arrayBuffer();
@@ -323,6 +342,44 @@ async function buildStandardizedZip(qtData) {
   return zip.generateAsync({ type: 'uint8array' });
 }
 
+function buildRSEXlsx(rseData) {
+  const wb = XLSX.utils.book_new();
+  const { compiled, supNames } = rseData;
+  if (!compiled?.length) return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+  const n = supNames?.length || 0;
+  const ws = styledSheet(compiled, [40, 55, ...Array(n).fill(50)], { rowHeight: 36, freezeCol: true });
+  XLSX.utils.book_append_sheet(wb, ws, 'RSE DD');
+  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+}
+
+function buildBPUXlsx(bpuData) {
+  const wb = XLSX.utils.book_new();
+  for (const [lotName, { compiled, supNames }] of Object.entries(bpuData)) {
+    if (!compiled?.length) continue;
+    const n = supNames?.length || 0;
+    const isLot2OrOptim = lotName.includes('LOT 2') || lotName.includes('Optimisation');
+    const colWidths = isLot2OrOptim
+      ? [40, ...Array(n).fill(18)]
+      : [40, 22, ...Array(n).fill(16)];
+    const ws = styledSheet(compiled, colWidths, { rowHeight: 28, freezeCol: true });
+    const sheetName = lotName.length > 31 ? lotName.substring(0, 31) : lotName;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  }
+  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+}
+
+function buildChiffrageXlsx(chiffrageData) {
+  const wb = XLSX.utils.book_new();
+  for (const [lotName, { compiled, supNames }] of Object.entries(chiffrageData)) {
+    if (!compiled?.length) continue;
+    const n = supNames?.length || 0;
+    const ws = styledSheet(compiled, [40, 22, 28, ...Array(n).fill(16)], { rowHeight: 28, freezeCol: true });
+    const sheetName = lotName.length > 31 ? lotName.substring(0, 31) : lotName;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  }
+  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+}
+
 function download(data, filename, type = 'application/octet-stream') {
   const url = URL.createObjectURL(new Blob([data], { type }));
   Object.assign(document.createElement('a'), { href: url, download: filename }).click();
@@ -344,6 +401,12 @@ export default function AnalyseUnicancer() {
   const [qtData, setQtData] = useState({});
   const [dirWarning, setDirWarning] = useState('');
   const [generatingZip, setGeneratingZip] = useState(false);
+  const [rseData, setRseData] = useState({});
+  const [bpuData, setBpuData] = useState({});
+  const [chiffrageData, setChiffrageData] = useState({});
+  const [compilingRse, setCompilingRse] = useState(false);
+  const [compilingBpu, setCompilingBpu] = useState(false);
+  const [compilingChiffrage, setCompilingChiffrage] = useState(false);
 
   const supportsApi = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
@@ -461,6 +524,230 @@ export default function AnalyseUnicancer() {
     setCompilingQt(false);
   }
 
+  async function compileRSE() {
+    if (!reponsesDirHandle) return;
+    setCompilingRse(true);
+    try {
+      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      if (!stdDir) {
+        setDirWarning('Dossier "Standardisés" introuvable.');
+        setCompilingRse(false);
+        return;
+      }
+      setDirWarning('');
+
+      const rseDir = await findSubdirByName(stdDir.handle, 'RSE');
+      if (!rseDir) {
+        setDirWarning('Dossier Standardisés/RSE/ introuvable.');
+        setCompilingRse(false);
+        return;
+      }
+
+      const xlsxFiles = await listXlsxFiles(rseDir, /_RSE_standardis[eé]\.xlsx$/i);
+
+      const SHEET = 'RSE DD';
+      const supData = {};
+
+      for (const { handle, supName } of xlsxFiles) {
+        try {
+          const wb = await readXlsxHandle(handle);
+          if (!wb.SheetNames.includes(SHEET)) continue;
+          const raw = XLSX.utils.sheet_to_json(wb.Sheets[SHEET], { header: 1, defval: '' });
+          // row 0 = headers, rows 1+ = data
+          const rows = raw.slice(1).filter(r => String(r[0] || '').trim() || String(r[1] || '').trim());
+          if (!rows.some(r => String(r[2] || '').trim())) continue;
+          supData[supName] = rows;
+        } catch (err) { console.error(err); }
+      }
+
+      if (!Object.keys(supData).length) {
+        setRseData({});
+        setCompilingRse(false);
+        return;
+      }
+
+      // Reference questions from supplier with most rows
+      const refSup = Object.keys(supData).reduce((a, b) => supData[a].length >= supData[b].length ? a : b);
+      const refRows = supData[refSup];
+      const supNames = Object.keys(supData);
+
+      const compiled = [['Thème', 'Question', ...supNames]];
+      refRows.forEach((refRow, qi) => {
+        const theme = String(refRow[0] || '').trim();
+        const question = String(refRow[1] || '').trim();
+        compiled.push([
+          theme,
+          question,
+          ...supNames.map(sup => {
+            const row = supData[sup][qi];
+            return row ? String(row[2] || '').trim() : '';
+          }),
+        ]);
+      });
+
+      setRseData({ compiled, supNames });
+    } catch (e) { console.error(e); }
+    setCompilingRse(false);
+  }
+
+  async function compileBPU() {
+    if (!reponsesDirHandle) return;
+    setCompilingBpu(true);
+    try {
+      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      if (!stdDir) {
+        setDirWarning('Dossier "Standardisés" introuvable.');
+        setCompilingBpu(false);
+        return;
+      }
+      setDirWarning('');
+
+      const bpuDir = await findSubdirByName(stdDir.handle, 'BPU');
+      if (!bpuDir) {
+        setDirWarning('Dossier Standardisés/BPU/ introuvable.');
+        setCompilingBpu(false);
+        return;
+      }
+
+      const xlsxFiles = await listXlsxFiles(bpuDir, /_BPU_standardis[eé]\.xlsx$/i);
+
+      const LOT_SHEETS = [
+        { name: 'LOT 1 — MAD Personnel', keyFn: r => `${String(r[0]||'').trim()}||${String(r[1]||'').trim()}`, priceCol: 4, headers: ['Profil', 'Niveau expérience'] },
+        { name: 'LOT 2 — Recrutement',   keyFn: r => String(r[0]||'').trim(),                                   priceCol: 1, headers: ['Profil'] },
+        { name: 'LOT 3 — Freelance',     keyFn: r => `${String(r[0]||'').trim()}||${String(r[1]||'').trim()}`, priceCol: 5, headers: ['Profil', 'Niveau expérience'] },
+        { name: 'Optimisation Tarifaire',keyFn: r => String(r[0]||'').trim(),                                   priceCol: 1, headers: ['Condition'] },
+      ];
+
+      const result = {};
+
+      for (const lotDef of LOT_SHEETS) {
+        const supPrices = {}; // supName -> Map(key -> price)
+        const keyOrder = [];
+        const keyRowMap = {}; // key -> reference row
+
+        for (const { handle, supName } of xlsxFiles) {
+          try {
+            const wb = await readXlsxHandle(handle);
+            if (!wb.SheetNames.includes(lotDef.name)) continue;
+            const raw = XLSX.utils.sheet_to_json(wb.Sheets[lotDef.name], { header: 1, defval: '' });
+            const rows = raw.slice(1).filter(r => String(r[0] || '').trim());
+            const priceMap = new Map();
+            for (const row of rows) {
+              const key = lotDef.keyFn(row);
+              if (!key) continue;
+              const price = String(row[lotDef.priceCol] || '').trim();
+              priceMap.set(key, price);
+              if (!keyRowMap[key]) {
+                keyRowMap[key] = row;
+                keyOrder.push(key);
+              }
+            }
+            const hasPrice = [...priceMap.values()].some(p => p !== '');
+            if (hasPrice) supPrices[supName] = priceMap;
+          } catch (err) { console.error(err); }
+        }
+
+        if (!Object.keys(supPrices).length) continue;
+
+        const supNames = Object.keys(supPrices);
+        const compiled = [[...lotDef.headers, ...supNames]];
+
+        for (const key of keyOrder) {
+          const refRow = keyRowMap[key];
+          const rowCells = lotDef.headers.map((_, hi) => String(refRow[hi] || '').trim());
+          rowCells.push(...supNames.map(sup => supPrices[sup]?.get(key) || ''));
+          compiled.push(rowCells);
+        }
+
+        result[lotDef.name] = { compiled, supNames };
+      }
+
+      setBpuData(result);
+    } catch (e) { console.error(e); }
+    setCompilingBpu(false);
+  }
+
+  async function compileChiffrage() {
+    if (!reponsesDirHandle) return;
+    setCompilingChiffrage(true);
+    try {
+      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      if (!stdDir) {
+        setDirWarning('Dossier "Standardisés" introuvable.');
+        setCompilingChiffrage(false);
+        return;
+      }
+      setDirWarning('');
+
+      const chiffrageDir = await findSubdirByName(stdDir.handle, 'Chiffrage');
+      if (!chiffrageDir) {
+        setDirWarning('Dossier Standardisés/Chiffrage/ introuvable.');
+        setCompilingChiffrage(false);
+        return;
+      }
+
+      const xlsxFiles = await listXlsxFiles(chiffrageDir, /_Chiffrage_standardis[eé]\.xlsx$/i);
+
+      const LOT_SHEETS = [
+        'LOT 1 — MAD Personnel',
+        'LOT 3 — Freelance',
+      ];
+
+      const result = {};
+
+      for (const sheetName of LOT_SHEETS) {
+        const supPrices = {}; // supName -> Map(key -> price)
+        const keyOrder = [];
+        const keyRowMap = {};
+
+        for (const { handle, supName } of xlsxFiles) {
+          try {
+            const wb = await readXlsxHandle(handle);
+            if (!wb.SheetNames.includes(sheetName)) continue;
+            const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
+            const rows = raw.slice(1).filter(r => String(r[0] || '').trim());
+            const priceMap = new Map();
+            for (const row of rows) {
+              const profil = String(row[0] || '').trim();
+              const niveau = String(row[1] || '').trim();
+              const duree  = String(row[2] || '').trim();
+              const key = `${profil}||${niveau}||${duree}`;
+              if (!profil) continue;
+              const price = String(row[3] || '').trim();
+              priceMap.set(key, price);
+              if (!keyRowMap[key]) {
+                keyRowMap[key] = row;
+                keyOrder.push(key);
+              }
+            }
+            if ([...priceMap.values()].some(p => p !== '')) supPrices[supName] = priceMap;
+          } catch (err) { console.error(err); }
+        }
+
+        if (!Object.keys(supPrices).length) continue;
+
+        const supNames = Object.keys(supPrices);
+        const compiled = [['Profil', 'Niveau expérience', 'Durée mission', ...supNames]];
+
+        for (const key of keyOrder) {
+          const refRow = keyRowMap[key];
+          const rowCells = [
+            String(refRow[0] || '').trim(),
+            String(refRow[1] || '').trim(),
+            String(refRow[2] || '').trim(),
+            ...supNames.map(sup => supPrices[sup]?.get(key) || ''),
+          ];
+          compiled.push(rowCells);
+        }
+
+        result[sheetName] = { compiled, supNames };
+      }
+
+      setChiffrageData(result);
+    } catch (e) { console.error(e); }
+    setCompilingChiffrage(false);
+  }
+
   async function handleDownloadZip() {
     setGeneratingZip(true);
     try {
@@ -473,6 +760,21 @@ export default function AnalyseUnicancer() {
   const rows = getRows();
   const nbF = annuaire.length;
   const hasQT = Object.keys(qtData).length > 0;
+  const hasRSE = rseData.compiled?.length > 0;
+  const hasBPU = Object.keys(bpuData).length > 0;
+  const hasChiffrage = Object.keys(chiffrageData).length > 0;
+
+  // Helper: find lowest price index among supplier columns for a data row
+  function lowestPriceIdx(rowCells, startCol) {
+    const nums = rowCells.slice(startCol).map(v => {
+      const n = parseFloat(String(v).replace(',', '.').replace(/[^0-9.-]/g, ''));
+      return isNaN(n) ? null : n;
+    });
+    const valid = nums.filter(n => n !== null);
+    if (!valid.length) return -1;
+    const min = Math.min(...valid);
+    return nums.findIndex(n => n === min);
+  }
 
   return (
     <Layout title="AO Recrutement Personnel 2026" sub="— Analyse des offres">
@@ -517,7 +819,7 @@ export default function AnalyseUnicancer() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 16 }}>
-        {['📊 Annuaire documents', '📋 Compilation QT', '🔍 Détail QT', '🔧 Outils'].map((t, i) => (
+        {['📊 Annuaire documents', '📋 Compilation QT', '💶 Comparatif BPU', '📄 RSE', '📑 Chiffrage', '🔍 Détail QT', '🔧 Outils'].map((t, i) => (
           <div key={i} className={'tab' + (tab === i ? ' active' : '')} onClick={() => setTab(i)}>{t}</div>
         ))}
       </div>
@@ -652,8 +954,230 @@ export default function AnalyseUnicancer() {
         </div>
       )}
 
-      {/* ─── Onglet 2 : Détail QT ─── */}
+      {/* ─── Onglet 2 : Comparatif BPU ─── */}
       {tab === 2 && (
+        <div className="fade-in">
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-header"><span className="card-title">💶 Comparatif BPU</span></div>
+            <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={compileBPU}
+                disabled={compilingBpu || !reponsesDirHandle}>
+                {compilingBpu ? 'Compilation…' : '⚙️ Compiler les BPU (Standardisés/BPU/)'}
+              </button>
+              {hasBPU && (
+                <button className="btn btn-outline" onClick={() => download(buildBPUXlsx(bpuData), 'Comparatif_BPU.xlsx')}>
+                  📥 Exporter Excel
+                </button>
+              )}
+            </div>
+          </div>
+
+          {hasBPU ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {Object.entries(bpuData).map(([lotName, { compiled, supNames }]) => {
+                if (!compiled?.length) return null;
+                const isLot2OrOptim = lotName.includes('LOT 2') || lotName.includes('Optimisation');
+                const keyColCount = isLot2OrOptim ? 1 : 2;
+                return (
+                  <div key={lotName} className="card">
+                    <div className="card-header">
+                      <span className="card-title">{lotName}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{supNames.length} fournisseur{supNames.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="card-body" style={{ padding: 0 }}>
+                      <div className="table-container">
+                        <table>
+                          <thead>
+                            <tr>
+                              {compiled[0].map((h, ci) => (
+                                <th key={ci} style={{ fontSize: 11, padding: '6px 8px', textAlign: ci >= keyColCount ? 'right' : 'left' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {compiled.slice(1).map((row, ri) => {
+                              const lowestIdx = lowestPriceIdx(row, keyColCount);
+                              return (
+                                <tr key={ri}>
+                                  {row.map((cell, ci) => {
+                                    const isPrice = ci >= keyColCount;
+                                    const isLowest = isPrice && (ci - keyColCount) === lowestIdx;
+                                    const displayVal = cell === '' ? '—' : cell;
+                                    return (
+                                      <td key={ci} style={{
+                                        fontSize: 12,
+                                        textAlign: isPrice ? 'right' : 'left',
+                                        fontWeight: isLowest ? 700 : 400,
+                                        color: isLowest ? '#15803d' : 'inherit',
+                                        background: isLowest ? '#dcfce7' : 'inherit',
+                                        padding: '4px 8px',
+                                      }}>
+                                        {displayVal}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">💶</div>
+              <div className="empty-title">Aucune donnée BPU</div>
+              <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez les BPU.</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Onglet 3 : RSE ─── */}
+      {tab === 3 && (
+        <div className="fade-in">
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-header"><span className="card-title">📄 RSE — Développement Durable</span></div>
+            <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={compileRSE}
+                disabled={compilingRse || !reponsesDirHandle}>
+                {compilingRse ? 'Compilation…' : '⚙️ Compiler les RSE (Standardisés/RSE/)'}
+              </button>
+              {hasRSE && (
+                <button className="btn btn-outline" onClick={() => download(buildRSEXlsx(rseData), 'Compilation_RSE.xlsx')}>
+                  📥 Exporter Excel
+                </button>
+              )}
+            </div>
+          </div>
+
+          {hasRSE ? (
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    {rseData.compiled[0].map((h, ci) => (
+                      <th key={ci} style={{ fontSize: 11, padding: '6px 8px', minWidth: ci === 0 ? 120 : ci === 1 ? 220 : 160 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rseData.compiled.slice(1).map((row, ri) => (
+                    <tr key={ri}>
+                      {row.map((cell, ci) => (
+                        <td key={ci} style={{
+                          fontSize: 11,
+                          padding: '4px 8px',
+                          verticalAlign: 'top',
+                          fontWeight: ci === 0 ? 600 : 400,
+                          color: cell === '' ? 'var(--text-muted)' : 'inherit',
+                        }}>
+                          {cell === '' ? '—' : cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">📄</div>
+              <div className="empty-title">Aucune donnée RSE</div>
+              <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez les RSE.</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Onglet 4 : Chiffrage ─── */}
+      {tab === 4 && (
+        <div className="fade-in">
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-header"><span className="card-title">📑 Chiffrage (Annexe 3)</span></div>
+            <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={compileChiffrage}
+                disabled={compilingChiffrage || !reponsesDirHandle}>
+                {compilingChiffrage ? 'Compilation…' : '⚙️ Compiler le Chiffrage (Standardisés/Chiffrage/)'}
+              </button>
+              {hasChiffrage && (
+                <button className="btn btn-outline" onClick={() => download(buildChiffrageXlsx(chiffrageData), 'Comparatif_Chiffrage.xlsx')}>
+                  📥 Exporter Excel
+                </button>
+              )}
+            </div>
+          </div>
+
+          {hasChiffrage ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {Object.entries(chiffrageData).map(([lotName, { compiled, supNames }]) => {
+                if (!compiled?.length) return null;
+                const keyColCount = 3; // Profil, Niveau, Durée
+                return (
+                  <div key={lotName} className="card">
+                    <div className="card-header">
+                      <span className="card-title">{lotName}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{supNames.length} fournisseur{supNames.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="card-body" style={{ padding: 0 }}>
+                      <div className="table-container">
+                        <table>
+                          <thead>
+                            <tr>
+                              {compiled[0].map((h, ci) => (
+                                <th key={ci} style={{ fontSize: 11, padding: '6px 8px', textAlign: ci >= keyColCount ? 'right' : 'left' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {compiled.slice(1).map((row, ri) => {
+                              const lowestIdx = lowestPriceIdx(row, keyColCount);
+                              return (
+                                <tr key={ri}>
+                                  {row.map((cell, ci) => {
+                                    const isPrice = ci >= keyColCount;
+                                    const isLowest = isPrice && (ci - keyColCount) === lowestIdx;
+                                    const displayVal = cell === '' ? '—' : cell;
+                                    return (
+                                      <td key={ci} style={{
+                                        fontSize: 12,
+                                        textAlign: isPrice ? 'right' : 'left',
+                                        fontWeight: isLowest ? 700 : 400,
+                                        color: isLowest ? '#15803d' : 'inherit',
+                                        background: isLowest ? '#dcfce7' : 'inherit',
+                                        padding: '4px 8px',
+                                      }}>
+                                        {displayVal}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">📑</div>
+              <div className="empty-title">Aucune donnée Chiffrage</div>
+              <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez le chiffrage.</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Onglet 5 : Détail QT ─── */}
+      {tab === 5 && (
         <div className="fade-in">
           {hasQT ? (
             <div className="table-container">
@@ -688,8 +1212,8 @@ export default function AnalyseUnicancer() {
         </div>
       )}
 
-      {/* ─── Onglet 3 : Outils ─── */}
-      {tab === 3 && (
+      {/* ─── Onglet 6 : Outils ─── */}
+      {tab === 6 && (
         <div className="fade-in">
           {/* Format standard */}
           <div className="card" style={{ marginBottom: 16 }}>
