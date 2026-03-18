@@ -39,6 +39,13 @@ export default function Layout({ children, title, sub, actions }) {
         </div>
 
         <div className="sidebar-section">
+          <div className="sidebar-section-label">Outils</div>
+          <NavLink to="/analyse-unicancer" className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
+            <span className="ni">&#x1F4CB;</span>AO Recrutement 2026
+          </NavLink>
+        </div>
+
+        <div className="sidebar-section">
           <div className="sidebar-section-label">Marchés</div>
           {marches.map(m => {
             const meta    = getMeta(m.id);
