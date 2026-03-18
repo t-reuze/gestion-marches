@@ -140,9 +140,6 @@ async function findQTFile(dirHandle, lot) {
   });
   if (annexe1.length) return { ...annexe1[0], lotSheet: lot };
 
-  // 3. Fallback : unique fichier xlsx du dossier
-  if (xlsx.length === 1) return { ...xlsx[0], lotSheet: lot };
-
   return null;
 }
 
@@ -210,7 +207,7 @@ const ST = {
   empty:   { fill: { patternType: 'solid', fgColor: { rgb: 'FEF2F2' } }, font: { bold: true, color: { rgb: 'BE185D' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
 };
 
-function styledSheet(aoa, colWidths, rowHeight = 40) {
+function styledSheet(aoa, colWidths, { rowHeight = 40, freezeCol = false } = {}) {
   const ws = {};
   const nRows = aoa.length;
   const nCols = aoa[0]?.length || 0;
@@ -225,9 +222,16 @@ function styledSheet(aoa, colWidths, rowHeight = 40) {
       };
     });
   });
-  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: nRows - 1, c: nCols - 1 } });
+  const range = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: nRows - 1, c: nCols - 1 } });
+  ws['!ref'] = range;
   ws['!cols'] = colWidths.map(wch => ({ wch }));
   ws['!rows'] = [{ hpt: rowHeight }];
+  // Autofiltre sur la ligne d'en-tête
+  ws['!autofilter'] = { ref: range };
+  // Volet figé : ligne 1 + col A si demandé
+  ws['!freeze'] = freezeCol
+    ? { xSplit: 1, ySplit: 1, topLeftCell: 'B2' }
+    : { xSplit: 0, ySplit: 1, topLeftCell: 'A2' };
   return ws;
 }
 
@@ -244,7 +248,7 @@ function buildQTXlsx(qtData) {
       ]);
     }
   }
-  const recapWs = styledSheet(recapAoa, [12, 42, 16, 20], 28);
+  const recapWs = styledSheet(recapAoa, [12, 42, 16, 20], { rowHeight: 28 });
   // Colorer la colonne Statut selon valeur
   recapAoa.forEach((row, ri) => {
     if (ri === 0) return;
@@ -259,7 +263,7 @@ function buildQTXlsx(qtData) {
   for (const [lot, { compiled }] of Object.entries(qtData)) {
     if (!compiled?.length) continue;
     const nSup = compiled[0].length - 1;
-    const ws = styledSheet(compiled, [52, ...Array(nSup).fill(40)], 36);
+    const ws = styledSheet(compiled, [52, ...Array(nSup).fill(40)], { rowHeight: 36, freezeCol: true });
     XLSX.utils.book_append_sheet(wb, ws, `QT LOT ${lot}`);
   }
 
@@ -370,9 +374,9 @@ export default function AnalyseUnicancer() {
         if (!refEntry) continue;
         const questions = refEntry.map(d => d.q);
 
-        // Uniquement les fournisseurs positionnés sur ce lot (avec fichier QT)
+        // Uniquement les fournisseurs avec un fichier QT valide ET au moins une question lue
         const allSupNames = subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase());
-        const supNames = allSupNames.filter(sup => supData[sup] !== null);
+        const supNames = allSupNames.filter(sup => supData[sup]?.length > 0);
 
         const compiled = [['Question', ...supNames]];
 
