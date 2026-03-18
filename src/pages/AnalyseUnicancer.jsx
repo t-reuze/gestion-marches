@@ -159,48 +159,10 @@ function parseQTSheet(raw, ansCol) {
   });
 }
 
-// ─── Détection fournisseur (annuaire) ─────────────────────────────────────────
-
-async function detectSupplier(dirHandle) {
-  const files = await getAllFiles(dirHandle);
-  const bpuFiles = files.filter(f => {
-    const n = f.path.toLowerCase();
-    return isOffice(f.name) && !n.includes('annexe 3') && !n.includes('chiffrage')
-      && (n.includes('annexe 5') || n.includes('bpu') || n.includes('bordereau de prix'));
-  });
-  const hasBpu = bpuFiles.length > 0;
-  const lots = { 1: false, 2: false, 3: false, optim: false };
-  bpuFiles.forEach(f => {
-    lotFromFilename(f.path).forEach(l => { if ([1,2,3].includes(l)) lots[l] = true; });
-    if (f.path.toLowerCase().includes('optim')) lots.optim = true;
-  });
-  if (hasBpu && !lots[1] && !lots[2] && !lots[3])
-    files.forEach(f => lotFromFilename(f.path).forEach(l => { if ([1,2,3].includes(l)) lots[l] = true; }));
-
-  const a3 = files.filter(f => isOffice(f.name) && (f.path.toLowerCase().includes('annexe 3') || f.path.toLowerCase().includes('chiffrage')));
-  const lotsA3 = new Set();
-  a3.forEach(f => lotFromFilename(f.path).forEach(l => lotsA3.add(l)));
-  const lotsFromBpu = new Set([1,2,3].filter(l => lots[l]));
-  const chiffrage = a3.length > 0 && lotsFromBpu.size > 0 && [...lotsFromBpu].every(l => lotsA3.has(l));
-
-  const fn = files.map(f => f.path.toLowerCase());
-  const qt = fn.some(n => /\.(xls|xlsx|p7m)$/.test(n) && (n.includes('qt_lot') || n.includes('qt lot') || (n.includes('annexe') && n.includes('1') && n.includes('cctp'))));
-  const rse = fn.some(n => n.includes('rse'));
-  const ccap = fn.some(n => n.includes('ccap') && !n.includes('bpu') && !n.includes('annexe 5') && (n.endsWith('.pdf') || n.endsWith('.p7m')));
-  const cctp = fn.some(n => n.includes('cctp') && !n.includes('annexe 1') && !n.includes('qt') && (n.endsWith('.pdf') || n.endsWith('.p7m')));
-  const dc1 = fn.some(n => /(^\/|\/)dc1/.test(n));
-  const dc2 = fn.some(n => /(^\/|\/)dc2/.test(n));
-  const attri = fn.some(n => n.includes('attri1') || (n.includes('attri') && n.includes('sign')));
-  const contacts = fn.some(n => n.includes('contact') || n.includes('annexe 4'));
-
-  return {
-    'Lot 1 MAD Personnel': val(lots[1]), 'Lot 2 Recrutement': val(lots[2]), 'Lot 3 Freelance': val(lots[3]),
-    'BPU (Annexe 5)': val(hasBpu), 'Optim. Tarifaire': val(lots.optim), 'QT (Annexe 1)': val(qt),
-    'BPU Chiffrage (Annexe 3)': val(chiffrage), 'Questionnaire RSE': val(rse),
-    'CCAP signé': val(ccap), 'CCTP signé': val(cctp), 'DC1': val(dc1), 'DC2': val(dc2),
-    'ATTRI1': val(attri), 'Fiche Contacts': val(contacts),
-  };
-}
+// Normalise un nom fournisseur pour la comparaison (strip accents, espaces, "OK" final)
+const normSupName = s => s.toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/\s+ok$/i, '').replace(/\s+/g, ' ').trim();
 
 // ─── Styles Excel ─────────────────────────────────────────────────────────────
 
@@ -454,12 +416,134 @@ export default function AnalyseUnicancer() {
     if (!reponsesDirHandle) return;
     setScanning(true); setAnnuaire([]); setEdits({});
     try {
+      // ── 1. Charger les infos depuis Standardisés/ ────────────────────────────
+      // supInfo : normName → { displayName, lots, hasQT, hasBpu, hasOptim, hasRse, hasChiffrage }
+      const supInfo = {};
+      const ensure = (norm, display) => {
+        if (!supInfo[norm]) supInfo[norm] = { displayName: display, lots: new Set(), hasQT: false, hasBpu: false, hasOptim: false, hasRse: false, hasChiffrage: false };
+      };
+
+      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      if (stdDir) {
+        // QT — détecter les lots depuis les noms de feuilles
+        setScanProgress('Lecture QT standardisés…');
+        for await (const [name, handle] of stdDir.handle.entries()) {
+          if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+          const display = name.replace(/_QT_standardis[eé]\.xlsx$/i, '').trim();
+          const n = normSupName(display);
+          ensure(n, display);
+          try {
+            const wb = await readXlsxHandle(handle);
+            wb.SheetNames.forEach(s => {
+              if (/lot\s*1/i.test(s)) supInfo[n].lots.add(1);
+              if (/lot\s*2/i.test(s)) supInfo[n].lots.add(2);
+              if (/lot\s*3/i.test(s)) supInfo[n].lots.add(3);
+            });
+            supInfo[n].hasQT = true;
+          } catch {}
+        }
+
+        // BPU — présence + onglet Optimisation
+        setScanProgress('Lecture BPU standardisés…');
+        const bpuDir = await findSubdirByName(stdDir.handle, 'BPU');
+        if (bpuDir) {
+          for await (const [name, handle] of bpuDir.entries()) {
+            if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+            const display = name.replace(/_BPU_standardis[eé]\.xlsx$/i, '').trim();
+            const n = normSupName(display);
+            ensure(n, display);
+            supInfo[n].hasBpu = true;
+            try {
+              const wb = await readXlsxHandle(handle);
+              if (wb.SheetNames.some(s => /optim/i.test(s))) supInfo[n].hasOptim = true;
+            } catch {}
+          }
+        }
+
+        // RSE
+        setScanProgress('Lecture RSE standardisés…');
+        const rseDir = await findSubdirByName(stdDir.handle, 'RSE');
+        if (rseDir) {
+          for await (const [name, handle] of rseDir.entries()) {
+            if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+            const display = name.replace(/_RSE_standardis[eé]\.xlsx$/i, '').trim();
+            const n = normSupName(display);
+            ensure(n, display);
+            supInfo[n].hasRse = true;
+          }
+        }
+
+        // Chiffrage
+        setScanProgress('Lecture Chiffrage standardisés…');
+        const chifDir = await findSubdirByName(stdDir.handle, 'Chiffrage');
+        if (chifDir) {
+          for await (const [name, handle] of chifDir.entries()) {
+            if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+            const display = name.replace(/_Chiffrage_standardis[eé]\.xlsx$/i, '').trim();
+            const n = normSupName(display);
+            ensure(n, display);
+            supInfo[n].hasChiffrage = true;
+          }
+        }
+      } else {
+        setDirWarning('Dossier "Standardisés" introuvable — données Excel absentes, seuls les PDFs seront détectés.');
+      }
+
+      // ── 2. Scan des dossiers fournisseurs pour les PDFs ──────────────────────
+      setScanProgress('Scan PDFs…');
+      const SKIP = new Set(['standardises', 'standardisés', 'compilation', '__pycache__']);
       const subdirs = await getSubdirs(reponsesDirHandle);
+      // Construire une map normName → folderHandle (pour retrouver le dossier d'un fournisseur)
+      const folderMap = {};
+      for (const { name, handle } of subdirs) {
+        const n = normSupName(name);
+        if (!SKIP.has(n)) folderMap[n] = { name, handle };
+      }
+      // Ajouter les dossiers fournisseurs qui n'ont pas de fichiers standardisés (PDFs seuls)
+      for (const [n, { name }] of Object.entries(folderMap)) {
+        ensure(n, name);
+      }
+
+      // Construire les lignes de l'annuaire
+      const allNorms = Object.keys(supInfo).sort((a, b) =>
+        supInfo[a].displayName.localeCompare(supInfo[b].displayName, 'fr', { sensitivity: 'base' })
+      );
       const rows = [];
-      for (let i = 0; i < subdirs.length; i++) {
-        const { name, handle } = subdirs[i];
-        setScanProgress(`${i + 1}/${subdirs.length} — ${name}`);
-        rows.push({ 'Nom fournisseur': name, ...await detectSupplier(handle) });
+      for (let i = 0; i < allNorms.length; i++) {
+        const n = allNorms[i];
+        const info = supInfo[n];
+        setScanProgress(`${i + 1}/${allNorms.length} — ${info.displayName}`);
+
+        let ccap = false, cctp = false, dc1 = false, dc2 = false, attri = false, contacts = false;
+        const folder = folderMap[n];
+        if (folder) {
+          const files = await getAllFiles(folder.handle);
+          const fn = files.map(f => f.path.toLowerCase());
+          ccap     = fn.some(p => p.includes('ccap') && (p.endsWith('.pdf') || p.endsWith('.p7m')));
+          cctp     = fn.some(p => p.includes('cctp') && !p.includes('annexe 1') && !p.includes('qt') && (p.endsWith('.pdf') || p.endsWith('.p7m')));
+          dc1      = fn.some(p => /(^\/|\/)dc1/.test(p));
+          dc2      = fn.some(p => /(^\/|\/)dc2/.test(p));
+          attri    = fn.some(p => p.includes('attri1') || (p.includes('attri') && p.includes('sign')));
+          contacts = fn.some(p => p.includes('contact') || p.includes('annexe 4'));
+        }
+
+        rows.push({
+          'Nom fournisseur':        info.displayName,
+          'Lot 1 MAD Personnel':    val(info.lots.has(1)),
+          'Lot 2 Recrutement':      val(info.lots.has(2)),
+          'Lot 3 Freelance':        val(info.lots.has(3)),
+          'BPU (Annexe 5)':         val(info.hasBpu),
+          'Optim. Tarifaire':       val(info.hasOptim),
+          'QT (Annexe 1)':          val(info.hasQT),
+          'BPU Chiffrage (Annexe 3)': val(info.hasChiffrage),
+          'Questionnaire RSE':      val(info.hasRse),
+          'CCAP signé':             val(ccap),
+          'CCTP signé':             val(cctp),
+          'DC1':                    val(dc1),
+          'DC2':                    val(dc2),
+          'ATTRI1':                 val(attri),
+          'Fiche Contacts':         val(contacts),
+        });
       }
       setAnnuaire(rows);
     } catch (e) { console.error(e); }
