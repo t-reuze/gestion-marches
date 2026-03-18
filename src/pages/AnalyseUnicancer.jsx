@@ -60,6 +60,22 @@ async function findReponsesDir(rootHandle) {
   return null;
 }
 
+// Trouve l'Annexe 1 CCTP (template QT) dans le sous-dossier DCE
+async function findDceTemplate(rootHandle) {
+  for await (const [name, handle] of rootHandle.entries()) {
+    if (handle.kind === 'directory' && name.toLowerCase() === 'dce') {
+      for await (const [fname, fhandle] of handle.entries()) {
+        if (fhandle.kind !== 'file') continue;
+        const n = fname.toLowerCase();
+        if (/\.(xls|xlsx)$/i.test(fname) && n.includes('annexe') && n.includes('1') && n.includes('cctp')) {
+          return { handle: fhandle, name: fname };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 async function detectSupplier(dirHandle) {
   const files = await getAllFiles(dirHandle);
 
@@ -196,10 +212,19 @@ export default function AnalyseUnicancer() {
         setReponsesDirPath(`${root.name} / ${found.name}`);
         setDirWarning('');
       } else {
-        // Pas de sous-dossier Reponses : utiliser la racine directement
         setReponsesDirHandle(root);
         setReponsesDirPath(root.name);
         setDirWarning('Sous-dossier "Reponses" non trouvé — scan depuis la racine.');
+      }
+
+      // Cherche automatiquement l'Annexe 1 CCTP dans le sous-dossier DCE
+      const dce = await findDceTemplate(root);
+      if (dce) {
+        setDceHandle(dce.handle);
+        setDceName(dce.name);
+      } else {
+        setDceHandle(null);
+        setDceName('');
       }
     } catch (e) { if (e.name !== 'AbortError') console.error(e); }
   }
@@ -430,10 +455,20 @@ export default function AnalyseUnicancer() {
       {tab === 1 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">📄 Fichier DCE template (Annexe 1 CCTP)</span></div>
+            <div className="card-header"><span className="card-title">📄 Annexe 1 CCTP — Template QT</span></div>
             <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <button className="btn btn-outline" onClick={pickDce} disabled={!supportsApi}>📂 Sélectionner le fichier DCE…</button>
-              {dceName && <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{dceName}</code>}
+              {dceName ? (
+                <>
+                  <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✅ Détecté automatiquement</span>
+                  <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{dceName}</code>
+                  <button className="btn btn-outline btn-sm" onClick={pickDce} disabled={!supportsApi}>📂 Changer…</button>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 12, color: '#d97706' }}>⚠️ Non détecté — dossier DCE introuvable</span>
+                  <button className="btn btn-outline" onClick={pickDce} disabled={!supportsApi}>📂 Sélectionner manuellement…</button>
+                </>
+              )}
             </div>
           </div>
 
