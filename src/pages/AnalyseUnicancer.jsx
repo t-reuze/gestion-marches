@@ -120,17 +120,48 @@ async function readXlsxHandle(fileHandle) {
 }
 
 async function findQTFile(dirHandle, lot) {
-  const EXCL = ['annexe 3', 'annexe_3', 'annexe 5', 'annexe_5', 'bpu', 'attri', 'chiffrage', 'rse'];
+  const EXCL = ['annexe 3', 'annexe_3', 'annexe 5', 'annexe_5', 'bpu', 'attri', 'chiffrage', 'rse', 'dc1', 'dc2', 'attri1'];
   const files = await getAllFiles(dirHandle);
-  const cands = files.filter(f => {
+  const xlsx = files.filter(f => /\.(xls|xlsx)$/i.test(f.name) && !EXCL.some(e => f.path.toLowerCase().includes(e)));
+
+  // 1. Fichier avec numéro de lot + mention QT/Annexe 1
+  const withLotQt = xlsx.filter(f => {
     const n = f.path.toLowerCase();
-    if (!/\.(xls|xlsx)$/i.test(f.name)) return false;
-    if (EXCL.some(e => n.includes(e))) return false;
     const hasLot = n.includes(`lot_${lot}`) || n.includes(`lot ${lot}`) || n.includes(`lot${lot}`);
-    const isQt = n.includes('qt') || (n.includes('annexe') && n.includes('1') && n.includes('cctp'));
+    const isQt = n.includes('qt') || (n.includes('annexe') && n.includes('1'));
     return hasLot && isQt;
   });
-  return cands[0] || null;
+  if (withLotQt.length) return { ...withLotQt[0], lotSheet: null };
+
+  // 2. Fichier Annexe 1 / CCTP sans numéro de lot (fichier unique multi-lots)
+  const annexe1 = xlsx.filter(f => {
+    const n = f.path.toLowerCase();
+    return (n.includes('annexe') && (n.includes('1') || n.includes('cctp'))) || n.includes('qt');
+  });
+  if (annexe1.length) return { ...annexe1[0], lotSheet: lot };
+
+  return null;
+}
+
+// Trouve la feuille correspondant au lot dans un classeur
+function findLotSheet(wb, lot) {
+  const match = wb.SheetNames.find(s => {
+    const n = s.toLowerCase();
+    return n.includes(`lot ${lot}`) || n.includes(`lot_${lot}`) || n.includes(`lot${lot}`) || n === `lot${lot}`;
+  });
+  return match || wb.SheetNames[0];
+}
+
+// Détecte dynamiquement la colonne réponse (colonne avec le plus de contenu hors col 0)
+function findAnswerCol(data) {
+  const counts = {};
+  data.forEach(row => {
+    for (let c = 1; c < row.length; c++) {
+      if (row[c] && String(row[c]).trim()) counts[c] = (counts[c] || 0) + 1;
+    }
+  });
+  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return best ? parseInt(best[0]) : 1;
 }
 
 function buildXlsx(rows) {
@@ -187,7 +218,6 @@ export default function AnalyseUnicancer() {
       setEdits({});
       setDirWarning('');
 
-      // Cherche automatiquement le sous-dossier "Reponses"
       const found = await findReponsesDir(root);
       if (found) {
         setReponsesDirHandle(found.handle);
@@ -235,42 +265,50 @@ export default function AnalyseUnicancer() {
     try {
       const subdirs = await getSubdirs(reponsesDirHandle);
       const result = {};
-      for (const lot of lotsSelected) {
-        // Extraire les questions depuis le premier fichier Annexe 1 trouvé dans un dossier fournisseur
-        let questions = null;
-        for (const { handle } of subdirs) {
-          const qtFile = await findQTFile(handle, lot);
-          if (!qtFile) continue;
-          try {
-            const wb = await readXlsxHandle(qtFile.handle);
-            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
-            const qs = data.filter(r => r[0] && String(r[0]).trim()).map(r => String(r[0]).trim());
-            if (qs.length > 0) { questions = qs; break; }
-          } catch { continue; }
-        }
-        if (!questions || !questions.length) continue;
 
-        const compiled = [['Question', ...subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase())]];
-        const supStatus = {};
-        const allAnswers = {};
+      for (const lot of lotsSelected) {
+        const supData = {};
+
         for (const { name, handle } of subdirs) {
           const sup = name.replace(/ ok$/i, '').trim().toUpperCase();
           const qtFile = await findQTFile(handle, lot);
-          if (!qtFile) { supStatus[sup] = 'absent'; allAnswers[sup] = []; continue; }
+          if (!qtFile) { supData[sup] = null; continue; }
           try {
             const wb = await readXlsxHandle(qtFile.handle);
-            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
-            allAnswers[sup] = data.map(r => String(r[2] || '').trim());
-            const filled = questions.filter((_, qi) => allAnswers[sup][qi]).length;
-            supStatus[sup] = filled === questions.length ? 'ok' : filled > 0 ? 'partial' : 'empty';
-          } catch { supStatus[sup] = 'absent'; allAnswers[sup] = []; }
+            const sheetName = qtFile.lotSheet ? findLotSheet(wb, qtFile.lotSheet) : wb.SheetNames[0];
+            const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
+            const rows = raw.filter(r => r[0] && String(r[0]).trim());
+            const ansCol = findAnswerCol(rows);
+            supData[sup] = rows.map(r => ({
+              q: String(r[0]).trim(),
+              a: String(r[ansCol] || '').trim(),
+            }));
+          } catch { supData[sup] = null; }
         }
+
+        const refEntry = Object.values(supData).find(d => d && d.length > 0);
+        if (!refEntry) continue;
+        const questions = refEntry.map(d => d.q);
+
+        const supNames = subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase());
+        const compiled = [['Question', ...supNames]];
+
         questions.forEach((q, qi) => {
-          compiled.push([q, ...subdirs.map(d => {
-            const sup = d.name.replace(/ ok$/i, '').trim().toUpperCase();
-            return allAnswers[sup]?.[qi] || '';
+          compiled.push([q, ...supNames.map(sup => {
+            const rows = supData[sup];
+            if (!rows) return '';
+            return rows[qi]?.a || rows.find(r => r.q === q)?.a || '';
           })]);
         });
+
+        const supStatus = {};
+        supNames.forEach(sup => {
+          const rows = supData[sup];
+          if (!rows) { supStatus[sup] = 'absent'; return; }
+          const filled = rows.filter(r => r.a).length;
+          supStatus[sup] = filled === questions.length ? 'ok' : filled > 0 ? 'partial' : 'empty';
+        });
+
         result[lot] = { compiled, supStatus, questions };
       }
       setQtData(result);
