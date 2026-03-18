@@ -385,59 +385,112 @@ function buildChiffrageXlsx(chiffrageData) {
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
 }
 
-// ─── Détection documents PDF par patterns étendus ────────────────────────────
-// Chaque règle : { any: [...mots] } — au moins un mot présent dans le chemin normalisé
+// ─── Détection documents par patterns étendus ────────────────────────────────
+// ext : null = toutes extensions ; sinon liste d'extensions acceptées
+// any : au moins un mot-clé doit être présent (dans nom de fichier OU dossier parent)
 // exclude : aucun de ces mots ne doit être présent
-// ext : extensions acceptées (null = toutes)
 
 const normPath = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-const PDF_RULES = {
+const DOC_RULES = {
+  // ── Documents Excel ──────────────────────────────────────────────────────
+  'QT (Annexe 1)': {
+    ext: ['.xls', '.xlsx'],
+    any: ['annexe 1', 'annexe1', 'qt lot', 'qt_lot', 'questionnaire technique',
+          'questionnaire tech', 'cctp annexe', 'qt-lot', ' qt '],
+    exclude: ['annexe 3', 'annexe3', 'annexe 5', 'annexe5', 'bpu', 'chiffrage', 'rse',
+              'bordereau', 'standardis'],
+  },
+  'BPU (Annexe 5)': {
+    ext: ['.xls', '.xlsx'],
+    any: ['annexe 5', 'annexe5', 'bpu', 'bordereau de prix', 'bordereau prix',
+          'bordereau unitaire', 'tarifs', 'grille tarifaire', 'grille de prix'],
+    exclude: ['annexe 3', 'annexe3', 'chiffrage', 'standardis'],
+  },
+  'Optim. Tarifaire': {
+    ext: ['.xls', '.xlsx'],
+    any: ['optim', 'optimisation tarifaire', 'remise', 'tarif optim', 'grille remise'],
+    exclude: ['standardis'],
+  },
+  'BPU Chiffrage (Annexe 3)': {
+    ext: ['.xls', '.xlsx'],
+    any: ['annexe 3', 'annexe3', 'chiffrage', 'chiffre', 'estimation', 'valorisation',
+          'bordereau chiffrage', 'devis'],
+    exclude: ['annexe 5', 'annexe5', 'bpu', 'standardis'],
+  },
+  'Questionnaire RSE': {
+    ext: ['.xls', '.xlsx', '.pdf', '.doc', '.docx'],
+    any: ['rse', 'developpement durable', 'questionnaire rse', 'responsabilite sociale',
+          'responsabilite environnementale', 'dd ', 'environnement', 'annexe rse'],
+    exclude: ['standardis'],
+  },
+  // ── Lots (détectés par nom de fichier ou dossier) ────────────────────────
+  'Lot 1': {
+    ext: ['.xls', '.xlsx', '.pdf'],
+    any: ['lot 1', 'lot1', 'lot_1', 'lot-1', 'mad', 'mise a disposition',
+          'mise a dispo', 'personnel', 'interimaire'],
+    exclude: ['lot 2', 'lot2', 'lot 3', 'lot3', 'standardis'],
+  },
+  'Lot 2': {
+    ext: ['.xls', '.xlsx', '.pdf'],
+    any: ['lot 2', 'lot2', 'lot_2', 'lot-2', 'recrutement', 'recruitment', 'cdi', 'cdd'],
+    exclude: ['lot 1', 'lot1', 'lot 3', 'lot3', 'standardis'],
+  },
+  'Lot 3': {
+    ext: ['.xls', '.xlsx', '.pdf'],
+    any: ['lot 3', 'lot3', 'lot_3', 'lot-3', 'freelance', 'independant', 'portage'],
+    exclude: ['lot 1', 'lot1', 'lot 2', 'lot2', 'standardis'],
+  },
+  // ── Documents PDF / signés ───────────────────────────────────────────────
   'CCAP signé': {
     ext: ['.pdf', '.p7m'],
-    any: ['ccap', 'clauses admin', 'cahier des clauses admin', 'cac', 'marche signe', 'marche public signe'],
-    exclude: ['bpu', 'bordereau', 'annexe 5', 'cctp'],
+    any: ['ccap', 'clauses administratives particulieres', 'clauses admin',
+          'cahier des clauses admin', 'conditions administratives'],
+    exclude: ['bpu', 'bordereau', 'annexe 5', 'annexe5', 'cctp'],
   },
   'CCTP signé': {
     ext: ['.pdf', '.p7m'],
-    any: ['cctp', 'clauses tech', 'cahier des clauses tech', 'cahier technique', 'cct'],
-    exclude: ['annexe 1', 'qt ', 'bpu', 'bordereau', 'ccap'],
+    any: ['cctp', 'clauses techniques particulieres', 'clauses tech',
+          'cahier technique', 'specifications techniques'],
+    exclude: ['annexe 1', 'annexe1', 'qt', 'bpu', 'bordereau', 'ccap'],
   },
   'DC1': {
-    ext: null,
-    any: ['dc1', 'lettre de candidature', 'lettre candidature', 'habilitation mandataire',
-          'declaration candidature', 'formulaire dc1'],
+    ext: ['.pdf', '.p7m', '.doc', '.docx', '.xlsx'],
+    any: ['dc1', 'lettre de candidature', 'lettre candidature',
+          'habilitation mandataire', 'declaration candidature', 'formulaire dc1',
+          'candidature lettre', 'pouvoir mandataire'],
     exclude: ['dc2'],
   },
   'DC2': {
-    ext: null,
-    any: ['dc2', 'declaration du candidat', 'declaration candidat', 'renseignements candidat',
-          'renseignements entreprise', 'formulaire dc2'],
+    ext: ['.pdf', '.p7m', '.doc', '.docx', '.xlsx'],
+    any: ['dc2', 'declaration du candidat', 'declaration candidat',
+          'renseignements du candidat', 'renseignements candidat',
+          'renseignements entreprise', 'formulaire dc2', 'capacites candidat'],
     exclude: ['dc1'],
   },
   'ATTRI1': {
     ext: ['.pdf', '.p7m'],
-    any: ['attri1', 'attri', 'attribution', 'accord-cadre', 'accord cadre', 'acte d engagement',
-          'acte engagement', 'notification', 'marche attribue', 'lettre attribution'],
+    any: ['attri1', 'attri', 'attribution', 'accord-cadre', 'accord cadre',
+          'acte d engagement', 'acte engagement', 'notification de marche',
+          'marche attribue', 'lettre attribution', 'avis attribution'],
     exclude: [],
   },
   'Fiche Contacts': {
     ext: null,
     any: ['contact', 'coordonnee', 'coordonnees', 'annexe 4', 'interlocuteur',
-          'fiche contact', 'referent', 'correspondant'],
+          'fiche contact', 'referent', 'correspondant', 'equipe', 'responsable marche'],
     exclude: [],
   },
 };
 
-function detectPdfDocs(files) {
-  // Pré-calcul : chemins normalisés avec extension
+function detectDocs(files) {
   const entries = files.map(f => ({
     p: normPath(f.path),
     ext: (f.name.match(/\.[^.]+$/) || [''])[0].toLowerCase(),
   }));
 
   const result = {};
-  for (const [label, { ext: exts, any: anyKw, exclude: exclKw }] of Object.entries(PDF_RULES)) {
+  for (const [label, { ext: exts, any: anyKw, exclude: exclKw }] of Object.entries(DOC_RULES)) {
     result[label] = entries.some(({ p, ext }) => {
       if (exts && !exts.includes(ext)) return false;
       if (exclKw.some(kw => p.includes(normPath(kw)))) return false;
@@ -588,29 +641,33 @@ export default function AnalyseUnicancer() {
         const info = supInfo[n];
         setScanProgress(`${i + 1}/${allNorms.length} — ${info.displayName}`);
 
-        let pdfDocs = {};
+        // Scan des fichiers bruts pour compléter ce que les standardisés ne couvrent pas
+        let raw = {};
         const folder = folderMap[n];
         if (folder) {
           const files = await getAllFiles(folder.handle);
-          pdfDocs = detectPdfDocs(files);
+          raw = detectDocs(files);
         }
 
         rows.push({
-          'Nom fournisseur':        info.displayName,
-          'Lot 1 MAD Personnel':    val(info.lots.has(1)),
-          'Lot 2 Recrutement':      val(info.lots.has(2)),
-          'Lot 3 Freelance':        val(info.lots.has(3)),
-          'BPU (Annexe 5)':         val(info.hasBpu),
-          'Optim. Tarifaire':       val(info.hasOptim),
-          'QT (Annexe 1)':          val(info.hasQT),
-          'BPU Chiffrage (Annexe 3)': val(info.hasChiffrage),
-          'Questionnaire RSE':      val(info.hasRse),
-          'CCAP signé':             val(pdfDocs['CCAP signé']),
-          'CCTP signé':             val(pdfDocs['CCTP signé']),
-          'DC1':                    val(pdfDocs['DC1']),
-          'DC2':                    val(pdfDocs['DC2']),
-          'ATTRI1':                 val(pdfDocs['ATTRI1']),
-          'Fiche Contacts':         val(pdfDocs['Fiche Contacts']),
+          'Nom fournisseur':          info.displayName,
+          // Lots : standardisés en priorité, sinon détection brute
+          'Lot 1 MAD Personnel':      val(info.lots.has(1) || raw['Lot 1']),
+          'Lot 2 Recrutement':        val(info.lots.has(2) || raw['Lot 2']),
+          'Lot 3 Freelance':          val(info.lots.has(3) || raw['Lot 3']),
+          // Excel : standardisés en priorité, sinon détection brute
+          'BPU (Annexe 5)':           val(info.hasBpu      || raw['BPU (Annexe 5)']),
+          'Optim. Tarifaire':         val(info.hasOptim    || raw['Optim. Tarifaire']),
+          'QT (Annexe 1)':            val(info.hasQT       || raw['QT (Annexe 1)']),
+          'BPU Chiffrage (Annexe 3)': val(info.hasChiffrage|| raw['BPU Chiffrage (Annexe 3)']),
+          'Questionnaire RSE':        val(info.hasRse      || raw['Questionnaire RSE']),
+          // PDFs : détection brute uniquement
+          'CCAP signé':               val(raw['CCAP signé']),
+          'CCTP signé':               val(raw['CCTP signé']),
+          'DC1':                      val(raw['DC1']),
+          'DC2':                      val(raw['DC2']),
+          'ATTRI1':                   val(raw['ATTRI1']),
+          'Fiche Contacts':           val(raw['Fiche Contacts']),
         });
       }
       setAnnuaire(rows);
