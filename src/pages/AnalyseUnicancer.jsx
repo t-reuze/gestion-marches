@@ -388,12 +388,16 @@ export default function AnalyseUnicancer() {
           })]);
         });
 
+        // Questions "réelles" = celles où au moins un fournisseur a répondu (exclut titres de section)
+        const realQIdx = questions.map((_, qi) => supNames.some(sup => supData[sup]?.[qi]?.a) ? qi : -1).filter(i => i >= 0);
+        const totalReal = realQIdx.length || questions.length;
+
         const supStatus = {};
         supNames.forEach(sup => {
           const rows = supData[sup];
           if (!rows) { supStatus[sup] = 'absent'; return; }
-          const filled = rows.filter(r => r.a).length;
-          supStatus[sup] = filled === questions.length ? 'ok' : filled > 0 ? 'partial' : 'empty';
+          const filled = realQIdx.filter(qi => rows[qi]?.a).length;
+          supStatus[sup] = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
         });
 
         result[lot] = { compiled, supStatus, questions };
