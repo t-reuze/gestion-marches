@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 import Layout from '../components/Layout';
 
 const DOC_LABELS = [
@@ -180,14 +180,89 @@ function buildXlsx(rows) {
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
 }
 
+const ST = {
+  header: (ci) => ({
+    fill: { patternType: 'solid', fgColor: { rgb: ci === 0 ? '1B3A5C' : '2A5C8A' } },
+    font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    border: { bottom: { style: 'medium', color: { rgb: 'E87722' } }, top: { style: 'thin', color: { rgb: '1B3A5C' } }, left: { style: 'thin', color: { rgb: '1B3A5C' } }, right: { style: 'thin', color: { rgb: '1B3A5C' } } },
+  }),
+  question: (even) => ({
+    fill: { patternType: 'solid', fgColor: { rgb: even ? 'EBF3FF' : 'FFFFFF' } },
+    font: { sz: 10, name: 'Calibri', color: { rgb: '1A1A2E' } },
+    alignment: { horizontal: 'left', vertical: 'top', wrapText: true },
+    border: { top: { style: 'thin', color: { rgb: 'CCDDEE' } }, bottom: { style: 'thin', color: { rgb: 'CCDDEE' } }, left: { style: 'thin', color: { rgb: 'CCDDEE' } }, right: { style: 'thin', color: { rgb: 'CCDDEE' } } },
+  }),
+  answer: (even) => ({
+    fill: { patternType: 'solid', fgColor: { rgb: even ? 'EBF3FF' : 'FFFFFF' } },
+    font: { sz: 10, name: 'Calibri', color: { rgb: '333333' } },
+    alignment: { horizontal: 'left', vertical: 'top', wrapText: true },
+    border: { top: { style: 'thin', color: { rgb: 'CCDDEE' } }, bottom: { style: 'thin', color: { rgb: 'CCDDEE' } }, left: { style: 'thin', color: { rgb: 'CCDDEE' } }, right: { style: 'thin', color: { rgb: 'CCDDEE' } } },
+  }),
+  summaryHeader: {
+    fill: { patternType: 'solid', fgColor: { rgb: '1B3A5C' } },
+    font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' },
+    alignment: { horizontal: 'center', vertical: 'center' },
+    border: { bottom: { style: 'medium', color: { rgb: 'E87722' } } },
+  },
+  ok:      { fill: { patternType: 'solid', fgColor: { rgb: 'DCFCE7' } }, font: { bold: true, color: { rgb: '15803D' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
+  partial: { fill: { patternType: 'solid', fgColor: { rgb: 'FEF9C3' } }, font: { bold: true, color: { rgb: '92400E' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
+  empty:   { fill: { patternType: 'solid', fgColor: { rgb: 'FEF2F2' } }, font: { bold: true, color: { rgb: 'BE185D' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
+};
+
+function styledSheet(aoa, colWidths, rowHeight = 40) {
+  const ws = {};
+  const nRows = aoa.length;
+  const nCols = aoa[0]?.length || 0;
+  aoa.forEach((row, ri) => {
+    const isHeader = ri === 0;
+    const even = ri % 2 === 0;
+    row.forEach((val, ci) => {
+      const ref = XLSX.utils.encode_cell({ r: ri, c: ci });
+      ws[ref] = {
+        v: val == null ? '' : String(val), t: 's',
+        s: isHeader ? ST.header(ci) : ci === 0 ? ST.question(even) : ST.answer(even),
+      };
+    });
+  });
+  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: nRows - 1, c: nCols - 1 } });
+  ws['!cols'] = colWidths.map(wch => ({ wch }));
+  ws['!rows'] = [{ hpt: rowHeight }];
+  return ws;
+}
+
 function buildQTXlsx(qtData) {
   const wb = XLSX.utils.book_new();
+
+  // --- Feuille Récapitulatif ---
+  const recapAoa = [['Lot', 'Fournisseur', 'Statut', 'Questions répondues']];
+  for (const [lot, { supStatus, questions }] of Object.entries(qtData)) {
+    for (const [sup, status] of Object.entries(supStatus)) {
+      recapAoa.push([`LOT ${lot}`, sup,
+        status === 'ok' ? 'Complet ✓' : status === 'partial' ? 'Partiel' : 'Vide',
+        status === 'ok' ? `${questions.length}/${questions.length}` : '?',
+      ]);
+    }
+  }
+  const recapWs = styledSheet(recapAoa, [12, 42, 16, 20], 28);
+  // Colorer la colonne Statut selon valeur
+  recapAoa.forEach((row, ri) => {
+    if (ri === 0) return;
+    const ref = XLSX.utils.encode_cell({ r: ri, c: 2 });
+    const status = row[2];
+    const sty = status.includes('Complet') ? ST.ok : status.includes('Partiel') ? ST.partial : ST.empty;
+    recapWs[ref] = { v: row[2], t: 's', s: sty };
+  });
+  XLSX.utils.book_append_sheet(wb, recapWs, 'Récapitulatif');
+
+  // --- Feuilles QT par lot ---
   for (const [lot, { compiled }] of Object.entries(qtData)) {
     if (!compiled?.length) continue;
-    const ws = XLSX.utils.aoa_to_sheet(compiled);
-    ws['!cols'] = [{ wch: 55 }, ...compiled[0].slice(1).map(() => ({ wch: 38 }))];
+    const nSup = compiled[0].length - 1;
+    const ws = styledSheet(compiled, [52, ...Array(nSup).fill(40)], 36);
     XLSX.utils.book_append_sheet(wb, ws, `QT LOT ${lot}`);
   }
+
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
 }
 
@@ -295,7 +370,10 @@ export default function AnalyseUnicancer() {
         if (!refEntry) continue;
         const questions = refEntry.map(d => d.q);
 
-        const supNames = subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase());
+        // Uniquement les fournisseurs positionnés sur ce lot (avec fichier QT)
+        const allSupNames = subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase());
+        const supNames = allSupNames.filter(sup => supData[sup] !== null);
+
         const compiled = [['Question', ...supNames]];
 
         questions.forEach((q, qi) => {
