@@ -385,6 +385,68 @@ function buildChiffrageXlsx(chiffrageData) {
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
 }
 
+// ─── Détection documents PDF par patterns étendus ────────────────────────────
+// Chaque règle : { any: [...mots] } — au moins un mot présent dans le chemin normalisé
+// exclude : aucun de ces mots ne doit être présent
+// ext : extensions acceptées (null = toutes)
+
+const normPath = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+const PDF_RULES = {
+  'CCAP signé': {
+    ext: ['.pdf', '.p7m'],
+    any: ['ccap', 'clauses admin', 'cahier des clauses admin', 'cac', 'marche signe', 'marche public signe'],
+    exclude: ['bpu', 'bordereau', 'annexe 5', 'cctp'],
+  },
+  'CCTP signé': {
+    ext: ['.pdf', '.p7m'],
+    any: ['cctp', 'clauses tech', 'cahier des clauses tech', 'cahier technique', 'cct'],
+    exclude: ['annexe 1', 'qt ', 'bpu', 'bordereau', 'ccap'],
+  },
+  'DC1': {
+    ext: null,
+    any: ['dc1', 'lettre de candidature', 'lettre candidature', 'habilitation mandataire',
+          'declaration candidature', 'formulaire dc1'],
+    exclude: ['dc2'],
+  },
+  'DC2': {
+    ext: null,
+    any: ['dc2', 'declaration du candidat', 'declaration candidat', 'renseignements candidat',
+          'renseignements entreprise', 'formulaire dc2'],
+    exclude: ['dc1'],
+  },
+  'ATTRI1': {
+    ext: ['.pdf', '.p7m'],
+    any: ['attri1', 'attri', 'attribution', 'accord-cadre', 'accord cadre', 'acte d engagement',
+          'acte engagement', 'notification', 'marche attribue', 'lettre attribution'],
+    exclude: [],
+  },
+  'Fiche Contacts': {
+    ext: null,
+    any: ['contact', 'coordonnee', 'coordonnees', 'annexe 4', 'interlocuteur',
+          'fiche contact', 'referent', 'correspondant'],
+    exclude: [],
+  },
+};
+
+function detectPdfDocs(files) {
+  // Pré-calcul : chemins normalisés avec extension
+  const entries = files.map(f => ({
+    p: normPath(f.path),
+    ext: (f.name.match(/\.[^.]+$/) || [''])[0].toLowerCase(),
+  }));
+
+  const result = {};
+  for (const [label, { ext: exts, any: anyKw, exclude: exclKw }] of Object.entries(PDF_RULES)) {
+    result[label] = entries.some(({ p, ext }) => {
+      if (exts && !exts.includes(ext)) return false;
+      if (exclKw.some(kw => p.includes(normPath(kw)))) return false;
+      return anyKw.some(kw => p.includes(normPath(kw)));
+    });
+  }
+  return result;
+}
+
 function download(data, filename, type = 'application/octet-stream') {
   const url = URL.createObjectURL(new Blob([data], { type }));
   Object.assign(document.createElement('a'), { href: url, download: filename }).click();
@@ -526,17 +588,11 @@ export default function AnalyseUnicancer() {
         const info = supInfo[n];
         setScanProgress(`${i + 1}/${allNorms.length} — ${info.displayName}`);
 
-        let ccap = false, cctp = false, dc1 = false, dc2 = false, attri = false, contacts = false;
+        let pdfDocs = {};
         const folder = folderMap[n];
         if (folder) {
           const files = await getAllFiles(folder.handle);
-          const fn = files.map(f => f.path.toLowerCase());
-          ccap     = fn.some(p => p.includes('ccap') && (p.endsWith('.pdf') || p.endsWith('.p7m')));
-          cctp     = fn.some(p => p.includes('cctp') && !p.includes('annexe 1') && !p.includes('qt') && (p.endsWith('.pdf') || p.endsWith('.p7m')));
-          dc1      = fn.some(p => /(^\/|\/)dc1/.test(p));
-          dc2      = fn.some(p => /(^\/|\/)dc2/.test(p));
-          attri    = fn.some(p => p.includes('attri1') || (p.includes('attri') && p.includes('sign')));
-          contacts = fn.some(p => p.includes('contact') || p.includes('annexe 4'));
+          pdfDocs = detectPdfDocs(files);
         }
 
         rows.push({
@@ -549,12 +605,12 @@ export default function AnalyseUnicancer() {
           'QT (Annexe 1)':          val(info.hasQT),
           'BPU Chiffrage (Annexe 3)': val(info.hasChiffrage),
           'Questionnaire RSE':      val(info.hasRse),
-          'CCAP signé':             val(ccap),
-          'CCTP signé':             val(cctp),
-          'DC1':                    val(dc1),
-          'DC2':                    val(dc2),
-          'ATTRI1':                 val(attri),
-          'Fiche Contacts':         val(contacts),
+          'CCAP signé':             val(pdfDocs['CCAP signé']),
+          'CCTP signé':             val(pdfDocs['CCTP signé']),
+          'DC1':                    val(pdfDocs['DC1']),
+          'DC2':                    val(pdfDocs['DC2']),
+          'ATTRI1':                 val(pdfDocs['ATTRI1']),
+          'Fiche Contacts':         val(pdfDocs['Fiche Contacts']),
         });
       }
       setAnnuaire(rows);
