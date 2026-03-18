@@ -362,35 +362,30 @@ export default function AnalyseUnicancer() {
             const sheetName = qtFile.lotSheet ? findLotSheet(wb, qtFile.lotSheet) : wb.SheetNames[0];
             const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
 
-            // Trouver la colonne réponse sur toutes les lignes (y compris l'en-tête)
             const ansCol = findAnswerCol(raw);
 
-            // Mots clés qui indiquent une ligne d'en-tête ou une valeur placeholder à ignorer
-            const isHeaderOrPlaceholder = (val) => {
-              const v = String(val || '').trim().toLowerCase();
-              return v === '' || v.includes('réponse') || v.includes('reponse') ||
-                     v.includes('candidat') || v === 'détail' || v === 'detail' ||
-                     v === 'info' || v === 'n/a' || v === 'à compléter';
-            };
-
-            // Filtrer : garder uniquement les lignes avec une question réelle
-            // Exclure les lignes d'en-tête (col B = "Détail" ou col ansCol = "Réponse candidat")
+            // Exclure uniquement la ligne d'en-tête exacte (col B = "Détail" ET col réponse = "Réponse candidat/fournisseur")
             const rows = raw.filter(r => {
               const q = String(r[0] || '').trim();
               if (!q) return false;
               const colB = String(r[1] || '').trim().toLowerCase();
               const colAns = String(r[ansCol] || '').trim().toLowerCase();
-              // Si la colonne réponse contient un label d'en-tête → ligne d'en-tête à ignorer
-              if (isHeaderOrPlaceholder(colAns) && (colB === 'détail' || colB === 'detail' || colAns.includes('réponse') || colAns.includes('candidat'))) return false;
+              if ((colB === 'détail' || colB === 'detail') &&
+                  (colAns.includes('réponse') || colAns.includes('reponse') || colAns.includes('candidat'))) return false;
               return true;
             });
 
-            supData[sup] = rows.map(r => {
-              const rawAns = String(r[ansCol] || '').trim();
-              // Ignorer les valeurs placeholder comme vraie réponse
-              const a = isHeaderOrPlaceholder(rawAns) ? '' : rawAns;
-              return { q: String(r[0]).trim(), a };
-            });
+            // Valeurs considérées comme NON-réponses (placeholders exacts)
+            const PLACEHOLDERS = new Set(['réponse candidat', 'réponse fournisseur', 'reponse candidat', 'reponse fournisseur', 'à compléter', 'a completer', 'n/a']);
+            const cleanAns = (v) => {
+              const s = String(v || '').trim();
+              return PLACEHOLDERS.has(s.toLowerCase()) ? '' : s;
+            };
+
+            supData[sup] = rows.map(r => ({
+              q: String(r[0]).trim(),
+              a: cleanAns(r[ansCol]),
+            }));
           } catch { supData[sup] = null; }
         }
 
