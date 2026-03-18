@@ -552,10 +552,13 @@ export default function AnalyseUnicancer() {
 
       const stdHandle = await findStdDir(reponsesDirHandle);
       if (stdHandle) {
-        // QT — détecter les lots depuis les noms de feuilles
+        // QT — les fichiers peuvent être directement dans stdHandle (structure Standardisés/)
+        // ou dans un sous-dossier QT/ (structure AO_Recrutement_Standardisés/)
         setScanProgress('Lecture QT standardisés…');
-        for await (const [name, handle] of stdHandle.entries()) {
+        const qtDir = await findSubdirByName(stdHandle, 'QT') ?? stdHandle;
+        for await (const [name, handle] of qtDir.entries()) {
           if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+          if (!/_qt_standardis/i.test(name)) continue;
           const display = name.replace(/_QT_standardis[eé]\.xlsx$/i, '').trim();
           const n = normSupName(display);
           ensure(n, display);
@@ -570,7 +573,8 @@ export default function AnalyseUnicancer() {
           } catch {}
         }
 
-        // BPU — présence + onglet Optimisation
+        // BPU — source principale pour la détection des lots
+        // Chaque feuille "LOT X — …" présente = fournisseur positionné sur ce lot
         setScanProgress('Lecture BPU standardisés…');
         const bpuDir = await findSubdirByName(stdHandle, 'BPU');
         if (bpuDir) {
@@ -582,7 +586,17 @@ export default function AnalyseUnicancer() {
             supInfo[n].hasBpu = true;
             try {
               const wb = await readXlsxHandle(handle);
-              if (wb.SheetNames.some(s => /optim/i.test(s))) supInfo[n].hasOptim = true;
+              wb.SheetNames.forEach(s => {
+                // Lot détecté si la feuille existe ET contient au moins une ligne de données
+                const hasData = () => {
+                  const raw = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+                  return raw.slice(1).some(r => r.some(c => String(c).trim() !== ''));
+                };
+                if (/lot\s*1/i.test(s) && hasData()) supInfo[n].lots.add(1);
+                if (/lot\s*2/i.test(s) && hasData()) supInfo[n].lots.add(2);
+                if (/lot\s*3/i.test(s) && hasData()) supInfo[n].lots.add(3);
+                if (/optim/i.test(s))                supInfo[n].hasOptim = true;
+              });
             } catch {}
           }
         }
