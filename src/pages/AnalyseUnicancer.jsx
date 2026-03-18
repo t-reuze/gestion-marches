@@ -374,9 +374,9 @@ export default function AnalyseUnicancer() {
         if (!refEntry) continue;
         const questions = refEntry.map(d => d.q);
 
-        // Uniquement les fournisseurs avec un fichier QT valide ET au moins une question lue
+        // Uniquement les fournisseurs avec au moins une réponse non vide
         const allSupNames = subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase());
-        const supNames = allSupNames.filter(sup => supData[sup]?.length > 0);
+        const supNames = allSupNames.filter(sup => supData[sup]?.some(r => r.a));
 
         const compiled = [['Question', ...supNames]];
 
