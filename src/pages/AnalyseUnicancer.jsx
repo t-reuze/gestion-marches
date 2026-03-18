@@ -46,18 +46,37 @@ async function getSubdirs(dirHandle) {
   return dirs.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function findReponsesDir(rootHandle) {
-  for await (const [name, handle] of rootHandle.entries()) {
-    if (handle.kind === 'directory' && name.toLowerCase() === 'reponses') return { handle, name };
-  }
-  return null;
-}
+/**
+ * Cherche récursivement le dossier contenant les fichiers standardisés.
+ * Reconnaît :
+ *   - un dossier nommé "Standardisés" (ou "standardises")
+ *   - OU un dossier qui contient directement des *_QT_standardisé.xlsx
+ *   - OU un dossier qui a des sous-dossiers BPU / RSE / Chiffrage
+ */
+async function findStdDir(dirHandle, depth = 0) {
+  if (depth > 5) return null;
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-async function findStandardisesDir(reponsesDirHandle) {
-  for await (const [name, handle] of reponsesDirHandle.entries()) {
-    if (handle.kind === 'directory' && name.toLowerCase().replace('é', 'e') === 'standardises') {
-      return { handle, name };
-    }
+  // Collecter les entrées une seule fois
+  const entries = [];
+  for await (const [name, handle] of dirHandle.entries()) entries.push([name, handle]);
+
+  // 1. Enfant nommé "Standardisés"
+  for (const [name, handle] of entries) {
+    if (handle.kind === 'directory' && norm(name) === 'standardises') return handle;
+  }
+
+  // 2. Ce dossier lui-même contient des QT ou des sous-dossiers BPU/RSE/Chiffrage
+  const hasQT   = entries.some(([n, h]) => h.kind === 'file' && /_qt_standardis/i.test(n) && !n.startsWith('~'));
+  const subNorm = new Set(entries.filter(([, h]) => h.kind === 'directory').map(([n]) => norm(n)));
+  if (hasQT || subNorm.has('bpu') || subNorm.has('rse') || subNorm.has('chiffrage')) return dirHandle;
+
+  // 3. Descendre dans les sous-dossiers (hors cachés et dossiers système)
+  const SKIP = new Set(['standardises', 'compilation', '__pycache__', 'node_modules']);
+  for (const [name, handle] of entries) {
+    if (handle.kind !== 'directory' || name.startsWith('.') || SKIP.has(norm(name))) continue;
+    const found = await findStdDir(handle, depth + 1);
+    if (found) return found;
   }
   return null;
 }
@@ -400,15 +419,8 @@ export default function AnalyseUnicancer() {
     try {
       const root = await window.showDirectoryPicker();
       setAnnuaire([]); setEdits({}); setDirWarning('');
-      const found = await findReponsesDir(root);
-      if (found) {
-        setReponsesDirHandle(found.handle);
-        setReponsesDirPath(`${root.name} / ${found.name}`);
-      } else {
-        setReponsesDirHandle(root);
-        setReponsesDirPath(root.name);
-        setDirWarning('Sous-dossier "Reponses" non trouvé — scan depuis la racine.');
-      }
+      setReponsesDirHandle(root);
+      setReponsesDirPath(root.name);
     } catch (e) { if (e.name !== 'AbortError') console.error(e); }
   }
 
@@ -423,11 +435,11 @@ export default function AnalyseUnicancer() {
         if (!supInfo[norm]) supInfo[norm] = { displayName: display, lots: new Set(), hasQT: false, hasBpu: false, hasOptim: false, hasRse: false, hasChiffrage: false };
       };
 
-      const stdDir = await findStandardisesDir(reponsesDirHandle);
-      if (stdDir) {
+      const stdHandle = await findStdDir(reponsesDirHandle);
+      if (stdHandle) {
         // QT — détecter les lots depuis les noms de feuilles
         setScanProgress('Lecture QT standardisés…');
-        for await (const [name, handle] of stdDir.handle.entries()) {
+        for await (const [name, handle] of stdHandle.entries()) {
           if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
           const display = name.replace(/_QT_standardis[eé]\.xlsx$/i, '').trim();
           const n = normSupName(display);
@@ -445,7 +457,7 @@ export default function AnalyseUnicancer() {
 
         // BPU — présence + onglet Optimisation
         setScanProgress('Lecture BPU standardisés…');
-        const bpuDir = await findSubdirByName(stdDir.handle, 'BPU');
+        const bpuDir = await findSubdirByName(stdHandle, 'BPU');
         if (bpuDir) {
           for await (const [name, handle] of bpuDir.entries()) {
             if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
@@ -462,7 +474,7 @@ export default function AnalyseUnicancer() {
 
         // RSE
         setScanProgress('Lecture RSE standardisés…');
-        const rseDir = await findSubdirByName(stdDir.handle, 'RSE');
+        const rseDir = await findSubdirByName(stdHandle, 'RSE');
         if (rseDir) {
           for await (const [name, handle] of rseDir.entries()) {
             if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
@@ -475,7 +487,7 @@ export default function AnalyseUnicancer() {
 
         // Chiffrage
         setScanProgress('Lecture Chiffrage standardisés…');
-        const chifDir = await findSubdirByName(stdDir.handle, 'Chiffrage');
+        const chifDir = await findSubdirByName(stdHandle, 'Chiffrage');
         if (chifDir) {
           for await (const [name, handle] of chifDir.entries()) {
             if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
@@ -558,7 +570,7 @@ export default function AnalyseUnicancer() {
     setCompilingQt(true);
     try {
       // Cherche le dossier Standardisés/ dans Réponses/
-      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      const stdDir = await findStdDir(reponsesDirHandle);
       if (!stdDir) {
         setDirWarning('Dossier "Standardisés" introuvable. Lancez d\'abord la standardisation Python.');
         setCompilingQt(false);
@@ -568,7 +580,7 @@ export default function AnalyseUnicancer() {
 
       // Liste tous les xlsx du dossier Standardisés/
       const xlsxFiles = [];
-      for await (const [name, handle] of stdDir.handle.entries()) {
+      for await (const [name, handle] of stdDir.entries()) {
         if (handle.kind === 'file' && /\.xlsx$/i.test(name) && !name.startsWith('~')) {
           // Nom fournisseur = nom de fichier sans le suffixe _QT_standardisé.xlsx
           const supName = name.replace(/_QT_standardis[eé]\.xlsx$/i, '').trim();
@@ -637,7 +649,7 @@ export default function AnalyseUnicancer() {
     if (!reponsesDirHandle) return;
     setCompilingRse(true);
     try {
-      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      const stdDir = await findStdDir(reponsesDirHandle);
       if (!stdDir) {
         setDirWarning('Dossier "Standardisés" introuvable.');
         setCompilingRse(false);
@@ -645,7 +657,7 @@ export default function AnalyseUnicancer() {
       }
       setDirWarning('');
 
-      const rseDir = await findSubdirByName(stdDir.handle, 'RSE');
+      const rseDir = await findSubdirByName(stdDir, 'RSE');
       if (!rseDir) {
         setDirWarning('Dossier Standardisés/RSE/ introuvable.');
         setCompilingRse(false);
@@ -703,7 +715,7 @@ export default function AnalyseUnicancer() {
     if (!reponsesDirHandle) return;
     setCompilingBpu(true);
     try {
-      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      const stdDir = await findStdDir(reponsesDirHandle);
       if (!stdDir) {
         setDirWarning('Dossier "Standardisés" introuvable.');
         setCompilingBpu(false);
@@ -711,7 +723,7 @@ export default function AnalyseUnicancer() {
       }
       setDirWarning('');
 
-      const bpuDir = await findSubdirByName(stdDir.handle, 'BPU');
+      const bpuDir = await findSubdirByName(stdDir, 'BPU');
       if (!bpuDir) {
         setDirWarning('Dossier Standardisés/BPU/ introuvable.');
         setCompilingBpu(false);
@@ -780,7 +792,7 @@ export default function AnalyseUnicancer() {
     if (!reponsesDirHandle) return;
     setCompilingChiffrage(true);
     try {
-      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      const stdDir = await findStdDir(reponsesDirHandle);
       if (!stdDir) {
         setDirWarning('Dossier "Standardisés" introuvable.');
         setCompilingChiffrage(false);
@@ -788,7 +800,7 @@ export default function AnalyseUnicancer() {
       }
       setDirWarning('');
 
-      const chiffrageDir = await findSubdirByName(stdDir.handle, 'Chiffrage');
+      const chiffrageDir = await findSubdirByName(stdDir, 'Chiffrage');
       if (!chiffrageDir) {
         setDirWarning('Dossier Standardisés/Chiffrage/ introuvable.');
         setCompilingChiffrage(false);
