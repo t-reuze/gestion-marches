@@ -53,6 +53,15 @@ async function findReponsesDir(rootHandle) {
   return null;
 }
 
+async function findStandardisesDir(reponsesDirHandle) {
+  for await (const [name, handle] of reponsesDirHandle.entries()) {
+    if (handle.kind === 'directory' && name.toLowerCase().replace('é', 'e') === 'standardises') {
+      return { handle, name };
+    }
+  }
+  return null;
+}
+
 async function readXlsxHandle(fileHandle) {
   const file = await fileHandle.getFile();
   const buf = await file.arrayBuffer();
@@ -377,52 +386,71 @@ export default function AnalyseUnicancer() {
     if (!reponsesDirHandle || !lotsSelected.length) return;
     setCompilingQt(true);
     try {
-      const subdirs = await getSubdirs(reponsesDirHandle);
+      // Cherche le dossier Standardisés/ dans Réponses/
+      const stdDir = await findStandardisesDir(reponsesDirHandle);
+      if (!stdDir) {
+        setDirWarning('Dossier "Standardisés" introuvable. Lancez d\'abord la standardisation Python.');
+        setCompilingQt(false);
+        return;
+      }
+      setDirWarning('');
+
+      // Liste tous les xlsx du dossier Standardisés/
+      const xlsxFiles = [];
+      for await (const [name, handle] of stdDir.handle.entries()) {
+        if (handle.kind === 'file' && /\.xlsx$/i.test(name) && !name.startsWith('~')) {
+          // Nom fournisseur = nom de fichier sans le suffixe _QT_standardisé.xlsx
+          const supName = name.replace(/_QT_standardis[eé]\.xlsx$/i, '').trim();
+          xlsxFiles.push({ name, handle, supName });
+        }
+      }
+      xlsxFiles.sort((a, b) => a.supName.localeCompare(b.supName));
+
       const result = {};
 
       for (const lot of lotsSelected) {
+        const lotSheetName = `QT LOT ${lot}`;
         const supData = {};
 
-        for (const { name, handle } of subdirs) {
-          const sup = name.replace(/ ok$/i, '').trim().toUpperCase();
-          const qtFile = await findQTFile(handle, lot);
-          if (!qtFile) { supData[sup] = null; continue; }
-          try {
-            const wb = await readXlsxHandle(qtFile.handle);
-            const sheetName = qtFile.lotSheet ? findLotSheet(wb, qtFile.lotSheet) : wb.SheetNames[0];
-            const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
-            const ansCol = findAnswerCol(raw);
-            supData[sup] = parseQTSheet(raw, ansCol);
-          } catch { supData[sup] = null; }
+        for (const { handle, supName } of xlsxFiles) {
+          const wb = await readXlsxHandle(handle);
+          // Si le fichier n'a pas de feuille pour ce lot → fournisseur non positionné
+          if (!wb.SheetNames.includes(lotSheetName)) continue;
+
+          const raw = XLSX.utils.sheet_to_json(wb.Sheets[lotSheetName], { header: 1, defval: '' });
+          // Format standard : ligne 0 = en-têtes, col 0 = question, col 2 = réponse candidat
+          const rows = raw.slice(1).filter(r => String(r[0] || '').trim());
+          supData[supName] = rows.map(r => ({
+            q: String(r[0] || '').trim(),
+            a: String(r[2] || '').trim(),
+          }));
         }
 
-        const refEntry = Object.values(supData).find(d => d?.length > 0);
-        if (!refEntry) continue;
-        const questions = refEntry.map(d => d.q);
+        if (!Object.keys(supData).length) continue;
 
-        // Uniquement fournisseurs avec au moins une vraie réponse
-        const allSupNames = subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase());
-        const supNames = allSupNames.filter(sup => supData[sup]?.some(r => r.a));
+        // Questions de référence (depuis n'importe quel fournisseur)
+        const questions = Object.values(supData)[0].map(d => d.q);
+
+        // Fournisseurs avec au moins une vraie réponse
+        const supNames = Object.keys(supData).filter(sup => supData[sup].some(r => r.a));
 
         const compiled = [['Question', ...supNames]];
         questions.forEach((q, qi) => {
           compiled.push([q, ...supNames.map(sup => {
             const rows = supData[sup];
-            return rows?.[qi]?.a || rows?.find(r => r.q === q)?.a || '';
+            return rows[qi]?.a || rows.find(r => r.q === q)?.a || '';
           })]);
         });
 
-        // Statut basé sur les questions réellement répondues par au moins un fournisseur
+        // Statut : questions répondues par au moins un fournisseur
         const realQIdx = questions
-          .map((_, qi) => supNames.some(sup => supData[sup]?.[qi]?.a) ? qi : -1)
+          .map((_, qi) => supNames.some(sup => supData[sup][qi]?.a) ? qi : -1)
           .filter(i => i >= 0);
         const totalReal = realQIdx.length || questions.length;
 
         const supStatus = {};
         supNames.forEach(sup => {
-          const rows = supData[sup];
-          if (!rows) { supStatus[sup] = 'absent'; return; }
-          const filled = realQIdx.filter(qi => rows[qi]?.a).length;
+          const filled = realQIdx.filter(qi => supData[sup][qi]?.a).length;
           supStatus[sup] = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
         });
 
@@ -583,7 +611,7 @@ export default function AnalyseUnicancer() {
               ))}
               <button className="btn btn-primary" style={{ marginLeft: 8 }} onClick={compileQT}
                 disabled={compilingQt || !reponsesDirHandle || !lotsSelected.length}>
-                {compilingQt ? 'Compilation…' : '⚙️ Compiler les QT'}
+                {compilingQt ? 'Compilation…' : '⚙️ Compiler les QT (Standardisés/)'}
               </button>
               {hasQT && (
                 <button className="btn btn-outline" onClick={() => download(buildQTXlsx(qtData), 'Compilation_QT_recrutement.xlsx')}>
