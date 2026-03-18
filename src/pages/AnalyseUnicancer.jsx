@@ -454,23 +454,12 @@ export default function AnalyseUnicancer() {
       {/* Onglet 1 : Compilation QT */}
       {tab === 1 && (
         <div className="fade-in">
-          <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">📄 Annexe 1 CCTP — Template QT</span></div>
-            <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              {dceName ? (
-                <>
-                  <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✅ Détecté automatiquement</span>
-                  <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{dceName}</code>
-                  <button className="btn btn-outline btn-sm" onClick={pickDce} disabled={!supportsApi}>📂 Changer…</button>
-                </>
-              ) : (
-                <>
-                  <span style={{ fontSize: 12, color: '#d97706' }}>⚠️ Non détecté — dossier DCE introuvable</span>
-                  <button className="btn btn-outline" onClick={pickDce} disabled={!supportsApi}>📂 Sélectionner manuellement…</button>
-                </>
-              )}
+          {!dceName && (
+            <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span>⚠️ Fichier DCE (Annexe 1 CCTP) non trouvé dans le dossier <code>DCE/</code>.</span>
+              <button className="btn btn-outline btn-sm" onClick={pickDce} disabled={!supportsApi}>📂 Sélectionner manuellement…</button>
             </div>
-          </div>
+          )}
 
           <div className="card" style={{ marginBottom: 16 }}>
             <div className="card-header"><span className="card-title">⚙️ Lots à compiler</span></div>
