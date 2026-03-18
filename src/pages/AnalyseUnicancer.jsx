@@ -5,11 +5,11 @@ import Layout from '../components/Layout';
 const DOC_LABELS = [
   'Lot 1 MAD Personnel', 'Lot 2 Recrutement', 'Lot 3 Freelance',
   'BPU (Annexe 5)', 'Optim. Tarifaire', 'QT (Annexe 1)',
-  'BPU Chiffrage (Annexe 3)', 'Questionnaire RSE', 'CCAP sign\u00e9',
-  'CCTP sign\u00e9', 'DC1', 'DC2', 'ATTRI1', 'Fiche Contacts',
+  'BPU Chiffrage (Annexe 3)', 'Questionnaire RSE', 'CCAP signé',
+  'CCTP signé', 'DC1', 'DC2', 'ATTRI1', 'Fiche Contacts',
 ];
 
-// ── Helpers d\u00e9tection ─────────────────────────────────────────────────────────
+// --- Détection helpers ---
 
 function lotFromFilename(name) {
   const n = name.toLowerCase();
@@ -53,7 +53,6 @@ async function getSubdirs(dirHandle) {
 async function detectSupplier(dirHandle) {
   const files = await getAllFiles(dirHandle);
 
-  // BPU / Annexe 5
   const bpuFiles = files.filter(f => {
     const n = f.path.toLowerCase();
     return isOffice(f.name)
@@ -70,7 +69,6 @@ async function detectSupplier(dirHandle) {
     files.forEach(f => lotFromFilename(f.path).forEach(l => { if ([1,2,3].includes(l)) lots[l] = true; }));
   }
 
-  // BPU Chiffrage / Annexe 3
   const a3 = files.filter(f => isOffice(f.name) && (f.path.toLowerCase().includes('annexe 3') || f.path.toLowerCase().includes('chiffrage')));
   const lotsA3 = new Set();
   a3.forEach(f => lotFromFilename(f.path).forEach(l => lotsA3.add(l)));
@@ -82,8 +80,8 @@ async function detectSupplier(dirHandle) {
   const rse = fn.some(n => n.includes('rse'));
   const ccap = fn.some(n => n.includes('ccap') && !n.includes('bpu') && !n.includes('annexe 5') && (n.endsWith('.pdf') || n.endsWith('.p7m')));
   const cctp = fn.some(n => n.includes('cctp') && !n.includes('annexe 1') && !n.includes('qt') && (n.endsWith('.pdf') || n.endsWith('.p7m')));
-  const dc1 = fn.some(n => /(\/|^)dc1/.test(n));
-  const dc2 = fn.some(n => /(\/|^)dc2/.test(n));
+  const dc1 = fn.some(n => /(^|\/)dc1/.test(n));
+  const dc2 = fn.some(n => /(^|\/)dc2/.test(n));
   const attri = fn.some(n => n.includes('attri1') || (n.includes('attri') && n.includes('sign')));
   const contacts = fn.some(n => n.includes('contact') || n.includes('annexe 4'));
 
@@ -96,8 +94,8 @@ async function detectSupplier(dirHandle) {
     'QT (Annexe 1)': val(qt),
     'BPU Chiffrage (Annexe 3)': val(chiffrage),
     'Questionnaire RSE': val(rse),
-    'CCAP sign\u00e9': val(ccap),
-    'CCTP sign\u00e9': val(cctp),
+    'CCAP signé': val(ccap),
+    'CCTP signé': val(cctp),
     'DC1': val(dc1),
     'DC2': val(dc2),
     'ATTRI1': val(attri),
@@ -153,19 +151,16 @@ function download(data, filename) {
   URL.revokeObjectURL(url);
 }
 
-// ── Composant principal ───────────────────────────────────────────────────────
+// --- Composant principal ---
 
 export default function AnalyseUnicancer() {
   const [tab, setTab] = useState(0);
-  // Dossier r\u00e9ponses
   const [reponsesDir, setReponsesDir] = useState(null);
   const [reponsesDirName, setReponsesDirName] = useState('');
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState('');
-  // Annuaire
   const [annuaire, setAnnuaire] = useState([]);
   const [edits, setEdits] = useState({});
-  // QT
   const [dceHandle, setDceHandle] = useState(null);
   const [dceName, setDceName] = useState('');
   const [lotsSelected, setLotsSelected] = useState([1, 2, 3]);
@@ -230,14 +225,13 @@ export default function AnalyseUnicancer() {
       const subdirs = await getSubdirs(reponsesDir);
       const result = {};
       for (const lot of lotsSelected) {
-        const sheetName = `QT LOT ${lot}`;
-        const ws = dceWb.Sheets[sheetName];
+        const ws = dceWb.Sheets[`QT LOT ${lot}`];
         if (!ws) continue;
         const template = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
         const questions = template.filter(r => r[0] && String(r[0]).trim()).map(r => String(r[0]).trim());
         const supStatus = {};
-        const compiled = [['Question', ...subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase())]];
         const allAnswers = {};
+        const compiled = [['Question', ...subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase())]];
         for (const { name, handle } of subdirs) {
           const sup = name.replace(/ ok$/i, '').trim().toUpperCase();
           const qtFile = await findQTFile(handle, lot);
@@ -266,73 +260,75 @@ export default function AnalyseUnicancer() {
   const rows = getRows();
   const nbF = annuaire.length;
 
-  // ── Rendu ─────────────────────────────────────────────────────────────────
   return (
-    <Layout title="AO Recrutement Personnel 2026" sub="\u2014 Analyse des offres">
+    <Layout title="AO Recrutement Personnel 2026" sub="— Analyse des offres">
 
       {/* Bandeau */}
       <div style={{ background: 'linear-gradient(135deg,#1B3A5C 0%,#2A5C8A 100%)', borderRadius: 10, padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 32 }}>\ud83d\udccb</span>
+        <span style={{ fontSize: 32 }}>&#x1F4CB;</span>
         <div>
           <div style={{ color: '#E87722', fontWeight: 700, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Unicancer</div>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>Tra\u00e7abilit\u00e9 &amp; Compilation \u2014 AO Recrutement de Personnel 2026</div>
-          <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, marginTop: 4 }}>D\u00e9tection automatique des documents fournisseurs \u00b7 Compilation des QT</div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>Traçabilité &amp; Compilation — AO Recrutement de Personnel 2026</div>
+          <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, marginTop: 4 }}>Détection automatique des documents fournisseurs &middot; Compilation des QT</div>
         </div>
       </div>
 
       {!supportsApi && (
-        <div className="info-box" style={{ background: '#fef3c7', borderColor: '#f59e0b', marginBottom: 16 }}>
-          <strong>\u26a0\ufe0f Navigateur non compatible</strong> \u2014 Cette fonctionnalit\u00e9 n\u00e9cessite Chrome ou Edge (File System Access API).
+        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>
+          <strong>&#x26A0;&#xFE0F; Navigateur non compatible</strong> — Cette fonctionnalité nécessite Chrome ou Edge.
         </div>
       )}
 
       {/* Dossier source */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header"><span className="card-title">\ud83d\udcc1 Dossier R\u00e9ponses</span></div>
+        <div className="card-header"><span className="card-title">&#x1F4C1; Dossier Réponses</span></div>
         <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <button className="btn btn-outline" onClick={pickDir} disabled={!supportsApi}>
-            \ud83d\udcc2 S\u00e9lectionner le dossier\u2026
+            &#x1F4C2; Sélectionner le dossier…
           </button>
           {reponsesDirName && (
             <>
               <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{reponsesDirName}</code>
               <button className="btn btn-primary" onClick={scan} disabled={scanning}>
-                {scanning ? `\u23f3 ${scanProgress}` : '\ud83d\udd0d Analyser'}
+                {scanning ? `&#x23F3; ${scanProgress}` : '&#x1F50D; Analyser'}
               </button>
             </>
           )}
           {nbF > 0 && !scanning && (
-            <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>\u2705 {nbF} fournisseur{nbF > 1 ? 's' : ''} d\u00e9tect\u00e9{nbF > 1 ? 's' : ''}</span>
+            <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>&#x2705; {nbF} fournisseur{nbF > 1 ? 's' : ''} détecté{nbF > 1 ? 's' : ''}</span>
           )}
         </div>
       </div>
 
       {/* Onglets */}
       <div className="tabs" style={{ marginBottom: 16 }}>
-        {['\ud83d\udcca Annuaire documents', '\ud83d\udccb Compilation QT', '\ud83d\udd0d D\u00e9tail QT'].map((t, i) => (
-          <div key={i} className={'tab' + (tab === i ? ' active' : '')} onClick={() => setTab(i)}>{t}</div>
+        {[
+          '&#x1F4CA; Annuaire documents',
+          '&#x1F4CB; Compilation QT',
+          '&#x1F50D; Détail QT',
+        ].map((t, i) => (
+          <div key={i} className={'tab' + (tab === i ? ' active' : '')} onClick={() => setTab(i)} dangerouslySetInnerHTML={{ __html: t }} />
         ))}
       </div>
 
-      {/* ══ Onglet 0 : Annuaire ══ */}
+      {/* Onglet 0 : Annuaire */}
       {tab === 0 && (
         <div className="fade-in">
           {rows.length > 0 ? (
             <>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
                 <button className="btn btn-primary btn-sm" onClick={() => download(buildXlsx(rows), 'ANNUAIRE_documents_fournisseurs.xlsx')}>
-                  \ud83d\udce5 Exporter Excel
+                  &#x1F4E5; Exporter Excel
                 </button>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tapez <strong>x</strong> si pr\u00e9sent, laissez vide sinon. Une annotation est possible.</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tapez <strong>x</strong> si présent, laissez vide sinon.</span>
               </div>
-
               <div className="table-container">
                 <table>
                   <thead>
                     <tr>
                       <th style={{ minWidth: 180 }}>Fournisseur</th>
                       {DOC_LABELS.map(l => (
-                        <th key={l} className="td-center" style={{ fontSize: 10, padding: '6px 3px', minWidth: 60 }}>{l}</th>
+                        <th key={l} className="td-center" style={{ fontSize: 10, padding: '6px 3px', minWidth: 58 }}>{l}</th>
                       ))}
                     </tr>
                   </thead>
@@ -365,12 +361,11 @@ export default function AnalyseUnicancer() {
                 </table>
               </div>
 
-              {/* R\u00e9cap manquants */}
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>R\u00e9capitulatif \u2014 documents manquants par fournisseur</div>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Récapitulatif — documents manquants par fournisseur</div>
                 <div className="table-container">
                   <table>
-                    <thead><tr><th>Fournisseur</th><th className="td-center">Re\u00e7us</th><th>Manquants</th></tr></thead>
+                    <thead><tr><th>Fournisseur</th><th className="td-center">Reçus</th><th>Manquants</th></tr></thead>
                     <tbody>
                       {rows.map((row, ri) => {
                         const present = DOC_LABELS.filter(l => row[l]?.trim());
@@ -383,7 +378,7 @@ export default function AnalyseUnicancer() {
                                 {present.length}/{DOC_LABELS.length}
                               </span>
                             </td>
-                            <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{manquants.join(', ') || '\u2014'}</td>
+                            <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{manquants.join(', ') || '—'}</td>
                           </tr>
                         );
                       })}
@@ -394,27 +389,27 @@ export default function AnalyseUnicancer() {
             </>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">\ud83d\udcc1</div>
-              <div className="empty-title">Aucune donn\u00e9e</div>
-              <div className="empty-sub">S\u00e9lectionnez le dossier R\u00e9ponses et cliquez sur Analyser.</div>
+              <div className="empty-icon">&#x1F4C1;</div>
+              <div className="empty-title">Aucune donnée</div>
+              <div className="empty-sub">Sélectionnez le dossier Réponses et cliquez sur Analyser.</div>
             </div>
           )}
         </div>
       )}
 
-      {/* ══ Onglet 1 : Compilation QT ══ */}
+      {/* Onglet 1 : Compilation QT */}
       {tab === 1 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">\ud83d\udcc4 Fichier DCE template (Annexe 1 CCTP)</span></div>
+            <div className="card-header"><span className="card-title">&#x1F4C4; Fichier DCE template (Annexe 1 CCTP)</span></div>
             <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <button className="btn btn-outline" onClick={pickDce} disabled={!supportsApi}>\ud83d\udcc2 S\u00e9lectionner le fichier DCE\u2026</button>
+              <button className="btn btn-outline" onClick={pickDce} disabled={!supportsApi}>&#x1F4C2; Sélectionner le fichier DCE…</button>
               {dceName && <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{dceName}</code>}
             </div>
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">\u2699\ufe0f Lots \u00e0 compiler</span></div>
+            <div className="card-header"><span className="card-title">&#x2699;&#xFE0F; Lots à compiler</span></div>
             <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
               {[1, 2, 3].map(lot => (
                 <label key={lot} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
@@ -432,27 +427,30 @@ export default function AnalyseUnicancer() {
                 onClick={compileQT}
                 disabled={compilingQt || !reponsesDir || !dceHandle || !lotsSelected.length}
               >
-                {compilingQt ? '\u23f3 Compilation\u2026' : '\u2699\ufe0f Compiler les QT'}
+                {compilingQt ? 'Compilation…' : '&#x2699;&#xFE0F; Compiler les QT'}
               </button>
               {Object.keys(qtData).length > 0 && (
                 <button className="btn btn-outline" onClick={() => download(buildQTXlsx(qtData), 'Compilation_QT_recrutement.xlsx')}>
-                  \ud83d\udce5 Exporter Excel
+                  &#x1F4E5; Exporter Excel
                 </button>
               )}
             </div>
           </div>
 
-          {Object.keys(qtData).length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px,1fr))', gap: 12 }}>
+          {Object.keys(qtData).length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
               {Object.entries(qtData).map(([lot, { questions, supStatus }]) => (
                 <div key={lot} className="card">
-                  <div className="card-header"><span className="card-title">LOT {lot}</span><span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{questions.length} questions</span></div>
+                  <div className="card-header">
+                    <span className="card-title">LOT {lot}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{questions.length} questions</span>
+                  </div>
                   <div className="card-body">
                     {Object.entries(supStatus).map(([sup, status]) => (
                       <div key={sup} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontWeight: 500 }}>{sup}</span>
                         <span style={{ color: status === 'ok' ? '#15803d' : status === 'absent' ? '#dc2626' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600 }}>
-                          {status === 'ok' ? '\u2705 Complet' : status === 'absent' ? '\u274c Absent' : status === 'partial' ? '\u26a0\ufe0f Partiel' : '\u26d4 Vide'}
+                          {status === 'ok' ? 'Complet' : status === 'absent' ? 'Absent' : status === 'partial' ? 'Partiel' : 'Vide'}
                         </span>
                       </div>
                     ))}
@@ -460,19 +458,17 @@ export default function AnalyseUnicancer() {
                 </div>
               ))}
             </div>
-          )}
-
-          {!Object.keys(qtData).length && (
+          ) : (
             <div className="empty-state">
-              <div className="empty-icon">\ud83d\udccb</div>
+              <div className="empty-icon">&#x1F4CB;</div>
               <div className="empty-title">Aucune compilation</div>
-              <div className="empty-sub">S\u00e9lectionnez le dossier R\u00e9ponses, le fichier DCE, puis lancez la compilation.</div>
+              <div className="empty-sub">Sélectionnez le dossier Réponses, le fichier DCE, puis compilez.</div>
             </div>
           )}
         </div>
       )}
 
-      {/* ══ Onglet 2 : D\u00e9tail QT ══ */}
+      {/* Onglet 2 : Détail QT */}
       {tab === 2 && (
         <div className="fade-in">
           {Object.keys(qtData).length > 0 ? (
@@ -495,7 +491,7 @@ export default function AnalyseUnicancer() {
                         </td>
                         <td className="td-center">
                           <span style={{ color: status === 'ok' ? '#15803d' : status === 'absent' ? '#dc2626' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600, fontSize: 12 }}>
-                            {status === 'ok' ? '\u2705 Complet' : status === 'absent' ? '\u274c Absent' : status === 'partial' ? '\u26a0\ufe0f Partiel' : '\u26d4 Vide'}
+                            {status === 'ok' ? 'Complet' : status === 'absent' ? 'Absent' : status === 'partial' ? 'Partiel' : 'Vide'}
                           </span>
                         </td>
                       </tr>
@@ -506,9 +502,9 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">\ud83d\udd0d</div>
-              <div className="empty-title">Aucune donn\u00e9e QT</div>
-              <div className="empty-sub">Lancez d\u2019abord la compilation QT.</div>
+              <div className="empty-icon">&#x1F50D;</div>
+              <div className="empty-title">Aucune donnée QT</div>
+              <div className="empty-sub">Lancez d&apos;abord la compilation QT.</div>
             </div>
           )}
         </div>
