@@ -291,7 +291,31 @@ function buildQTXlsx(qtData) {
   for (const [lot, { compiled }] of Object.entries(qtData)) {
     if (!compiled?.length) continue;
     const nSup = compiled[0].length - 1;
-    const ws = styledSheet(compiled, [52, ...Array(nSup).fill(40)], { rowHeight: 36, freezeCol: true });
+
+    // Intercale une colonne "Note" vide après chaque fournisseur
+    const compiledWithNotes = compiled.map((row, ri) =>
+      [row[0], ...Array.from({ length: nSup }, (_, si) => [
+        row[si + 1] ?? '',
+        ri === 0 ? 'Note' : '',
+      ]).flat()]
+    );
+
+    const colWidths = [52, ...Array(nSup).flatMap(() => [40, 18])];
+    const ws = styledSheet(compiledWithNotes, colWidths, { rowHeight: 36, freezeCol: true });
+
+    // Re-style les cellules d'en-tête "Note" (gris clair)
+    const noteStyle = {
+      fill: { patternType: 'solid', fgColor: { rgb: '4A6B8A' } },
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10, name: 'Calibri', italic: true },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: { bottom: { style: 'medium', color: { rgb: 'E87722' } }, top: { style: 'thin', color: { rgb: '1B3A5C' } }, left: { style: 'thin', color: { rgb: '1B3A5C' } }, right: { style: 'thin', color: { rgb: '1B3A5C' } } },
+    };
+    for (let si = 0; si < nSup; si++) {
+      const noteCol = 1 + si * 2 + 1; // col index of "Note" header
+      const ref = XLSX.utils.encode_cell({ r: 0, c: noteCol });
+      if (ws[ref]) ws[ref].s = noteStyle;
+    }
+
     XLSX.utils.book_append_sheet(wb, ws, `QT LOT ${lot}`);
   }
 
