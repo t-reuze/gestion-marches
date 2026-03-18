@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import XLSX from 'xlsx-js-style';
+import JSZip from 'jszip';
 import Layout from '../components/Layout';
 
 const DOC_LABELS = [
@@ -9,7 +10,7 @@ const DOC_LABELS = [
   'CCTP signé', 'DC1', 'DC2', 'ATTRI1', 'Fiche Contacts',
 ];
 
-// --- Détection helpers ---
+// ─── Helpers fichiers ──────────────────────────────────────────────────────────
 
 function lotFromFilename(name) {
   const n = name.toLowerCase();
@@ -31,11 +32,8 @@ async function getAllFiles(dirHandle, path = '') {
   for await (const [name, handle] of dirHandle.entries()) {
     if (name.startsWith('~') || name.startsWith('.')) continue;
     const fullPath = path ? path + '/' + name : name;
-    if (handle.kind === 'file') {
-      files.push({ name, path: fullPath, handle });
-    } else {
-      files.push(...await getAllFiles(handle, fullPath));
-    }
+    if (handle.kind === 'file') files.push({ name, path: fullPath, handle });
+    else files.push(...await getAllFiles(handle, fullPath));
   }
   return files;
 }
@@ -43,30 +41,103 @@ async function getAllFiles(dirHandle, path = '') {
 async function getSubdirs(dirHandle) {
   const dirs = [];
   for await (const [name, handle] of dirHandle.entries()) {
-    if (handle.kind === 'directory' && !name.startsWith('.')) {
-      dirs.push({ name, handle });
-    }
+    if (handle.kind === 'directory' && !name.startsWith('.')) dirs.push({ name, handle });
   }
   return dirs.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-// Trouve le sous-dossier "Reponses" (insensible à la casse) dans un répertoire
 async function findReponsesDir(rootHandle) {
   for await (const [name, handle] of rootHandle.entries()) {
-    if (handle.kind === 'directory' && name.toLowerCase() === 'reponses') {
-      return { handle, name };
-    }
+    if (handle.kind === 'directory' && name.toLowerCase() === 'reponses') return { handle, name };
   }
   return null;
 }
 
+async function readXlsxHandle(fileHandle) {
+  const file = await fileHandle.getFile();
+  const buf = await file.arrayBuffer();
+  return XLSX.read(buf, { type: 'array' });
+}
+
+async function findQTFile(dirHandle, lot) {
+  const EXCL = ['annexe 3', 'annexe_3', 'annexe 5', 'annexe_5', 'bpu', 'attri', 'chiffrage', 'rse', 'dc1', 'dc2', 'attri1'];
+  const files = await getAllFiles(dirHandle);
+  const xlsx = files.filter(f => /\.(xls|xlsx)$/i.test(f.name) && !EXCL.some(e => f.path.toLowerCase().includes(e)));
+
+  const withLotQt = xlsx.filter(f => {
+    const n = f.path.toLowerCase();
+    const hasLot = n.includes(`lot_${lot}`) || n.includes(`lot ${lot}`) || n.includes(`lot${lot}`);
+    const isQt = n.includes('qt') || (n.includes('annexe') && n.includes('1'));
+    return hasLot && isQt;
+  });
+  if (withLotQt.length) return { ...withLotQt[0], lotSheet: null };
+
+  const annexe1 = xlsx.filter(f => {
+    const n = f.path.toLowerCase();
+    return (n.includes('annexe') && (n.includes('1') || n.includes('cctp'))) || n.includes('qt');
+  });
+  if (annexe1.length) return { ...annexe1[0], lotSheet: lot };
+
+  return null;
+}
+
+function findLotSheet(wb, lot) {
+  const match = wb.SheetNames.find(s => {
+    const n = s.toLowerCase();
+    return n.includes(`lot ${lot}`) || n.includes(`lot_${lot}`) || n.includes(`lot${lot}`);
+  });
+  return match || wb.SheetNames[0];
+}
+
+// Trouve la colonne réponse : cherche "réponse"/"candidat" dans les en-têtes, sinon col C
+function findAnswerCol(data) {
+  for (let ri = 0; ri < Math.min(8, data.length); ri++) {
+    const row = data[ri];
+    for (let ci = 1; ci < row.length; ci++) {
+      const cell = String(row[ci] || '').toLowerCase();
+      if (cell.includes('réponse') || cell.includes('reponse') || cell.includes('candidat')) return ci;
+    }
+  }
+  return 2;
+}
+
+// Lit et nettoie un fichier QT — retourne [{ q, a }]
+function parseQTSheet(raw, ansCol) {
+  const HEADER_VALS = new Set([
+    'réponse candidat', 'réponse fournisseur', 'reponse candidat', 'reponse fournisseur',
+    'réponse du candidat', 'réponses', 'réponse',
+  ]);
+  const SKIP_ANS = new Set([
+    'réponse candidat', 'réponse fournisseur', 'reponse candidat', 'reponse fournisseur',
+    'à compléter', 'a completer', 'n/a', '-',
+  ]);
+
+  const rows = raw.filter(r => {
+    const q = String(r[0] || '').trim();
+    if (!q) return false;
+    // Ignorer la ligne d'en-tête (colonne réponse contient un label d'en-tête)
+    const ans = String(r[ansCol] || '').trim().toLowerCase();
+    if (HEADER_VALS.has(ans)) return false;
+    // Ignorer aussi si col B = "Détail"/"Detail" et col réponse contient "réponse"
+    const colB = String(r[1] || '').trim().toLowerCase();
+    if ((colB === 'détail' || colB === 'detail') && ans.startsWith('réponse')) return false;
+    return true;
+  });
+
+  return rows.map(r => {
+    const raw_a = String(r[ansCol] || '').trim();
+    const a = SKIP_ANS.has(raw_a.toLowerCase()) ? '' : raw_a;
+    return { q: String(r[0]).trim(), a };
+  });
+}
+
+// ─── Détection fournisseur (annuaire) ─────────────────────────────────────────
+
 async function detectSupplier(dirHandle) {
   const files = await getAllFiles(dirHandle);
-
   const bpuFiles = files.filter(f => {
     const n = f.path.toLowerCase();
-    return isOffice(f.name)
-      && !n.includes('annexe 3') && !n.includes('chiffrage')
+    return isOffice(f.name) && !n.includes('annexe 3') && !n.includes('chiffrage')
       && (n.includes('annexe 5') || n.includes('bpu') || n.includes('bordereau de prix'));
   });
   const hasBpu = bpuFiles.length > 0;
@@ -75,9 +146,8 @@ async function detectSupplier(dirHandle) {
     lotFromFilename(f.path).forEach(l => { if ([1,2,3].includes(l)) lots[l] = true; });
     if (f.path.toLowerCase().includes('optim')) lots.optim = true;
   });
-  if (hasBpu && !lots[1] && !lots[2] && !lots[3]) {
+  if (hasBpu && !lots[1] && !lots[2] && !lots[3])
     files.forEach(f => lotFromFilename(f.path).forEach(l => { if ([1,2,3].includes(l)) lots[l] = true; }));
-  }
 
   const a3 = files.filter(f => isOffice(f.name) && (f.path.toLowerCase().includes('annexe 3') || f.path.toLowerCase().includes('chiffrage')));
   const lotsA3 = new Set();
@@ -96,86 +166,15 @@ async function detectSupplier(dirHandle) {
   const contacts = fn.some(n => n.includes('contact') || n.includes('annexe 4'));
 
   return {
-    'Lot 1 MAD Personnel': val(lots[1]),
-    'Lot 2 Recrutement': val(lots[2]),
-    'Lot 3 Freelance': val(lots[3]),
-    'BPU (Annexe 5)': val(hasBpu),
-    'Optim. Tarifaire': val(lots.optim),
-    'QT (Annexe 1)': val(qt),
-    'BPU Chiffrage (Annexe 3)': val(chiffrage),
-    'Questionnaire RSE': val(rse),
-    'CCAP signé': val(ccap),
-    'CCTP signé': val(cctp),
-    'DC1': val(dc1),
-    'DC2': val(dc2),
-    'ATTRI1': val(attri),
-    'Fiche Contacts': val(contacts),
+    'Lot 1 MAD Personnel': val(lots[1]), 'Lot 2 Recrutement': val(lots[2]), 'Lot 3 Freelance': val(lots[3]),
+    'BPU (Annexe 5)': val(hasBpu), 'Optim. Tarifaire': val(lots.optim), 'QT (Annexe 1)': val(qt),
+    'BPU Chiffrage (Annexe 3)': val(chiffrage), 'Questionnaire RSE': val(rse),
+    'CCAP signé': val(ccap), 'CCTP signé': val(cctp), 'DC1': val(dc1), 'DC2': val(dc2),
+    'ATTRI1': val(attri), 'Fiche Contacts': val(contacts),
   };
 }
 
-async function readXlsxHandle(fileHandle) {
-  const file = await fileHandle.getFile();
-  const buf = await file.arrayBuffer();
-  return XLSX.read(buf, { type: 'array' });
-}
-
-async function findQTFile(dirHandle, lot) {
-  const EXCL = ['annexe 3', 'annexe_3', 'annexe 5', 'annexe_5', 'bpu', 'attri', 'chiffrage', 'rse', 'dc1', 'dc2', 'attri1'];
-  const files = await getAllFiles(dirHandle);
-  const xlsx = files.filter(f => /\.(xls|xlsx)$/i.test(f.name) && !EXCL.some(e => f.path.toLowerCase().includes(e)));
-
-  // 1. Fichier avec numéro de lot + mention QT/Annexe 1
-  const withLotQt = xlsx.filter(f => {
-    const n = f.path.toLowerCase();
-    const hasLot = n.includes(`lot_${lot}`) || n.includes(`lot ${lot}`) || n.includes(`lot${lot}`);
-    const isQt = n.includes('qt') || (n.includes('annexe') && n.includes('1'));
-    return hasLot && isQt;
-  });
-  if (withLotQt.length) return { ...withLotQt[0], lotSheet: null };
-
-  // 2. Fichier Annexe 1 / CCTP / QT sans numéro de lot (fichier unique multi-lots)
-  const annexe1 = xlsx.filter(f => {
-    const n = f.path.toLowerCase();
-    return (n.includes('annexe') && (n.includes('1') || n.includes('cctp'))) || n.includes('qt');
-  });
-  if (annexe1.length) return { ...annexe1[0], lotSheet: lot };
-
-  return null;
-}
-
-// Trouve la feuille "QT LOT X" dans un classeur
-function findLotSheet(wb, lot) {
-  const match = wb.SheetNames.find(s => {
-    const n = s.toLowerCase();
-    return n.includes(`lot ${lot}`) || n.includes(`lot_${lot}`) || n.includes(`lot${lot}`);
-  });
-  return match || wb.SheetNames[0];
-}
-
-// Trouve la colonne réponse en cherchant "réponse"/"candidat" dans les en-têtes, sinon col C (index 2)
-function findAnswerCol(data) {
-  for (let ri = 0; ri < Math.min(8, data.length); ri++) {
-    const row = data[ri];
-    for (let ci = 1; ci < row.length; ci++) {
-      const cell = String(row[ci] || '').toLowerCase();
-      if (cell.includes('r\u00e9ponse') || cell.includes('reponse') || cell.includes('candidat')) {
-        return ci;
-      }
-    }
-  }
-  return 2; // Col C par défaut (structure standard des QT Unicancer)
-}
-
-function buildXlsx(rows) {
-  const ws = XLSX.utils.aoa_to_sheet([
-    ['Nom fournisseur', ...DOC_LABELS],
-    ...rows.map(r => [r['Nom fournisseur'], ...DOC_LABELS.map(l => r[l] || '')]),
-  ]);
-  ws['!cols'] = [{ wch: 36 }, ...DOC_LABELS.map(() => ({ wch: 12 }))];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'ANNUAIRE');
-  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
-}
+// ─── Styles Excel ─────────────────────────────────────────────────────────────
 
 const ST = {
   header: (ci) => ({
@@ -196,12 +195,6 @@ const ST = {
     alignment: { horizontal: 'left', vertical: 'top', wrapText: true },
     border: { top: { style: 'thin', color: { rgb: 'CCDDEE' } }, bottom: { style: 'thin', color: { rgb: 'CCDDEE' } }, left: { style: 'thin', color: { rgb: 'CCDDEE' } }, right: { style: 'thin', color: { rgb: 'CCDDEE' } } },
   }),
-  summaryHeader: {
-    fill: { patternType: 'solid', fgColor: { rgb: '1B3A5C' } },
-    font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' },
-    alignment: { horizontal: 'center', vertical: 'center' },
-    border: { bottom: { style: 'medium', color: { rgb: 'E87722' } } },
-  },
   ok:      { fill: { patternType: 'solid', fgColor: { rgb: 'DCFCE7' } }, font: { bold: true, color: { rgb: '15803D' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
   partial: { fill: { patternType: 'solid', fgColor: { rgb: 'FEF9C3' } }, font: { bold: true, color: { rgb: '92400E' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
   empty:   { fill: { patternType: 'solid', fgColor: { rgb: 'FEF2F2' } }, font: { bold: true, color: { rgb: 'BE185D' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
@@ -226,19 +219,29 @@ function styledSheet(aoa, colWidths, { rowHeight = 40, freezeCol = false } = {})
   ws['!ref'] = range;
   ws['!cols'] = colWidths.map(wch => ({ wch }));
   ws['!rows'] = [{ hpt: rowHeight }];
-  // Autofiltre sur la ligne d'en-tête
   ws['!autofilter'] = { ref: range };
-  // Volet figé : ligne 1 + col A si demandé
   ws['!freeze'] = freezeCol
     ? { xSplit: 1, ySplit: 1, topLeftCell: 'B2' }
     : { xSplit: 0, ySplit: 1, topLeftCell: 'A2' };
   return ws;
 }
 
+// ─── Exports Excel ────────────────────────────────────────────────────────────
+
+function buildXlsx(rows) {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['Nom fournisseur', ...DOC_LABELS],
+    ...rows.map(r => [r['Nom fournisseur'], ...DOC_LABELS.map(l => r[l] || '')]),
+  ]);
+  ws['!cols'] = [{ wch: 36 }, ...DOC_LABELS.map(() => ({ wch: 12 }))];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ANNUAIRE');
+  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+}
+
 function buildQTXlsx(qtData) {
   const wb = XLSX.utils.book_new();
 
-  // --- Feuille Récapitulatif ---
   const recapAoa = [['Lot', 'Fournisseur', 'Statut', 'Questions répondues']];
   for (const [lot, { supStatus, questions }] of Object.entries(qtData)) {
     for (const [sup, status] of Object.entries(supStatus)) {
@@ -249,17 +252,14 @@ function buildQTXlsx(qtData) {
     }
   }
   const recapWs = styledSheet(recapAoa, [12, 42, 16, 20], { rowHeight: 28 });
-  // Colorer la colonne Statut selon valeur
   recapAoa.forEach((row, ri) => {
     if (ri === 0) return;
     const ref = XLSX.utils.encode_cell({ r: ri, c: 2 });
-    const status = row[2];
-    const sty = status.includes('Complet') ? ST.ok : status.includes('Partiel') ? ST.partial : ST.empty;
-    recapWs[ref] = { v: row[2], t: 's', s: sty };
+    const s = row[2];
+    recapWs[ref] = { v: s, t: 's', s: s.includes('Complet') ? ST.ok : s.includes('Partiel') ? ST.partial : ST.empty };
   });
   XLSX.utils.book_append_sheet(wb, recapWs, 'Récapitulatif');
 
-  // --- Feuilles QT par lot ---
   for (const [lot, { compiled }] of Object.entries(qtData)) {
     if (!compiled?.length) continue;
     const nSup = compiled[0].length - 1;
@@ -270,17 +270,60 @@ function buildQTXlsx(qtData) {
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
 }
 
-function download(data, filename) {
-  const url = URL.createObjectURL(new Blob([data], { type: 'application/octet-stream' }));
+// Template vierge : questions pré-remplies, col C vide
+function buildTemplateXlsx(qtData) {
+  const wb = XLSX.utils.book_new();
+  for (const [lot, { questions }] of Object.entries(qtData)) {
+    const aoa = [
+      ['Question', 'Détail', 'Réponse candidat'],
+      ...questions.map(q => [q, '', '']),
+    ];
+    const ws = styledSheet(aoa, [55, 25, 55], { rowHeight: 36, freezeCol: false });
+    XLSX.utils.book_append_sheet(wb, ws, `QT LOT ${lot}`);
+  }
+  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+}
+
+// ZIP des fichiers standardisés par fournisseur (un xlsx par fournisseur, une feuille par lot)
+async function buildStandardizedZip(qtData) {
+  const zip = new JSZip();
+
+  // Collecter tous les fournisseurs positionnés
+  const allSups = new Set();
+  for (const { supData } of Object.values(qtData)) {
+    if (supData) Object.keys(supData).filter(s => supData[s]?.some(r => r.a)).forEach(s => allSups.add(s));
+  }
+
+  for (const sup of allSups) {
+    const wb = XLSX.utils.book_new();
+    for (const [lot, { questions, supData }] of Object.entries(qtData)) {
+      const rows = supData?.[sup];
+      if (!rows?.some(r => r.a)) continue;
+      const aoa = [
+        ['Question', 'Détail', 'Réponse candidat'],
+        ...questions.map((q, qi) => [q, '', rows[qi]?.a || rows.find(r => r.q === q)?.a || '']),
+      ];
+      const ws = styledSheet(aoa, [55, 25, 55], { rowHeight: 36, freezeCol: false });
+      XLSX.utils.book_append_sheet(wb, ws, `QT LOT ${lot}`);
+    }
+    if (!wb.SheetNames.length) continue;
+    const data = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    zip.file(`${sup}_QT_standardise.xlsx`, data);
+  }
+
+  return zip.generateAsync({ type: 'uint8array' });
+}
+
+function download(data, filename, type = 'application/octet-stream') {
+  const url = URL.createObjectURL(new Blob([data], { type }));
   Object.assign(document.createElement('a'), { href: url, download: filename }).click();
   URL.revokeObjectURL(url);
 }
 
-// --- Composant principal ---
+// ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function AnalyseUnicancer() {
   const [tab, setTab] = useState(0);
-  const [rootDirName, setRootDirName] = useState('');
   const [reponsesDirHandle, setReponsesDirHandle] = useState(null);
   const [reponsesDirPath, setReponsesDirPath] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -291,22 +334,18 @@ export default function AnalyseUnicancer() {
   const [compilingQt, setCompilingQt] = useState(false);
   const [qtData, setQtData] = useState({});
   const [dirWarning, setDirWarning] = useState('');
+  const [generatingZip, setGeneratingZip] = useState(false);
 
   const supportsApi = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
   async function pickDir() {
     try {
       const root = await window.showDirectoryPicker();
-      setRootDirName(root.name);
-      setAnnuaire([]);
-      setEdits({});
-      setDirWarning('');
-
+      setAnnuaire([]); setEdits({}); setDirWarning('');
       const found = await findReponsesDir(root);
       if (found) {
         setReponsesDirHandle(found.handle);
         setReponsesDirPath(`${root.name} / ${found.name}`);
-        setDirWarning('');
       } else {
         setReponsesDirHandle(root);
         setReponsesDirPath(root.name);
@@ -317,31 +356,22 @@ export default function AnalyseUnicancer() {
 
   async function scan() {
     if (!reponsesDirHandle) return;
-    setScanning(true);
-    setAnnuaire([]);
-    setEdits({});
+    setScanning(true); setAnnuaire([]); setEdits({});
     try {
       const subdirs = await getSubdirs(reponsesDirHandle);
       const rows = [];
       for (let i = 0; i < subdirs.length; i++) {
         const { name, handle } = subdirs[i];
         setScanProgress(`${i + 1}/${subdirs.length} — ${name}`);
-        const docs = await detectSupplier(handle);
-        rows.push({ 'Nom fournisseur': name, ...docs });
+        rows.push({ 'Nom fournisseur': name, ...await detectSupplier(handle) });
       }
       setAnnuaire(rows);
     } catch (e) { console.error(e); }
-    setScanning(false);
-    setScanProgress('');
+    setScanning(false); setScanProgress('');
   }
 
-  function getRows() {
-    return annuaire.map((row, i) => ({ ...row, ...(edits[i] || {}) }));
-  }
-
-  function setCell(ri, col, value) {
-    setEdits(e => ({ ...e, [ri]: { ...(e[ri] || {}), [col]: value } }));
-  }
+  const getRows = () => annuaire.map((row, i) => ({ ...row, ...(edits[i] || {}) }));
+  const setCell = (ri, col, value) => setEdits(e => ({ ...e, [ri]: { ...(e[ri] || {}), [col]: value } }));
 
   async function compileQT() {
     if (!reponsesDirHandle || !lotsSelected.length) return;
@@ -361,54 +391,31 @@ export default function AnalyseUnicancer() {
             const wb = await readXlsxHandle(qtFile.handle);
             const sheetName = qtFile.lotSheet ? findLotSheet(wb, qtFile.lotSheet) : wb.SheetNames[0];
             const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
-
             const ansCol = findAnswerCol(raw);
-
-            // Exclure uniquement la ligne d'en-tête exacte (col B = "Détail" ET col réponse = "Réponse candidat/fournisseur")
-            const rows = raw.filter(r => {
-              const q = String(r[0] || '').trim();
-              if (!q) return false;
-              const colB = String(r[1] || '').trim().toLowerCase();
-              const colAns = String(r[ansCol] || '').trim().toLowerCase();
-              if ((colB === 'détail' || colB === 'detail') &&
-                  (colAns.includes('réponse') || colAns.includes('reponse') || colAns.includes('candidat'))) return false;
-              return true;
-            });
-
-            // Valeurs considérées comme NON-réponses (placeholders exacts)
-            const PLACEHOLDERS = new Set(['réponse candidat', 'réponse fournisseur', 'reponse candidat', 'reponse fournisseur', 'à compléter', 'a completer', 'n/a']);
-            const cleanAns = (v) => {
-              const s = String(v || '').trim();
-              return PLACEHOLDERS.has(s.toLowerCase()) ? '' : s;
-            };
-
-            supData[sup] = rows.map(r => ({
-              q: String(r[0]).trim(),
-              a: cleanAns(r[ansCol]),
-            }));
+            supData[sup] = parseQTSheet(raw, ansCol);
           } catch { supData[sup] = null; }
         }
 
-        const refEntry = Object.values(supData).find(d => d && d.length > 0);
+        const refEntry = Object.values(supData).find(d => d?.length > 0);
         if (!refEntry) continue;
         const questions = refEntry.map(d => d.q);
 
-        // Uniquement les fournisseurs avec au moins une réponse non vide
+        // Uniquement fournisseurs avec au moins une vraie réponse
         const allSupNames = subdirs.map(d => d.name.replace(/ ok$/i, '').trim().toUpperCase());
         const supNames = allSupNames.filter(sup => supData[sup]?.some(r => r.a));
 
         const compiled = [['Question', ...supNames]];
-
         questions.forEach((q, qi) => {
           compiled.push([q, ...supNames.map(sup => {
             const rows = supData[sup];
-            if (!rows) return '';
-            return rows[qi]?.a || rows.find(r => r.q === q)?.a || '';
+            return rows?.[qi]?.a || rows?.find(r => r.q === q)?.a || '';
           })]);
         });
 
-        // Questions "réelles" = celles où au moins un fournisseur a répondu (exclut titres de section)
-        const realQIdx = questions.map((_, qi) => supNames.some(sup => supData[sup]?.[qi]?.a) ? qi : -1).filter(i => i >= 0);
+        // Statut basé sur les questions réellement répondues par au moins un fournisseur
+        const realQIdx = questions
+          .map((_, qi) => supNames.some(sup => supData[sup]?.[qi]?.a) ? qi : -1)
+          .filter(i => i >= 0);
         const totalReal = realQIdx.length || questions.length;
 
         const supStatus = {};
@@ -419,26 +426,35 @@ export default function AnalyseUnicancer() {
           supStatus[sup] = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
         });
 
-        result[lot] = { compiled, supStatus, questions };
+        result[lot] = { compiled, supStatus, questions, supData };
       }
       setQtData(result);
     } catch (e) { console.error(e); }
     setCompilingQt(false);
   }
 
+  async function handleDownloadZip() {
+    setGeneratingZip(true);
+    try {
+      const data = await buildStandardizedZip(qtData);
+      download(data, 'QT_standardises.zip', 'application/zip');
+    } catch (e) { console.error(e); }
+    setGeneratingZip(false);
+  }
+
   const rows = getRows();
   const nbF = annuaire.length;
+  const hasQT = Object.keys(qtData).length > 0;
 
   return (
     <Layout title="AO Recrutement Personnel 2026" sub="— Analyse des offres">
 
-      {/* Bandeau */}
       <div style={{ background: 'linear-gradient(135deg,#1B3A5C 0%,#2A5C8A 100%)', borderRadius: 10, padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
         <span style={{ fontSize: 32 }}>📋</span>
         <div>
           <div style={{ color: '#E87722', fontWeight: 700, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Unicancer</div>
           <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>Traçabilité &amp; Compilation — AO Recrutement de Personnel 2026</div>
-          <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, marginTop: 4 }}>Détection automatique des documents fournisseurs · Compilation des QT</div>
+          <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, marginTop: 4 }}>Détection automatique · Compilation QT · Standardisation</div>
         </div>
       </div>
 
@@ -448,18 +464,15 @@ export default function AnalyseUnicancer() {
         </div>
       )}
 
-      {/* Dossier source */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-header"><span className="card-title">📁 Dossier de l&apos;AO</span></div>
         <div className="card-body">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <button className="btn btn-outline" onClick={pickDir} disabled={!supportsApi}>
-              📂 Sélectionner le dossier…
-            </button>
+            <button className="btn btn-outline" onClick={pickDir} disabled={!supportsApi}>📂 Sélectionner le dossier…</button>
             {reponsesDirPath && (
               <>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Dossier fournisseurs détecté :</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Dossier fournisseurs :</div>
                   <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{reponsesDirPath}</code>
                 </div>
                 <button className="btn btn-primary" onClick={scan} disabled={scanning}>
@@ -471,28 +484,23 @@ export default function AnalyseUnicancer() {
               <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✅ {nbF} fournisseur{nbF > 1 ? 's' : ''} détecté{nbF > 1 ? 's' : ''}</span>
             )}
           </div>
-          {dirWarning && (
-            <div style={{ marginTop: 8, fontSize: 12, color: '#d97706' }}>⚠️ {dirWarning}</div>
-          )}
+          {dirWarning && <div style={{ marginTop: 8, fontSize: 12, color: '#d97706' }}>⚠️ {dirWarning}</div>}
         </div>
       </div>
 
-      {/* Onglets */}
       <div className="tabs" style={{ marginBottom: 16 }}>
-        {['📊 Annuaire documents', '📋 Compilation QT', '🔍 Détail QT'].map((t, i) => (
+        {['📊 Annuaire documents', '📋 Compilation QT', '🔍 Détail QT', '🔧 Outils'].map((t, i) => (
           <div key={i} className={'tab' + (tab === i ? ' active' : '')} onClick={() => setTab(i)}>{t}</div>
         ))}
       </div>
 
-      {/* Onglet 0 : Annuaire */}
+      {/* ─── Onglet 0 : Annuaire ─── */}
       {tab === 0 && (
         <div className="fade-in">
           {rows.length > 0 ? (
             <>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-                <button className="btn btn-primary btn-sm" onClick={() => download(buildXlsx(rows), 'ANNUAIRE_documents_fournisseurs.xlsx')}>
-                  📥 Exporter Excel
-                </button>
+                <button className="btn btn-primary btn-sm" onClick={() => download(buildXlsx(rows), 'ANNUAIRE_documents_fournisseurs.xlsx')}>📥 Exporter Excel</button>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tapez <strong>x</strong> si présent, laissez vide sinon.</span>
               </div>
               <div className="table-container">
@@ -500,9 +508,7 @@ export default function AnalyseUnicancer() {
                   <thead>
                     <tr>
                       <th style={{ minWidth: 180 }}>Fournisseur</th>
-                      {DOC_LABELS.map(l => (
-                        <th key={l} className="td-center" style={{ fontSize: 10, padding: '6px 3px', minWidth: 58 }}>{l}</th>
-                      ))}
+                      {DOC_LABELS.map(l => <th key={l} className="td-center" style={{ fontSize: 10, padding: '6px 3px', minWidth: 58 }}>{l}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -514,17 +520,10 @@ export default function AnalyseUnicancer() {
                           const isX = v.toLowerCase() === 'x';
                           return (
                             <td key={col} className="td-center" style={{ padding: '3px 2px' }}>
-                              <input
-                                value={v}
-                                onChange={e => setCell(ri, col, e.target.value)}
-                                style={{
-                                  width: 40, textAlign: 'center', border: '1px solid var(--border)',
-                                  borderRadius: 4, padding: '2px 4px', fontSize: 12,
+                              <input value={v} onChange={e => setCell(ri, col, e.target.value)}
+                                style={{ width: 40, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 4px', fontSize: 12,
                                   background: isX ? '#dcfce7' : v ? '#fef9c3' : '#fef2f2',
-                                  color: isX ? '#15803d' : v ? '#92400e' : '#be185d',
-                                  fontWeight: isX ? 700 : 400,
-                                }}
-                              />
+                                  color: isX ? '#15803d' : v ? '#92400e' : '#be185d', fontWeight: isX ? 700 : 400 }} />
                             </td>
                           );
                         })}
@@ -533,9 +532,8 @@ export default function AnalyseUnicancer() {
                   </tbody>
                 </table>
               </div>
-
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Récapitulatif — documents manquants par fournisseur</div>
+                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Récapitulatif — documents manquants</div>
                 <div className="table-container">
                   <table>
                     <thead><tr><th>Fournisseur</th><th className="td-center">Reçus</th><th>Manquants</th></tr></thead>
@@ -570,7 +568,7 @@ export default function AnalyseUnicancer() {
         </div>
       )}
 
-      {/* Onglet 1 : Compilation QT */}
+      {/* ─── Onglet 1 : Compilation QT ─── */}
       {tab === 1 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
@@ -578,23 +576,16 @@ export default function AnalyseUnicancer() {
             <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
               {[1, 2, 3].map(lot => (
                 <label key={lot} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
-                  <input
-                    type="checkbox"
-                    checked={lotsSelected.includes(lot)}
-                    onChange={e => setLotsSelected(s => e.target.checked ? [...s, lot].sort() : s.filter(l => l !== lot))}
-                  />
+                  <input type="checkbox" checked={lotsSelected.includes(lot)}
+                    onChange={e => setLotsSelected(s => e.target.checked ? [...s, lot].sort() : s.filter(l => l !== lot))} />
                   LOT {lot}
                 </label>
               ))}
-              <button
-                className="btn btn-primary"
-                style={{ marginLeft: 8 }}
-                onClick={compileQT}
-                disabled={compilingQt || !reponsesDirHandle || !lotsSelected.length}
-              >
+              <button className="btn btn-primary" style={{ marginLeft: 8 }} onClick={compileQT}
+                disabled={compilingQt || !reponsesDirHandle || !lotsSelected.length}>
                 {compilingQt ? 'Compilation…' : '⚙️ Compiler les QT'}
               </button>
-              {Object.keys(qtData).length > 0 && (
+              {hasQT && (
                 <button className="btn btn-outline" onClick={() => download(buildQTXlsx(qtData), 'Compilation_QT_recrutement.xlsx')}>
                   📥 Exporter Excel
                 </button>
@@ -602,7 +593,7 @@ export default function AnalyseUnicancer() {
             </div>
           </div>
 
-          {Object.keys(qtData).length > 0 ? (
+          {hasQT ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
               {Object.entries(qtData).map(([lot, { questions, supStatus }]) => (
                 <div key={lot} className="card">
@@ -614,8 +605,8 @@ export default function AnalyseUnicancer() {
                     {Object.entries(supStatus).map(([sup, status]) => (
                       <div key={sup} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontWeight: 500 }}>{sup}</span>
-                        <span style={{ color: status === 'ok' ? '#15803d' : status === 'absent' ? '#dc2626' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600 }}>
-                          {status === 'ok' ? '✅ Complet' : status === 'absent' ? '❌ Absent' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
+                        <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600 }}>
+                          {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
                         </span>
                       </div>
                     ))}
@@ -633,30 +624,24 @@ export default function AnalyseUnicancer() {
         </div>
       )}
 
-      {/* Onglet 2 : Détail QT */}
+      {/* ─── Onglet 2 : Détail QT ─── */}
       {tab === 2 && (
         <div className="fade-in">
-          {Object.keys(qtData).length > 0 ? (
+          {hasQT ? (
             <div className="table-container">
               <table>
                 <thead>
-                  <tr>
-                    <th>Fournisseur</th>
-                    <th className="td-center">Lot</th>
-                    <th className="td-center">Statut</th>
-                  </tr>
+                  <tr><th>Fournisseur</th><th className="td-center">Lot</th><th className="td-center">Statut</th></tr>
                 </thead>
                 <tbody>
                   {Object.entries(qtData).flatMap(([lot, { supStatus }]) =>
                     Object.entries(supStatus).map(([sup, status]) => (
                       <tr key={lot + sup}>
                         <td style={{ fontWeight: 600, fontSize: 12 }}>{sup}</td>
+                        <td className="td-center"><span className="score-chip" style={{ background: '#e0e7ff', color: '#3730a3' }}>LOT {lot}</span></td>
                         <td className="td-center">
-                          <span className="score-chip" style={{ background: '#e0e7ff', color: '#3730a3' }}>LOT {lot}</span>
-                        </td>
-                        <td className="td-center">
-                          <span style={{ color: status === 'ok' ? '#15803d' : status === 'absent' ? '#dc2626' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600, fontSize: 12 }}>
-                            {status === 'ok' ? '✅ Complet' : status === 'absent' ? '❌ Absent' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
+                          <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600, fontSize: 12 }}>
+                            {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
                           </span>
                         </td>
                       </tr>
@@ -672,6 +657,74 @@ export default function AnalyseUnicancer() {
               <div className="empty-sub">Lancez d&apos;abord la compilation QT.</div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ─── Onglet 3 : Outils ─── */}
+      {tab === 3 && (
+        <div className="fade-in">
+          {/* Format standard */}
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-header"><span className="card-title">📐 Format standard attendu</span></div>
+            <div className="card-body" style={{ fontSize: 13 }}>
+              <p style={{ marginBottom: 8 }}>Pour que la compilation fonctionne de façon fiable, les fichiers Annexe 1 QT doivent respecter ce format :</p>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: '#1B3A5C', color: '#fff' }}>
+                    <th style={{ padding: '6px 10px', border: '1px solid #ddd' }}>Col A — Question</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #ddd' }}>Col B — Détail</th>
+                    <th style={{ padding: '6px 10px', border: '1px solid #ddd', background: '#E87722' }}>Col C — Réponse candidat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ background: '#EBF3FF' }}>
+                    <td style={{ padding: '5px 10px', border: '1px solid #ddd' }}>Présentation de la société</td>
+                    <td style={{ padding: '5px 10px', border: '1px solid #ddd', color: '#888' }}>info</td>
+                    <td style={{ padding: '5px 10px', border: '1px solid #ddd', fontStyle: 'italic', color: '#15803d' }}>← réponse du fournisseur ici</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '5px 10px', border: '1px solid #ddd' }}>Description du portefeuille client…</td>
+                    <td style={{ padding: '5px 10px', border: '1px solid #ddd' }}></td>
+                    <td style={{ padding: '5px 10px', border: '1px solid #ddd', fontStyle: 'italic', color: '#15803d' }}>← réponse du fournisseur ici</td>
+                  </tr>
+                </tbody>
+              </table>
+              <ul style={{ marginTop: 12, paddingLeft: 20, lineHeight: 1.8 }}>
+                <li>Feuilles nommées <strong>QT LOT 1</strong>, <strong>QT LOT 2</strong>, <strong>QT LOT 3</strong></li>
+                <li>1ère ligne avec en-têtes : <code>Question</code> | <code>Détail</code> | <code>Réponse candidat</code></li>
+                <li><strong>Col C = réponse du fournisseur</strong> — toujours</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Template vierge */}
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card-header"><span className="card-title">📄 Template vierge à envoyer aux fournisseurs</span></div>
+            <div className="card-body">
+              <p style={{ fontSize: 13, marginBottom: 12 }}>
+                Génère un fichier Excel standardisé avec les questions pré-remplies et la colonne <strong>Réponse candidat</strong> vide — à envoyer à chaque fournisseur.
+              </p>
+              <button className="btn btn-primary" onClick={() => download(buildTemplateXlsx(qtData), 'Template_QT_vierge.xlsx')} disabled={!hasQT}>
+                📥 Télécharger le template vierge
+              </button>
+              {!hasQT && <span style={{ marginLeft: 12, fontSize: 12, color: 'var(--text-muted)' }}>Compilez d&apos;abord les QT pour générer le template.</span>}
+            </div>
+          </div>
+
+          {/* Standardisation */}
+          <div className="card">
+            <div className="card-header"><span className="card-title">🔄 Standardiser les fichiers existants</span></div>
+            <div className="card-body">
+              <p style={{ fontSize: 13, marginBottom: 12 }}>
+                Reformat les fichiers QT de tous les fournisseurs positionnés dans le format standard (col C = réponse).
+                Génère un <strong>.zip</strong> avec un fichier Excel par fournisseur.
+              </p>
+              <button className="btn btn-primary" onClick={handleDownloadZip} disabled={!hasQT || generatingZip}>
+                {generatingZip ? '⏳ Génération…' : '📦 Télécharger les QT standardisés (.zip)'}
+              </button>
+              {!hasQT && <span style={{ marginLeft: 12, fontSize: 12, color: 'var(--text-muted)' }}>Compilez d&apos;abord les QT.</span>}
+            </div>
+          </div>
         </div>
       )}
 
