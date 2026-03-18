@@ -60,17 +60,13 @@ async function findReponsesDir(rootHandle) {
   return null;
 }
 
-// Trouve l'Annexe 1 CCTP (template QT) dans le sous-dossier DCE
-async function findDceTemplate(rootHandle) {
-  for await (const [name, handle] of rootHandle.entries()) {
-    if (handle.kind === 'directory' && name.toLowerCase() === 'dce') {
-      for await (const [fname, fhandle] of handle.entries()) {
-        if (fhandle.kind !== 'file') continue;
-        const n = fname.toLowerCase();
-        if (/\.(xls|xlsx)$/i.test(fname) && n.includes('annexe') && n.includes('1') && n.includes('cctp')) {
-          return { handle: fhandle, name: fname };
-        }
-      }
+// Trouve l'Annexe 1 CCTP (template QT) directement dans le dossier Réponses
+async function findDceTemplate(reponsesDirHandle) {
+  for await (const [fname, fhandle] of reponsesDirHandle.entries()) {
+    if (fhandle.kind !== 'file') continue;
+    const n = fname.toLowerCase();
+    if (/\.(xls|xlsx)$/i.test(fname) && n.includes('annexe') && n.includes('1') && n.includes('cctp')) {
+      return { handle: fhandle, name: fname };
     }
   }
   return null;
@@ -217,8 +213,8 @@ export default function AnalyseUnicancer() {
         setDirWarning('Sous-dossier "Reponses" non trouvé — scan depuis la racine.');
       }
 
-      // Cherche automatiquement l'Annexe 1 CCTP dans le sous-dossier DCE
-      const dce = await findDceTemplate(root);
+      // Cherche automatiquement l'Annexe 1 CCTP dans le dossier Réponses
+      const dce = await findDceTemplate(found ? found.handle : root);
       if (dce) {
         setDceHandle(dce.handle);
         setDceName(dce.name);
