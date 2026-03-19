@@ -51,18 +51,28 @@ export default function Dashboard() {
   });
 
   return (
-    <Layout title="Tableau de bord" sub="— Vue d’ensemble des marchés en cours">
+    <Layout title="Tableau de bord" sub="Vue d'ensemble des marchés">
       <div className="kpi-grid">
-        <KpiCard label="Total marchés"    value={total}     color="#1A4FA8" icon="&#x1F4CB;" sub={actifs + ' actif' + (actifs > 1 ? 's' : '')} />
-        <KpiCard label="Offres reçues"    value={offres}    color="#10B981" icon="&#x1F4E5;" sub={'sur ' + total + ' marchés'} />
-        <KpiCard label="En analyse"       value={enAnalyse} color="#F59E0B" icon="&#x1F50D;" sub={'marché' + (enAnalyse > 1 ? 's' : '') + ' en cours'} />
-        <KpiCard label="Budget total"     value={budgetTotal > 0 ? formatBudget(budgetTotal) : '—'} color="#8B5CF6" icon="&#x1F4B6;" sub={'estimation cumulée'} />
+        <KpiCard label="Total marchés"  value={total}     color="#E8501A" sub={actifs + ' actif' + (actifs > 1 ? 's' : '')} />
+        <KpiCard label="Offres reçues"  value={offres}    color="#10B981" sub={'sur ' + total + ' marchés'} />
+        <KpiCard label="En analyse"     value={enAnalyse} color="#F59E0B" sub={'marché' + (enAnalyse > 1 ? 's' : '') + ' en cours'} />
+        <KpiCard label="Budget estimé"  value={budgetTotal > 0 ? formatBudget(budgetTotal) : '—'} color="#8B5CF6" sub={'estimation cumulée'} />
       </div>
 
-      <div className="filters-row" style={{ marginBottom: 16 }}>
-        <input className="filter-input" placeholder="Rechercher un marché…" value={search} onChange={e => setSearch(e.target.value)} style={{ width: 220 }} />
+      <div className="filters-row">
+        <input
+          className="filter-input"
+          placeholder="Rechercher un marché…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ width: 240 }}
+        />
         {filtres.map(f => (
-          <button key={f.value} className={'btn btn-sm ' + (filtre === f.value ? 'btn-primary' : 'btn-outline')} onClick={() => setFiltre(f.value)}>
+          <button
+            key={f.value}
+            className={'btn btn-sm ' + (filtre === f.value ? 'btn-primary' : 'btn-outline')}
+            onClick={() => setFiltre(f.value)}
+          >
             {f.label}
           </button>
         ))}
@@ -70,7 +80,6 @@ export default function Dashboard() {
 
       {marchesFiltres.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">&#x1F50D;</div>
           <div className="empty-title">Aucun marché trouvé</div>
           <div className="empty-sub">Modifiez vos critères de recherche.</div>
         </div>
@@ -81,7 +90,7 @@ export default function Dashboard() {
             return (
               <div key={m.id} className="marche-card fade-in">
                 <div className="marche-card-header">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                     <span className="marche-ref">{m.reference}</span>
                     <StatusBadge statut={m.statut} />
                   </div>
@@ -90,32 +99,34 @@ export default function Dashboard() {
                 </div>
                 <div className="marche-card-body">
                   <div className="marche-meta">
-                    {m.responsable      && <span className="marche-meta-item">&#x1F464; {m.responsable}</span>}
-                    {m.service          && <span className="marche-meta-item">&#x1F3E5; {m.service}</span>}
-                    {m.nbLots      > 0  && <span className="marche-meta-item">&#x1F4E6; {m.nbLots} lot{m.nbLots > 1 ? 's' : ''}</span>}
-                    {m.nbOffresRecues > 0 && <span className="marche-meta-item">&#x1F4E5; {m.nbOffresRecues} offre{m.nbOffresRecues !== 1 ? 's' : ''}</span>}
-                    {m.dateLimiteDepot  && <span className="marche-meta-item">&#x1F4C5; Limite : {formatDate(m.dateLimiteDepot)}</span>}
-                    {m.budgetEstime     && <span className="marche-meta-item">&#x1F4B6; {m.budgetEstime}</span>}
+                    {m.responsable      && <span className="marche-meta-item">{m.responsable}</span>}
+                    {m.service          && <span className="marche-meta-item">{m.service}</span>}
+                    {m.nbLots      > 0  && <span className="marche-meta-item">{m.nbLots} lot{m.nbLots > 1 ? 's' : ''}</span>}
+                    {m.nbOffresRecues > 0 && <span className="marche-meta-item">{m.nbOffresRecues} offre{m.nbOffresRecues !== 1 ? 's' : ''}</span>}
+                    {m.dateLimiteDepot  && <span className="marche-meta-item">Limite : {formatDate(m.dateLimiteDepot)}</span>}
+                    {m.budgetEstime     && <span className="marche-meta-item">{m.budgetEstime}</span>}
                   </div>
                   {m.tags && m.tags.length > 0 && (
-                    <div className="marche-tags">{m.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>
+                    <div className="marche-tags">
+                      {m.tags.map(t => <span key={t} className="tag">{t}</span>)}
+                    </div>
                   )}
                   {m.progression > 0 && (
                     <>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Progression — {m.progression}%</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 5 }}>Progression — {m.progression}%</div>
                       <div className="marche-progress-bar">
-                        <div className="marche-progress-fill" style={{ width: m.progression + '%', background: cfg.color || '#3B82F6' }} />
+                        <div className="marche-progress-fill" style={{ width: m.progression + '%', background: cfg.color || 'var(--orange)' }} />
                       </div>
                     </>
                   )}
                 </div>
                 <div className="marche-card-footer">
                   <button className="btn btn-primary btn-sm" onClick={() => navigate('/marche/' + m.id + '/notation')}>
-                    &#x270F;&#xFE0F; Notation
+                    Notation
                   </button>
                   {m.hasReporting && (
                     <button className="btn btn-outline btn-sm" onClick={() => navigate('/marche/' + m.id + '/reporting')}>
-                      &#x1F4C8; Reporting
+                      Reporting
                     </button>
                   )}
                 </div>
