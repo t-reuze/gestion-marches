@@ -12,19 +12,6 @@ const DOC_LABELS = [
 
 // ─── Helpers fichiers ──────────────────────────────────────────────────────────
 
-function lotFromFilename(name) {
-  const n = name.toLowerCase();
-  const lots = new Set();
-  const re = /lot[\s_-]*(\d[\d\s,/&+-]*)/g;
-  let m;
-  while ((m = re.exec(n)) !== null) {
-    const nums = m[0].match(/[123]/g);
-    if (nums) nums.forEach(d => lots.add(parseInt(d)));
-  }
-  return [...lots].sort();
-}
-
-const isOffice = name => /\.(xls|xlsx|pdf|p7m)$/i.test(name);
 const val = b => b ? 'x' : '';
 
 async function getAllFiles(dirHandle, path = '') {
@@ -100,82 +87,14 @@ async function listXlsxFiles(dirHandle, suffixRe) {
   return files.sort((a, b) => a.supName.localeCompare(b.supName));
 }
 
+// Valeur réelle = non vide, non placeholder NA/N/A
+const NA_VALS = new Set(['na', 'n/a', 'n.a.', 'n.a', 'non applicable', 'néant', 'neant', '-']);
+const isRealVal = v => { const s = String(v||'').trim().toLowerCase(); return s !== '' && !NA_VALS.has(s); };
+
 async function readXlsxHandle(fileHandle) {
   const file = await fileHandle.getFile();
   const buf = await file.arrayBuffer();
   return XLSX.read(buf, { type: 'array' });
-}
-
-async function findQTFile(dirHandle, lot) {
-  const EXCL = ['annexe 3', 'annexe_3', 'annexe 5', 'annexe_5', 'bpu', 'attri', 'chiffrage', 'rse', 'dc1', 'dc2', 'attri1'];
-  const files = await getAllFiles(dirHandle);
-  const xlsx = files.filter(f => /\.(xls|xlsx)$/i.test(f.name) && !EXCL.some(e => f.path.toLowerCase().includes(e)));
-
-  const withLotQt = xlsx.filter(f => {
-    const n = f.path.toLowerCase();
-    const hasLot = n.includes(`lot_${lot}`) || n.includes(`lot ${lot}`) || n.includes(`lot${lot}`);
-    const isQt = n.includes('qt') || (n.includes('annexe') && n.includes('1'));
-    return hasLot && isQt;
-  });
-  if (withLotQt.length) return { ...withLotQt[0], lotSheet: null };
-
-  const annexe1 = xlsx.filter(f => {
-    const n = f.path.toLowerCase();
-    return (n.includes('annexe') && (n.includes('1') || n.includes('cctp'))) || n.includes('qt');
-  });
-  if (annexe1.length) return { ...annexe1[0], lotSheet: lot };
-
-  return null;
-}
-
-function findLotSheet(wb, lot) {
-  const match = wb.SheetNames.find(s => {
-    const n = s.toLowerCase();
-    return n.includes(`lot ${lot}`) || n.includes(`lot_${lot}`) || n.includes(`lot${lot}`);
-  });
-  return match || wb.SheetNames[0];
-}
-
-// Trouve la colonne réponse : cherche "réponse"/"candidat" dans les en-têtes, sinon col C
-function findAnswerCol(data) {
-  for (let ri = 0; ri < Math.min(8, data.length); ri++) {
-    const row = data[ri];
-    for (let ci = 1; ci < row.length; ci++) {
-      const cell = String(row[ci] || '').toLowerCase();
-      if (cell.includes('réponse') || cell.includes('reponse') || cell.includes('candidat')) return ci;
-    }
-  }
-  return 2;
-}
-
-// Lit et nettoie un fichier QT — retourne [{ q, a }]
-function parseQTSheet(raw, ansCol) {
-  const HEADER_VALS = new Set([
-    'réponse candidat', 'réponse fournisseur', 'reponse candidat', 'reponse fournisseur',
-    'réponse du candidat', 'réponses', 'réponse',
-  ]);
-  const SKIP_ANS = new Set([
-    'réponse candidat', 'réponse fournisseur', 'reponse candidat', 'reponse fournisseur',
-    'à compléter', 'a completer', 'n/a', '-',
-  ]);
-
-  const rows = raw.filter(r => {
-    const q = String(r[0] || '').trim();
-    if (!q) return false;
-    // Ignorer la ligne d'en-tête (colonne réponse contient un label d'en-tête)
-    const ans = String(r[ansCol] || '').trim().toLowerCase();
-    if (HEADER_VALS.has(ans)) return false;
-    // Ignorer aussi si col B = "Détail"/"Detail" et col réponse contient "réponse"
-    const colB = String(r[1] || '').trim().toLowerCase();
-    if ((colB === 'détail' || colB === 'detail') && ans.startsWith('réponse')) return false;
-    return true;
-  });
-
-  return rows.map(r => {
-    const raw_a = String(r[ansCol] || '').trim();
-    const a = SKIP_ANS.has(raw_a.toLowerCase()) ? '' : raw_a;
-    return { q: String(r[0]).trim(), a };
-  });
 }
 
 // Normalise un nom fournisseur pour la comparaison (strip accents, espaces, "OK" final)
@@ -207,6 +126,7 @@ const ST = {
   ok:      { fill: { patternType: 'solid', fgColor: { rgb: 'DCFCE7' } }, font: { bold: true, color: { rgb: '15803D' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
   partial: { fill: { patternType: 'solid', fgColor: { rgb: 'FEF9C3' } }, font: { bold: true, color: { rgb: '92400E' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
   empty:   { fill: { patternType: 'solid', fgColor: { rgb: 'FEF2F2' } }, font: { bold: true, color: { rgb: 'BE185D' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
+  absent:  { fill: { patternType: 'solid', fgColor: { rgb: 'FFE4E4' } }, font: { bold: true, color: { rgb: 'DC2626' }, sz: 10, name: 'Calibri' }, alignment: { horizontal: 'center' } },
 };
 
 function styledSheet(aoa, colWidths, { rowHeight = 40, freezeCol = false } = {}) {
@@ -255,7 +175,7 @@ function buildQTXlsx(qtData) {
   for (const [lot, { supStatus }] of Object.entries(qtData)) {
     for (const [sup, { status, filled, total }] of Object.entries(supStatus)) {
       recapAoa.push([`LOT ${lot}`, sup,
-        status === 'ok' ? 'Complet ✓' : status === 'partial' ? 'Partiel' : 'Vide',
+        status === 'ok' ? 'Complet ✓' : status === 'partial' ? 'Partiel' : status === 'absent' ? 'Absent' : 'Vide',
         `${filled}/${total}`,
       ]);
     }
@@ -265,7 +185,7 @@ function buildQTXlsx(qtData) {
     if (ri === 0) return;
     const ref = XLSX.utils.encode_cell({ r: ri, c: 2 });
     const s = row[2];
-    recapWs[ref] = { v: s, t: 's', s: s.includes('Complet') ? ST.ok : s.includes('Partiel') ? ST.partial : ST.empty };
+    recapWs[ref] = { v: s, t: 's', s: s.includes('Complet') ? ST.ok : s.includes('Partiel') ? ST.partial : s === 'Absent' ? ST.absent : ST.empty };
   });
   XLSX.utils.book_append_sheet(wb, recapWs, 'Récapitulatif');
 
@@ -544,10 +464,21 @@ export default function AnalyseUnicancer() {
     setScanning(true); setAnnuaire([]); setEdits({});
     try {
       // ── 1. Charger les infos depuis Standardisés/ ────────────────────────────
-      // supInfo : normName → { displayName, lots, hasQT, hasBpu, hasOptim, hasRse, hasChiffrage }
+      // supInfo : normName → { displayName, lots, hasQT, hasBpu, hasOptim, hasRse, hasChiffrage, bpuMissing }
       const supInfo = {};
       const ensure = (norm, display) => {
-        if (!supInfo[norm]) supInfo[norm] = { displayName: display, lots: new Set(), hasQT: false, hasBpu: false, hasOptim: false, hasRse: false, hasChiffrage: false };
+        if (!supInfo[norm]) supInfo[norm] = {
+          displayName: display, lots: new Set(),
+          hasQT: false, hasBpu: false, hasOptim: false, hasRse: false, hasChiffrage: false,
+          bpuMissing: {}, // { lotNum: ['colonne manquante', ...] }
+        };
+      };
+
+      // Colonnes fournisseur obligatoires par lot dans les BPU standardisés (index 0-based)
+      const BPU_REQ = {
+        1: [{ col: 2, name: 'PUHT/jour' }, { col: 3, name: '% Remise' }],
+        2: [{ col: 1, name: '% Taux' }],
+        3: [{ col: 2, name: 'PUHT/jour' }, { col: 3, name: 'PUHT/heure' }, { col: 4, name: '% Remise' }],
       };
 
       const stdHandle = await findStdDir(reponsesDirHandle);
@@ -586,17 +517,29 @@ export default function AnalyseUnicancer() {
             supInfo[n].hasBpu = true;
             try {
               const wb = await readXlsxHandle(handle);
-              wb.SheetNames.forEach(s => {
-                // Lot détecté si la feuille existe ET contient au moins une ligne de données
-                const hasData = () => {
-                  const raw = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
-                  return raw.slice(1).some(r => r.some(c => String(c).trim() !== ''));
-                };
-                if (/lot\s*1/i.test(s) && hasData()) supInfo[n].lots.add(1);
-                if (/lot\s*2/i.test(s) && hasData()) supInfo[n].lots.add(2);
-                if (/lot\s*3/i.test(s) && hasData()) supInfo[n].lots.add(3);
-                if (/optim/i.test(s))                supInfo[n].hasOptim = true;
-              });
+              for (const s of wb.SheetNames) {
+                if (/optim/i.test(s)) { supInfo[n].hasOptim = true; continue; }
+                const lotNum = /lot\s*1/i.test(s) ? 1 : /lot\s*2/i.test(s) ? 2 : /lot\s*3/i.test(s) ? 3 : 0;
+                if (!lotNum) continue;
+
+                const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+                const dataRows = rawSheet.slice(1).filter(r => String(r[0]||'').trim());
+                if (!dataRows.length) continue;
+
+                // Vérifier chaque colonne obligatoire pour ce lot
+                const reqCols = BPU_REQ[lotNum] || [];
+                let anyFilled = false;
+                const missing = [];
+                for (const { col, name } of reqCols) {
+                  const filled = dataRows.some(r => isRealVal(r[col]));
+                  if (filled) anyFilled = true;
+                  else missing.push(name);
+                }
+                if (anyFilled) {
+                  supInfo[n].lots.add(lotNum);
+                  if (missing.length) supInfo[n].bpuMissing[lotNum] = missing;
+                }
+              }
             } catch {}
           }
         }
@@ -631,18 +574,31 @@ export default function AnalyseUnicancer() {
       }
 
       // ── 2. Scan des dossiers fournisseurs pour les PDFs ──────────────────────
+      // On ne scanne les dossiers QUE pour les PDFs des fournisseurs déjà connus.
+      // Quand des fichiers standardisés existent, on n'ajoute PAS de nouveaux fournisseurs
+      // depuis les dossiers bruts (évite "action a faire", "QT/", "BPU/" etc.).
       setScanProgress('Scan PDFs…');
-      const SKIP = new Set(['standardises', 'standardisés', 'compilation', '__pycache__']);
+      const SKIP_DIRS = new Set([
+        'standardises', 'compilation', '__pycache__',
+        'qt', 'bpu', 'rse', 'chiffrage',
+        'ao', 'reponses', 'action a faire', 'actions a faire',
+        'consignes', 'instructions', 'template', 'modele', 'modeles',
+      ]);
       const subdirs = await getSubdirs(reponsesDirHandle);
-      // Construire une map normName → folderHandle (pour retrouver le dossier d'un fournisseur)
       const folderMap = {};
       for (const { name, handle } of subdirs) {
         const n = normSupName(name);
-        if (!SKIP.has(n)) folderMap[n] = { name, handle };
+        if (SKIP_DIRS.has(n)) continue;
+        folderMap[n] = { name, handle };
       }
-      // Ajouter les dossiers fournisseurs qui n'ont pas de fichiers standardisés (PDFs seuls)
-      for (const [n, { name }] of Object.entries(folderMap)) {
-        ensure(n, name);
+
+      // Si aucun fichier standardisé trouvé → fallback : tous les dossiers sont des fournisseurs
+      // Si des fichiers standardisés existent → on n'ajoute pas les dossiers inconnus
+      const hasStdData = Object.keys(supInfo).length > 0;
+      if (!hasStdData) {
+        for (const [n, { name }] of Object.entries(folderMap)) {
+          ensure(n, name);
+        }
       }
 
       // Construire les lignes de l'annuaire
@@ -663,6 +619,13 @@ export default function AnalyseUnicancer() {
           raw = detectDocs(files);
         }
 
+        // BPU : 'x' si complet, 'partiel' si colonnes fournisseur manquantes, '' si absent
+        const bpuMissing = info.bpuMissing || {};
+        const bpuHasMissing = Object.keys(bpuMissing).length > 0;
+        const bpuVal = info.hasBpu
+          ? (bpuHasMissing ? 'partiel' : 'x')
+          : (raw['BPU (Annexe 5)'] ? 'x' : '');
+
         rows.push({
           'Nom fournisseur':          info.displayName,
           // Lots : standardisés en priorité, sinon détection brute
@@ -670,7 +633,7 @@ export default function AnalyseUnicancer() {
           'Lot 2 Recrutement':        val(info.lots.has(2) || raw['Lot 2']),
           'Lot 3 Freelance':          val(info.lots.has(3) || raw['Lot 3']),
           // Excel : standardisés en priorité, sinon détection brute
-          'BPU (Annexe 5)':           val(info.hasBpu      || raw['BPU (Annexe 5)']),
+          'BPU (Annexe 5)':           bpuVal,
           'Optim. Tarifaire':         val(info.hasOptim    || raw['Optim. Tarifaire']),
           'QT (Annexe 1)':            val(info.hasQT       || raw['QT (Annexe 1)']),
           'BPU Chiffrage (Annexe 3)': val(info.hasChiffrage|| raw['BPU Chiffrage (Annexe 3)']),
@@ -681,6 +644,8 @@ export default function AnalyseUnicancer() {
           'DC1':                      val(raw['DC1']),
           'DC2':                      val(raw['DC2']),
           'ATTRI1':                   val(raw['ATTRI1']),
+          // Métadonnées (non affichées dans le tableau principal)
+          _bpuMissing:                bpuMissing,
           'Fiche Contacts':           val(raw['Fiche Contacts']),
         });
       }
@@ -705,16 +670,32 @@ export default function AnalyseUnicancer() {
       }
       setDirWarning('');
 
-      // Liste tous les xlsx du dossier Standardisés/
-      const xlsxFiles = [];
-      for await (const [name, handle] of stdDir.entries()) {
-        if (handle.kind === 'file' && /\.xlsx$/i.test(name) && !name.startsWith('~')) {
-          // Nom fournisseur = nom de fichier sans le suffixe _QT_standardisé.xlsx
-          const supName = name.replace(/_QT_standardis[eé]\.xlsx$/i, '').trim();
-          xlsxFiles.push({ name, handle, supName });
+      // Cherche QT/ subfolder (structure AO_Recrutement_Standardisés) ou lit directement
+      const qtDir = await findSubdirByName(stdDir, 'QT') ?? stdDir;
+      const xlsxFiles = await listXlsxFiles(qtDir, /_QT_standardis[eé]\.xlsx$/i);
+
+      // ── Source de vérité des lots : BPU standardisés (avec exclusion NA) ──────
+      // Pour chaque lot, récupère tous les fournisseurs réellement positionnés.
+      const BPU_REQ_COLS = { 1: [2, 3], 2: [1], 3: [2, 4] };
+      const bpuLotSups = { 1: new Set(), 2: new Set(), 3: new Set() };
+      const bpuDir = await findSubdirByName(stdDir, 'BPU');
+      if (bpuDir) {
+        for await (const [name, handle] of bpuDir.entries()) {
+          if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+          const supName = name.replace(/_BPU_standardis[eé]\.xlsx$/i, '').trim();
+          try {
+            const wb = await readXlsxHandle(handle);
+            for (const s of wb.SheetNames) {
+              const ln = /lot\s*1/i.test(s) ? 1 : /lot\s*2/i.test(s) ? 2 : /lot\s*3/i.test(s) ? 3 : 0;
+              if (!ln) continue;
+              const req = BPU_REQ_COLS[ln] || [];
+              const raw = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+              const dRows = raw.slice(1).filter(r => String(r[0]||'').trim());
+              if (req.some(ci => dRows.some(r => isRealVal(r[ci])))) bpuLotSups[ln].add(supName);
+            }
+          } catch {}
         }
       }
-      xlsxFiles.sort((a, b) => a.supName.localeCompare(b.supName));
 
       const result = {};
 
@@ -722,13 +703,11 @@ export default function AnalyseUnicancer() {
         const lotSheetName = `QT LOT ${lot}`;
         const supData = {};
 
+        // 1. Lire les réponses QT de chaque fournisseur qui a un fichier pour ce lot
         for (const { handle, supName } of xlsxFiles) {
           const wb = await readXlsxHandle(handle);
-          // Si le fichier n'a pas de feuille pour ce lot → fournisseur non positionné
           if (!wb.SheetNames.includes(lotSheetName)) continue;
-
           const raw = XLSX.utils.sheet_to_json(wb.Sheets[lotSheetName], { header: 1, defval: '' });
-          // Format standard : ligne 0 = en-têtes, col 0 = question, col 2 = réponse candidat
           const rows = raw.slice(1).filter(r => String(r[0] || '').trim());
           supData[supName] = rows.map(r => ({
             q: String(r[0] || '').trim(),
@@ -736,18 +715,26 @@ export default function AnalyseUnicancer() {
           }));
         }
 
+        // 2. Ajouter les fournisseurs positionnés (BPU) mais sans QT pour ce lot → "Absent"
+        for (const supName of bpuLotSups[lot]) {
+          if (!supData[supName]) supData[supName] = [];  // tableau vide = pas de QT
+        }
+
         if (!Object.keys(supData).length) continue;
 
-        // Questions de référence (depuis n'importe quel fournisseur)
-        const questions = Object.values(supData)[0].map(d => d.q);
+        // Questions de référence = premier fournisseur qui a des données QT
+        const refSup = Object.keys(supData).find(s => supData[s].length > 0);
+        if (!refSup) continue;
+        const questions = supData[refSup].map(d => d.q);
 
-        // Fournisseurs avec au moins une vraie réponse
-        const supNames = Object.keys(supData).filter(sup => supData[sup].some(r => r.a));
+        // Tous les fournisseurs triés (avec et sans QT)
+        const supNames = Object.keys(supData).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
 
         const compiled = [['Question', ...supNames]];
         questions.forEach((q, qi) => {
           compiled.push([q, ...supNames.map(sup => {
             const rows = supData[sup];
+            if (!rows.length) return '';   // pas de QT pour ce lot
             return rows[qi]?.a || rows.find(r => r.q === q)?.a || '';
           })]);
         });
@@ -760,9 +747,13 @@ export default function AnalyseUnicancer() {
 
         const supStatus = {};
         supNames.forEach(sup => {
-          const filled = realQIdx.filter(qi => supData[sup][qi]?.a).length;
-          const status = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
-          supStatus[sup] = { status, filled, total: totalReal };
+          if (!supData[sup].length) {
+            supStatus[sup] = { status: 'absent', filled: 0, total: totalReal };
+          } else {
+            const filled = realQIdx.filter(qi => supData[sup][qi]?.a).length;
+            const status = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
+            supStatus[sup] = { status, filled, total: totalReal };
+          }
         });
 
         result[lot] = { compiled, supStatus, questions, supData };
@@ -860,9 +851,9 @@ export default function AnalyseUnicancer() {
       const xlsxFiles = await listXlsxFiles(bpuDir, /_BPU_standardis[eé]\.xlsx$/i);
 
       const LOT_SHEETS = [
-        { name: 'LOT 1 — MAD Personnel', keyFn: r => `${String(r[0]||'').trim()}||${String(r[1]||'').trim()}`, priceCol: 4, headers: ['Profil', 'Niveau expérience'] },
-        { name: 'LOT 2 — Recrutement',   keyFn: r => String(r[0]||'').trim(),                                   priceCol: 1, headers: ['Profil'] },
-        { name: 'LOT 3 — Freelance',     keyFn: r => `${String(r[0]||'').trim()}||${String(r[1]||'').trim()}`, priceCol: 5, headers: ['Profil', 'Niveau expérience'] },
+        { name: 'LOT 1 – MAD Personnel', keyFn: r => `${String(r[0]||'').trim()}||${String(r[1]||'').trim()}`, priceCol: 4, headers: ['Profil', 'Niveau expérience'] },
+        { name: 'LOT 2 – Recrutement',   keyFn: r => String(r[0]||'').trim(),                                   priceCol: 1, headers: ['Profil'] },
+        { name: 'LOT 3 – Freelance',     keyFn: r => `${String(r[0]||'').trim()}||${String(r[1]||'').trim()}`, priceCol: 5, headers: ['Profil', 'Niveau expérience'] },
         { name: 'Optimisation Tarifaire',keyFn: r => String(r[0]||'').trim(),                                   priceCol: 1, headers: ['Condition'] },
       ];
 
@@ -937,8 +928,8 @@ export default function AnalyseUnicancer() {
       const xlsxFiles = await listXlsxFiles(chiffrageDir, /_Chiffrage_standardis[eé]\.xlsx$/i);
 
       const LOT_SHEETS = [
-        'LOT 1 — MAD Personnel',
-        'LOT 3 — Freelance',
+        'LOT 1 – MAD Personnel',
+        'LOT 3 – Freelance',
       ];
 
       const result = {};
@@ -1096,12 +1087,19 @@ export default function AnalyseUnicancer() {
                         {DOC_LABELS.map(col => {
                           const v = row[col] || '';
                           const isX = v.toLowerCase() === 'x';
+                          const isPartiel = v.toLowerCase() === 'partiel';
+                          // Tooltip pour BPU partiel
+                          const tooltip = isPartiel && col === 'BPU (Annexe 5)' && row._bpuMissing
+                            ? 'Colonnes manquantes : ' + Object.entries(row._bpuMissing).map(([l, cs]) => `Lot ${l} : ${cs.join(', ')}`).join(' | ')
+                            : undefined;
                           return (
                             <td key={col} className="td-center" style={{ padding: '3px 2px' }}>
                               <input value={v} onChange={e => setCell(ri, col, e.target.value)}
+                                title={tooltip}
                                 style={{ width: 40, textAlign: 'center', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 4px', fontSize: 12,
                                   background: isX ? '#dcfce7' : v ? '#fef9c3' : '#fef2f2',
-                                  color: isX ? '#15803d' : v ? '#92400e' : '#be185d', fontWeight: isX ? 700 : 400 }} />
+                                  color: isX ? '#15803d' : v ? '#92400e' : '#be185d', fontWeight: isX ? 700 : 400,
+                                  cursor: tooltip ? 'help' : 'text' }} />
                             </td>
                           );
                         })}
@@ -1127,7 +1125,14 @@ export default function AnalyseUnicancer() {
                                 {present.length}/{DOC_LABELS.length}
                               </span>
                             </td>
-                            <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{manquants.join(', ') || '—'}</td>
+                            <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                              {manquants.join(', ') || '—'}
+                              {row._bpuMissing && Object.keys(row._bpuMissing).length > 0 && (
+                                <div style={{ marginTop: 4, color: '#d97706', fontSize: 10 }}>
+                                  ⚠️ BPU colonnes manquantes — {Object.entries(row._bpuMissing).map(([lot, cols]) => `Lot ${lot} : ${cols.join(', ')}`).join(' | ')}
+                                </div>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
@@ -1183,9 +1188,9 @@ export default function AnalyseUnicancer() {
                     {Object.entries(supStatus).map(([sup, { status, filled, total }]) => (
                       <div key={sup} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontWeight: 500 }}>{sup}</span>
-                        <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600 }}>
-                          {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
-                          <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>
+                        <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : status === 'absent' ? '#dc2626' : '#64748b', fontWeight: 600 }}>
+                          {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : status === 'absent' ? '❌ Absent' : '⛔ Vide'}
+                          {status !== 'absent' && <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>}
                         </span>
                       </div>
                     ))}
@@ -1441,9 +1446,9 @@ export default function AnalyseUnicancer() {
                         <td style={{ fontWeight: 600, fontSize: 12 }}>{sup}</td>
                         <td className="td-center"><span className="score-chip" style={{ background: '#e0e7ff', color: '#3730a3' }}>LOT {lot}</span></td>
                         <td className="td-center">
-                          <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : '#64748b', fontWeight: 600, fontSize: 12 }}>
-                            {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : '⛔ Vide'}
-                            <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>
+                          <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : status === 'absent' ? '#dc2626' : '#64748b', fontWeight: 600, fontSize: 12 }}>
+                            {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : status === 'absent' ? '❌ Absent' : '⛔ Vide'}
+                            {status !== 'absent' && <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>}
                           </span>
                         </td>
                       </tr>
