@@ -19,11 +19,11 @@ export default function MarcheNavTabs() {
     : 'notation';
 
   const tabList = [
-    { key: 'analyse',   label: '&#x270F;&#xFE0F; Notation / Analyse',     path: '/marche/' + id + '/analyse',   show: id === 'bio-mol' || marche.hasAnalyse },
-    { key: 'notation',  label: '&#x270F;&#xFE0F; Notation',               path: '/marche/' + id + '/notation',  show: !marche.hasAnalyse },
-    { key: 'reponses',  label: '&#x1F4CB; Réponses fournisseurs',   path: '/marche/' + id + '/reponses',  show: !!getSession(id) },
-    { key: 'infos',     label: '&#x2139;&#xFE0F; Informations',           path: '/marche/' + id + '/infos',     show: true },
-    { key: 'reporting', label: '&#x1F4C8; Reporting',                     path: '/marche/' + id + '/reporting', show: marche.hasReporting },
+    { key: 'analyse',   label: 'Notation / Analyse',   path: '/marche/' + id + '/analyse',   show: id === 'bio-mol' || marche.hasAnalyse },
+    { key: 'notation',  label: 'Notation',              path: '/marche/' + id + '/notation',  show: !marche.hasAnalyse },
+    { key: 'reponses',  label: 'Réponses fournisseurs', path: '/marche/' + id + '/reponses',  show: !!getSession(id) },
+    { key: 'infos',     label: 'Informations',          path: '/marche/' + id + '/infos',     show: true },
+    { key: 'reporting', label: 'Reporting',             path: '/marche/' + id + '/reporting', show: marche.hasReporting },
   ].filter(t => t.show);
 
   return (
@@ -33,8 +33,9 @@ export default function MarcheNavTabs() {
           key={t.key}
           className={'marche-tab' + (active === t.key ? ' active' : '')}
           onClick={() => navigate(t.path)}
-          dangerouslySetInnerHTML={{ __html: t.label }}
-        />
+        >
+          {t.label}
+        </div>
       ))}
     </div>
   );
