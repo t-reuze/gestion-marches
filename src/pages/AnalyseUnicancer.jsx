@@ -3,10 +3,36 @@ import XLSX from 'xlsx-js-style';
 import JSZip from 'jszip';
 import Layout from '../components/Layout';
 
+/* ── Icons ──────────────────────────────────────────────────────────────── */
+const IconAO = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
+  </svg>
+);
+const IconFolder = () => (
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 6a2 2 0 0 1 2-2h3.5l2 2H16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/>
+  </svg>
+);
+const IconSearch = () => (
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/>
+  </svg>
+);
+const IconCheck = () => (
+  <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="4 10 8 14 16 6"/>
+  </svg>
+);
+
 const DOC_LABELS = [
   'Lot 1 MAD Personnel', 'Lot 2 Recrutement', 'Lot 3 Freelance',
   'BPU (Annexe 5)', 'Optim. Tarifaire', 'QT (Annexe 1)',
-  'BPU Chiffrage (Annexe 3)', 'Questionnaire RSE', 'CCAP signé',
+  'BPU Chiffrage', 'Questionnaire RSE', 'CCAP signé',
   'CCTP signé', 'DC1', 'DC2', 'ATTRI1', 'Fiche Contacts',
 ];
 
@@ -332,7 +358,7 @@ const DOC_RULES = {
     any: ['optim', 'optimisation tarifaire', 'remise', 'tarif optim', 'grille remise'],
     exclude: ['standardis'],
   },
-  'BPU Chiffrage (Annexe 3)': {
+  'BPU Chiffrage': {
     ext: ['.xls', '.xlsx'],
     any: ['annexe 3', 'annexe3', 'chiffrage', 'chiffre', 'estimation', 'valorisation',
           'bordereau chiffrage', 'devis'],
@@ -636,7 +662,7 @@ export default function AnalyseUnicancer() {
           'BPU (Annexe 5)':           bpuVal,
           'Optim. Tarifaire':         val(info.hasOptim    || raw['Optim. Tarifaire']),
           'QT (Annexe 1)':            val(info.hasQT       || raw['QT (Annexe 1)']),
-          'BPU Chiffrage (Annexe 3)': val(info.hasChiffrage|| raw['BPU Chiffrage (Annexe 3)']),
+          'BPU Chiffrage': val(info.hasChiffrage|| raw['BPU Chiffrage']),
           'Questionnaire RSE':        val(info.hasRse      || raw['Questionnaire RSE']),
           // PDFs : détection brute uniquement
           'CCAP signé':               val(raw['CCAP signé']),
@@ -1018,47 +1044,51 @@ export default function AnalyseUnicancer() {
   return (
     <Layout title="AO Recrutement Personnel 2026" sub="— Analyse des offres">
 
-      <div style={{ background: 'linear-gradient(135deg,#1B3A5C 0%,#2A5C8A 100%)', borderRadius: 10, padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 32 }}>📋</span>
+      <div style={{ background: 'linear-gradient(135deg,#001120 0%,#002456 100%)', borderRadius: 10, padding: '20px 28px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 18 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(232,80,26,.18)', border: '1px solid rgba(232,80,26,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E87722', flexShrink: 0 }}>
+          <IconAO />
+        </div>
         <div>
-          <div style={{ color: '#E87722', fontWeight: 700, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Unicancer</div>
+          <div style={{ color: '#E87722', fontWeight: 700, fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 5 }}>Unicancer</div>
           <div style={{ color: '#fff', fontWeight: 700, fontSize: 15 }}>Traçabilité &amp; Compilation — AO Recrutement de Personnel 2026</div>
-          <div style={{ color: 'rgba(255,255,255,.6)', fontSize: 12, marginTop: 4 }}>Détection automatique · Compilation QT · Standardisation</div>
+          <div style={{ color: 'rgba(255,255,255,.5)', fontSize: 12, marginTop: 3 }}>Détection automatique · Compilation QT · Standardisation</div>
         </div>
       </div>
 
       {!supportsApi && (
         <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>
-          ⚠️ <strong>Navigateur non compatible</strong> — Cette fonctionnalité nécessite Chrome ou Edge.
+          <strong>Navigateur non compatible</strong> — Cette fonctionnalité nécessite Chrome ou Edge.
         </div>
       )}
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header"><span className="card-title">📁 Dossier de l&apos;AO</span></div>
+        <div className="card-header"><span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 7 }}><IconFolder /> Dossier de l&apos;AO</span></div>
         <div className="card-body">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <button className="btn btn-outline" onClick={pickDir} disabled={!supportsApi}>📂 Sélectionner le dossier…</button>
+            <button className="btn btn-outline" onClick={pickDir} disabled={!supportsApi} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconFolder /> Sélectionner le dossier…</button>
             {reponsesDirPath && (
               <>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Dossier fournisseurs :</div>
                   <code style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: 5, fontSize: 12 }}>{reponsesDirPath}</code>
                 </div>
-                <button className="btn btn-primary" onClick={scan} disabled={scanning}>
-                  {scanning ? `⏳ ${scanProgress}` : '🔍 Analyser'}
+                <button className="btn btn-primary" onClick={scan} disabled={scanning} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {scanning ? scanProgress : <><IconSearch /> Analyser</>}
                 </button>
               </>
             )}
             {nbF > 0 && !scanning && (
-              <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✅ {nbF} fournisseur{nbF > 1 ? 's' : ''} détecté{nbF > 1 ? 's' : ''}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#15803d', fontWeight: 600, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '3px 10px' }}>
+                <IconCheck /> {nbF} fournisseur{nbF > 1 ? 's' : ''} détecté{nbF > 1 ? 's' : ''}
+              </span>
             )}
           </div>
-          {dirWarning && <div style={{ marginTop: 8, fontSize: 12, color: '#d97706' }}>⚠️ {dirWarning}</div>}
+          {dirWarning && <div style={{ marginTop: 8, fontSize: 12, color: '#d97706', display: 'flex', alignItems: 'center', gap: 5 }}>Avertissement : {dirWarning}</div>}
         </div>
       </div>
 
       <div className="tabs" style={{ marginBottom: 16 }}>
-        {['📊 Annuaire documents', '📋 Compilation QT', '💶 Comparatif BPU', '📄 RSE', '📑 Chiffrage', '🔍 Détail QT', '🔧 Outils'].map((t, i) => (
+        {['Annuaire documents', 'Compilation QT', 'Comparatif BPU', 'RSE', 'Chiffrage', 'Détail QT', 'Outils'].map((t, i) => (
           <div key={i} className={'tab' + (tab === i ? ' active' : '')} onClick={() => setTab(i)}>{t}</div>
         ))}
       </div>
@@ -1069,7 +1099,7 @@ export default function AnalyseUnicancer() {
           {rows.length > 0 ? (
             <>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-                <button className="btn btn-primary btn-sm" onClick={() => download(buildXlsx(rows), 'ANNUAIRE_documents_fournisseurs.xlsx')}>📥 Exporter Excel</button>
+                <button className="btn btn-primary btn-sm" onClick={() => download(buildXlsx(rows), 'ANNUAIRE_documents_fournisseurs.xlsx')}>Exporter Excel</button>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tapez <strong>x</strong> si présent, laissez vide sinon.</span>
               </div>
               <div className="table-container">
@@ -1129,7 +1159,7 @@ export default function AnalyseUnicancer() {
                               {manquants.join(', ') || '—'}
                               {row._bpuMissing && Object.keys(row._bpuMissing).length > 0 && (
                                 <div style={{ marginTop: 4, color: '#d97706', fontSize: 10 }}>
-                                  ⚠️ BPU colonnes manquantes — {Object.entries(row._bpuMissing).map(([lot, cols]) => `Lot ${lot} : ${cols.join(', ')}`).join(' | ')}
+                                  BPU colonnes manquantes — {Object.entries(row._bpuMissing).map(([lot, cols]) => `Lot ${lot} : ${cols.join(', ')}`).join(' | ')}
                                 </div>
                               )}
                             </td>
@@ -1143,7 +1173,7 @@ export default function AnalyseUnicancer() {
             </>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">📁</div>
+              <div className="empty-icon">—</div>
               <div className="empty-title">Aucune donnée</div>
               <div className="empty-sub">Sélectionnez le dossier de l&apos;AO et cliquez sur Analyser.</div>
             </div>
@@ -1155,7 +1185,7 @@ export default function AnalyseUnicancer() {
       {tab === 1 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">⚙️ Lots à compiler</span></div>
+            <div className="card-header"><span className="card-title">Lots à compiler</span></div>
             <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
               {[1, 2, 3].map(lot => (
                 <label key={lot} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
@@ -1166,11 +1196,11 @@ export default function AnalyseUnicancer() {
               ))}
               <button className="btn btn-primary" style={{ marginLeft: 8 }} onClick={compileQT}
                 disabled={compilingQt || !reponsesDirHandle || !lotsSelected.length}>
-                {compilingQt ? 'Compilation…' : '⚙️ Compiler les QT (Standardisés/)'}
+                {compilingQt ? 'Compilation…' : 'Compiler les QT'}
               </button>
               {hasQT && (
                 <button className="btn btn-outline" onClick={() => download(buildQTXlsx(qtData), 'Compilation_QT_recrutement.xlsx')}>
-                  📥 Exporter Excel
+                  Exporter Excel
                 </button>
               )}
             </div>
@@ -1189,7 +1219,7 @@ export default function AnalyseUnicancer() {
                       <div key={sup} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontWeight: 500 }}>{sup}</span>
                         <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : status === 'absent' ? '#dc2626' : '#64748b', fontWeight: 600 }}>
-                          {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : status === 'absent' ? '❌ Absent' : '⛔ Vide'}
+                          {status === 'ok' ? 'Complet' : status === 'partial' ? 'Partiel' : status === 'absent' ? 'Absent' : 'Vide'}
                           {status !== 'absent' && <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>}
                         </span>
                       </div>
@@ -1200,7 +1230,7 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">📋</div>
+              <div className="empty-icon">—</div>
               <div className="empty-title">Aucune compilation</div>
               <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez.</div>
             </div>
@@ -1212,15 +1242,15 @@ export default function AnalyseUnicancer() {
       {tab === 2 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">💶 Comparatif BPU</span></div>
+            <div className="card-header"><span className="card-title">Comparatif BPU</span></div>
             <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={compileBPU}
                 disabled={compilingBpu || !reponsesDirHandle}>
-                {compilingBpu ? 'Compilation…' : '⚙️ Compiler les BPU (Standardisés/BPU/)'}
+                {compilingBpu ? 'Compilation…' : 'Compiler les BPU'}
               </button>
               {hasBPU && (
                 <button className="btn btn-outline" onClick={() => download(buildBPUXlsx(bpuData), 'Comparatif_BPU.xlsx')}>
-                  📥 Exporter Excel
+                  Exporter Excel
                 </button>
               )}
             </div>
@@ -1283,7 +1313,7 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">💶</div>
+              <div className="empty-icon">—</div>
               <div className="empty-title">Aucune donnée BPU</div>
               <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez les BPU.</div>
             </div>
@@ -1295,15 +1325,15 @@ export default function AnalyseUnicancer() {
       {tab === 3 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">📄 RSE — Développement Durable</span></div>
+            <div className="card-header"><span className="card-title">RSE — Développement Durable</span></div>
             <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={compileRSE}
                 disabled={compilingRse || !reponsesDirHandle}>
-                {compilingRse ? 'Compilation…' : '⚙️ Compiler les RSE (Standardisés/RSE/)'}
+                {compilingRse ? 'Compilation…' : 'Compiler les RSE'}
               </button>
               {hasRSE && (
                 <button className="btn btn-outline" onClick={() => download(buildRSEXlsx(rseData), 'Compilation_RSE.xlsx')}>
-                  📥 Exporter Excel
+                  Exporter Excel
                 </button>
               )}
             </div>
@@ -1340,7 +1370,7 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">📄</div>
+              <div className="empty-icon">—</div>
               <div className="empty-title">Aucune donnée RSE</div>
               <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez les RSE.</div>
             </div>
@@ -1352,15 +1382,15 @@ export default function AnalyseUnicancer() {
       {tab === 4 && (
         <div className="fade-in">
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">📑 Chiffrage (Annexe 3)</span></div>
+            <div className="card-header"><span className="card-title">Chiffrage</span></div>
             <div className="card-body" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={compileChiffrage}
                 disabled={compilingChiffrage || !reponsesDirHandle}>
-                {compilingChiffrage ? 'Compilation…' : '⚙️ Compiler le Chiffrage (Standardisés/Chiffrage/)'}
+                {compilingChiffrage ? 'Compilation…' : 'Compiler le Chiffrage'}
               </button>
               {hasChiffrage && (
                 <button className="btn btn-outline" onClick={() => download(buildChiffrageXlsx(chiffrageData), 'Comparatif_Chiffrage.xlsx')}>
-                  📥 Exporter Excel
+                  Exporter Excel
                 </button>
               )}
             </div>
@@ -1422,7 +1452,7 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">📑</div>
+              <div className="empty-icon">—</div>
               <div className="empty-title">Aucune donnée Chiffrage</div>
               <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez le chiffrage.</div>
             </div>
@@ -1447,7 +1477,7 @@ export default function AnalyseUnicancer() {
                         <td className="td-center"><span className="score-chip" style={{ background: '#e0e7ff', color: '#3730a3' }}>LOT {lot}</span></td>
                         <td className="td-center">
                           <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : status === 'absent' ? '#dc2626' : '#64748b', fontWeight: 600, fontSize: 12 }}>
-                            {status === 'ok' ? '✅ Complet' : status === 'partial' ? '⚠️ Partiel' : status === 'absent' ? '❌ Absent' : '⛔ Vide'}
+                            {status === 'ok' ? 'Complet' : status === 'partial' ? 'Partiel' : status === 'absent' ? 'Absent' : 'Vide'}
                             {status !== 'absent' && <span style={{ fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({filled}/{total})</span>}
                           </span>
                         </td>
@@ -1459,7 +1489,7 @@ export default function AnalyseUnicancer() {
             </div>
           ) : (
             <div className="empty-state">
-              <div className="empty-icon">🔍</div>
+              <div className="empty-icon">—</div>
               <div className="empty-title">Aucune donnée QT</div>
               <div className="empty-sub">Lancez d&apos;abord la compilation QT.</div>
             </div>
@@ -1472,7 +1502,7 @@ export default function AnalyseUnicancer() {
         <div className="fade-in">
           {/* Format standard */}
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">📐 Format standard attendu</span></div>
+            <div className="card-header"><span className="card-title">Format standard attendu</span></div>
             <div className="card-body" style={{ fontSize: 13 }}>
               <p style={{ marginBottom: 8 }}>Pour que la compilation fonctionne de façon fiable, les fichiers Annexe 1 QT doivent respecter ce format :</p>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -1506,13 +1536,13 @@ export default function AnalyseUnicancer() {
 
           {/* Template vierge */}
           <div className="card" style={{ marginBottom: 16 }}>
-            <div className="card-header"><span className="card-title">📄 Template vierge à envoyer aux fournisseurs</span></div>
+            <div className="card-header"><span className="card-title">Template vierge à envoyer aux fournisseurs</span></div>
             <div className="card-body">
               <p style={{ fontSize: 13, marginBottom: 12 }}>
                 Génère un fichier Excel standardisé avec les questions pré-remplies et la colonne <strong>Réponse candidat</strong> vide — à envoyer à chaque fournisseur.
               </p>
               <button className="btn btn-primary" onClick={() => download(buildTemplateXlsx(qtData), 'Template_QT_vierge.xlsx')} disabled={!hasQT}>
-                📥 Télécharger le template vierge
+                Télécharger le template vierge
               </button>
               {!hasQT && <span style={{ marginLeft: 12, fontSize: 12, color: 'var(--text-muted)' }}>Compilez d&apos;abord les QT pour générer le template.</span>}
             </div>
@@ -1520,14 +1550,14 @@ export default function AnalyseUnicancer() {
 
           {/* Standardisation */}
           <div className="card">
-            <div className="card-header"><span className="card-title">🔄 Standardiser les fichiers existants</span></div>
+            <div className="card-header"><span className="card-title">Standardiser les fichiers existants</span></div>
             <div className="card-body">
               <p style={{ fontSize: 13, marginBottom: 12 }}>
                 Reformat les fichiers QT de tous les fournisseurs positionnés dans le format standard (col C = réponse).
                 Génère un <strong>.zip</strong> avec un fichier Excel par fournisseur.
               </p>
               <button className="btn btn-primary" onClick={handleDownloadZip} disabled={!hasQT || generatingZip}>
-                {generatingZip ? '⏳ Génération…' : '📦 Télécharger les QT standardisés (.zip)'}
+                {generatingZip ? 'Génération…' : 'Télécharger les QT standardisés (.zip)'}
               </button>
               {!hasQT && <span style={{ marginLeft: 12, fontSize: 12, color: 'var(--text-muted)' }}>Compilez d&apos;abord les QT.</span>}
             </div>
