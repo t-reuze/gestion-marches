@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Guide Équipe — Gestion Marchés</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 13px; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #1a1a2e;
+      background: #fff;
+      line-height: 1.6;
+    }
+
+    /* ── Print layout ── */
+    @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+    @media print {
+      .no-print { display: none; }
+      .page-break { page-break-before: always; }
+      body { font-size: 11px; }
+      .cover { page-break-after: always; }
+    }
+
+    /* ── Preview wrapper ── */
+    .preview-hint {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #f59e0b; color: #1a1a2e;
+      text-align: center; padding: 10px 0; font-weight: 600; font-size: 13px;
+      z-index: 100;
+    }
+    .preview-hint kbd {
+      background: #1a1a2e; color: #fff;
+      border-radius: 4px; padding: 1px 7px; font-size: 12px;
+    }
+    @media print { .preview-hint { display: none; } }
+
+    /* ── Container ── */
+    .page { max-width: 760px; margin: 0 auto; padding: 40px 20px; }
+    @media print { .page { max-width: 100%; padding: 0; } }
+
+    /* ── Cover ── */
+    .cover {
+      min-height: 90vh;
+      display: flex; flex-direction: column; justify-content: center;
+      border-left: 6px solid #e85d04;
+      padding-left: 32px;
+      margin-bottom: 60px;
+    }
+    .cover .tag {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      color: #e85d04; font-weight: 700; margin-bottom: 16px;
+    }
+    .cover h1 { font-size: 32px; font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
+    .cover h1 span { color: #e85d04; }
+    .cover .subtitle { font-size: 15px; color: #555; margin-bottom: 32px; }
+    .cover .meta {
+      display: flex; gap: 24px; flex-wrap: wrap;
+    }
+    .cover .meta-item { font-size: 12px; color: #777; }
+    .cover .meta-item strong { color: #1a1a2e; display: block; font-size: 13px; }
+
+    /* ── Section header ── */
+    .section-title {
+      font-size: 18px; font-weight: 800;
+      border-bottom: 3px solid #e85d04;
+      padding-bottom: 6px; margin: 36px 0 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title .num {
+      background: #e85d04; color: #fff;
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ── Step cards ── */
+    .steps { display: flex; flex-direction: column; gap: 12px; }
+    .step {
+      display: flex; gap: 14px; align-items: flex-start;
+      background: #f8f9ff; border-radius: 8px; padding: 14px 16px;
+      border-left: 4px solid #e85d04;
+    }
+    .step-num {
+      background: #e85d04; color: #fff;
+      width: 24px; height: 24px; border-radius: 50%;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .step-content h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .step-content p { font-size: 12px; color: #444; margin-bottom: 6px; }
+
+    /* ── Code blocks ── */
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: #1a1a2e; color: #a8d8a8;
+      padding: 2px 7px; border-radius: 4px; font-size: 11.5px;
+    }
+    pre {
+      background: #1a1a2e; color: #a8d8a8;
+      border-radius: 8px; padding: 14px 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11.5px; line-height: 1.7;
+      overflow-x: auto; margin: 8px 0;
+    }
+    pre .comment { color: #6a8f6a; }
+    pre .cmd { color: #7ec8e3; }
+    pre .str { color: #f7c59f; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+    th { background: #1a1a2e; color: #fff; padding: 8px 12px; text-align: left; font-weight: 600; }
+    td { padding: 7px 12px; border-bottom: 1px solid #e8e8f0; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #f8f9ff; }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: 8px; padding: 12px 16px;
+      margin: 12px 0; font-size: 12px;
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .callout-icon { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
+    .callout.tip { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .callout.warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+    .callout.danger { background: #fff1f2; border-left: 4px solid #f43f5e; }
+    .callout.info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+
+    /* ── Assignation badges ── */
+    .person-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #f0f0ff; border: 1px solid #c7c7ef;
+      border-radius: 20px; padding: 3px 12px;
+      font-size: 12px; font-weight: 600; margin: 4px 4px 4px 0;
+    }
+    .person-badge .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .dot-orange { background: #e85d04; }
+    .dot-blue   { background: #3b82f6; }
+    .dot-green  { background: #22c55e; }
+
+    /* ── Summary box ── */
+    .summary-box {
+      border: 2px solid #e85d04; border-radius: 10px;
+      padding: 18px 20px; margin: 20px 0;
+    }
+    .summary-box h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #e85d04; }
+    .summary-box .cmd-list { display: flex; flex-direction: column; gap: 6px; }
+    .summary-box .cmd-row {
+      display: flex; gap: 12px; align-items: center;
+      font-size: 12px;
+    }
+    .summary-box .cmd-row code { min-width: 220px; }
+    .summary-box .cmd-row span { color: #666; }
+
+    /* ── Claude section ── */
+    .claude-hero {
+      background: linear-gradient(135deg, #1a1a2e 0%, #2d1b69 100%);
+      border-radius: 12px; padding: 24px 28px; margin: 20px 0;
+      color: #fff;
+    }
+    .claude-hero h3 { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+    .claude-hero p { font-size: 12px; color: #ccc; margin-bottom: 16px; }
+    .claude-features {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .claude-feature {
+      background: rgba(255,255,255,0.08); border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .claude-feature .feature-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .claude-feature .feature-desc { font-size: 11px; color: #aaa; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 1px solid #e8e8f0;
+      font-size: 11px; color: #999;
+      display: flex; justify-content: space-between;
+    }
+
+    p { margin: 8px 0; font-size: 12px; }
+    ul { padding-left: 20px; font-size: 12px; }
+    li { margin: 4px 0; }
+    h2 { font-size: 15px; font-weight: 700; margin: 20px 0 10px; }
+    strong { font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="preview-hint no-print">
+  Pour générer le PDF : <kbd>Ctrl + P</kbd> → Destination : <strong>Enregistrer au format PDF</strong> → Enregistrer
+</div>
+
+<div class="page">
+
+  <!-- ══════════════════════════════════════════════
+       COVER
+  ═══════════════════════════════════════════════ -->
+  <div class="cover">
+    <div class="tag">Unicancer — Gestion Marchés</div>
+    <h1>Guide de travail<br><span>collaboratif</span></h1>
+    <p class="subtitle">Git + GitHub + Claude Code<br>À destination de toute l'équipe</p>
+    <div class="meta">
+      <div class="meta-item"><strong>Équipe</strong>t-reuze · Tom · Gaspar</div>
+      <div class="meta-item"><strong>Dépôt</strong>github.com/t-reuze/gestion-marches</div>
+      <div class="meta-item"><strong>Version</strong>Mars 2026</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       PARTIE 1 — GIT POUR DÉBUTANTS
+  ═══════════════════════════════════════════════ -->
+  <div class="section-title">
+    <div class="num">1</div>
+    Travailler sur le projet — Git pour débutants
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">💡</div>
+    <div>
+      <strong>Git, c'est quoi ?</strong> Un système de sauvegarde intelligent. Chaque personne travaille dans son coin (sa <em>branche</em>), puis on regroupe le travail quand c'est prêt — sans écraser celui des autres.
+    </div>
+  </div>
+
+  <h2>Qui fait quoi</h2>
+  <table>
+    <tr>
+      <th>Personne</th>
+      <th>Branche assignée</th>
+      <th>Périmètre</th>
+    </tr>
+    <tr>
+      <td><span class="person-badge"><span class="dot dot-orange"></span>t-reuze</span></td>
+      <td><code>feature/analyse-offres</code></td>
+      <td>Analyse Excel, QT, BPU, RSE</td>
+    </tr>
+    <tr>
+      <td><span class="person-badge"><span class="dot dot-blue"></span>Tom</span></td>
+      <td><code>feature/notation</code></td>
+      <td>Grille de notation des offres</td>
+    </tr>
+    <tr>
+      <td><span class="person-badge"><span class="dot dot-green"></span>Gaspar</span></td>
+      <td><code>feature/reporting</code></td>
+      <td>Dashboard, reporting, graphiques</td>
+    </tr>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div>
+      <strong>Fichiers partagés — prévenir avant de modifier :</strong>
+      <code>src/data/mockData.js</code> et <code>src/components/Layout.jsx</code>.
+      Un message Teams suffit.
+    </div>
+  </div>
+
+
+  <!-- Installation -->
+  <h2>Étape 0 — Installation (une seule fois)</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">A</div>
+      <div class="step-content">
+        <h3>Vérifier que Git est installé</h3>
+        <p>Ouvre VS Code → terminal (<kbd>Ctrl+J</kbd>) → tape :</p>
+        <pre><span class="cmd">git</span> --version</pre>
+        <p>Tu dois voir <code>git version 2.x.x</code>. Sinon, télécharge Git sur <strong>git-scm.com</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">B</div>
+      <div class="step-content">
+        <h3>Configurer ton identité</h3>
+        <pre><span class="cmd">git config</span> --global user.name <span class="str">"Prénom Nom"</span>
+<span class="cmd">git config</span> --global user.email <span class="str">"ton@email.com"</span></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">C</div>
+      <div class="step-content">
+        <h3>Télécharger le projet</h3>
+        <pre><span class="cmd">git clone</span> https://github.com/t-reuze/gestion-marches.git</pre>
+        <p>Puis ouvre le dossier <code>gestion-marches</code> dans VS Code.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Quotidien -->
+  <h2 style="margin-top: 28px;">Le quotidien — 5 commandes</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Se mettre à jour (chaque matin)</h3>
+        <pre><span class="cmd">git checkout</span> feature/notation   <span class="comment"># va sur ta branche</span>
+<span class="cmd">git pull</span>                          <span class="comment"># récupère les dernières modifs</span></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Travailler normalement</h3>
+        <p>Modifie tes fichiers dans VS Code comme d'habitude. Rien ne change.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Sauvegarder son travail</h3>
+        <pre><span class="cmd">git add</span> .
+<span class="cmd">git commit</span> -m <span class="str">"feat: description de ce que j'ai fait"</span></pre>
+        <p>Le message doit décrire ce que tu as fait, pas comment. Exemples :<br>
+        <code>feat: ajout filtre fournisseur</code> &nbsp;·&nbsp; <code>fix: correction calcul lots</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Envoyer sur GitHub</h3>
+        <pre><span class="cmd">git push</span></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h3>Demander une validation (Pull Request)</h3>
+        <p>Quand ta tâche est terminée :</p>
+        <ul>
+          <li>Va sur <strong>github.com/t-reuze/gestion-marches</strong></li>
+          <li>Clique sur la bannière jaune <strong>"Compare & pull request"</strong></li>
+          <li>Remplis le titre, assigne <strong>t-reuze</strong> en reviewer</li>
+          <li>Clique <strong>"Create pull request"</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Résumé -->
+  <div class="summary-box">
+    <h3>Aide-mémoire — les commandes essentielles</h3>
+    <div class="cmd-list">
+      <div class="cmd-row"><code>git pull</code><span>Récupérer les dernières modifications</span></div>
+      <div class="cmd-row"><code>git status</code><span>Voir ce que j'ai modifié</span></div>
+      <div class="cmd-row"><code>git add .</code><span>Sélectionner tous mes fichiers modifiés</span></div>
+      <div class="cmd-row"><code>git commit -m "message"</code><span>Créer un point de sauvegarde</span></div>
+      <div class="cmd-row"><code>git push</code><span>Envoyer sur GitHub</span></div>
+      <div class="cmd-row"><code>git branch</code><span>Voir sur quelle branche je suis</span></div>
+    </div>
+  </div>
+
+  <!-- Problèmes fréquents -->
+  <h2>Problèmes fréquents</h2>
+  <table>
+    <tr><th>Problème</th><th>Solution</th></tr>
+    <tr>
+      <td>Je ne sais plus sur quelle branche je suis</td>
+      <td>Regarde en bas à gauche de VS Code, ou tape <code>git branch</code></td>
+    </tr>
+    <tr>
+      <td>J'ai modifié un fichier par erreur</td>
+      <td><code>git restore nom-du-fichier.jsx</code> ⚠️ efface définitivement</td>
+    </tr>
+    <tr>
+      <td>J'ai un conflit</td>
+      <td>Ne touche à rien — appelle t-reuze. Les conflits se règlent à deux.</td>
+    </tr>
+    <tr>
+      <td>Git demande un mot de passe</td>
+      <td>C'est ton mot de passe GitHub. Si ça bloque, contacter t-reuze.</td>
+    </tr>
+  </table>
+
+  <div class="callout danger">
+    <div class="callout-icon">🚫</div>
+    <div>
+      <strong>Règle absolue :</strong> On ne pousse jamais directement sur <code>main</code>. Toujours passer par une Pull Request. Si GitHub te bloque, c'est normal — c'est fait exprès.
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       PARTIE 2 — CLAUDE CODE
+  ═══════════════════════════════════════════════ -->
+  <div class="page-break"></div>
+
+  <div class="section-title" style="margin-top: 32px;">
+    <div class="num">2</div>
+    Travailler avec Claude Code
+  </div>
+
+  <div class="claude-hero">
+    <h3>Claude Code — l'assistant IA intégré à VS Code</h3>
+    <p>Claude Code est un assistant développeur qui comprend l'ensemble du projet. Il peut lire, modifier et créer des fichiers, exécuter des commandes, et expliquer le code existant.</p>
+    <div class="claude-features">
+      <div class="claude-feature">
+        <div class="feature-title">Lecture de code</div>
+        <div class="feature-desc">Il lit les fichiers du projet et comprend le contexte avant de répondre</div>
+      </div>
+      <div class="claude-feature">
+        <div class="feature-title">Modification de fichiers</div>
+        <div class="feature-desc">Il peut éditer directement des composants React, corriger des bugs</div>
+      </div>
+      <div class="claude-feature">
+        <div class="feature-title">Commandes terminal</div>
+        <div class="feature-desc">Il peut lancer <code style="background:#ffffff22">git</code>, <code style="background:#ffffff22">npm</code> et d'autres commandes</div>
+      </div>
+      <div class="claude-feature">
+        <div class="feature-title">Explications</div>
+        <div class="feature-desc">Il explique n'importe quelle partie du code en langage simple</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Comment accéder à Claude Code</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Depuis VS Code</h3>
+        <p>Claude Code est disponible via l'extension VS Code. Clique sur l'icône Claude dans la barre latérale gauche, ou utilise le raccourci <kbd>Ctrl+Shift+C</kbd>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Depuis le terminal</h3>
+        <p>Ouvre un terminal dans le dossier du projet et tape :</p>
+        <pre><span class="cmd">claude</span></pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Depuis claude.ai/code</h3>
+        <p>Accessible aussi via navigateur sur <strong>claude.ai/code</strong> avec ton compte Anthropic.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Comment bien formuler ses demandes</h2>
+
+  <div class="callout tip">
+    <div class="callout-icon">✅</div>
+    <div>
+      <strong>Donne du contexte.</strong> Plus ta demande est précise, meilleure est la réponse.<br>
+      Claude lit les fichiers du projet automatiquement — pas besoin de tout recopier.
+    </div>
+  </div>
+
+  <table>
+    <tr><th>Demande vague</th><th>Demande efficace</th></tr>
+    <tr>
+      <td>«&nbsp;Ça marche pas&nbsp;»</td>
+      <td>«&nbsp;La page Notation affiche une erreur quand il n'y a pas de données — comment corriger ?&nbsp;»</td>
+    </tr>
+    <tr>
+      <td>«&nbsp;Fais quelque chose de joli&nbsp;»</td>
+      <td>«&nbsp;Dans KpiCard.jsx, ajoute une icône à gauche du titre. Je veux que ce soit discret.&nbsp;»</td>
+    </tr>
+    <tr>
+      <td>«&nbsp;Ajoute une fonctionnalité&nbsp;»</td>
+      <td>«&nbsp;Dans la page Reporting, ajoute un filtre par statut de marché au-dessus du tableau.&nbsp;»</td>
+    </tr>
+  </table>
+
+  <h2>Exemples de demandes utiles</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-content">
+        <h3>Comprendre du code</h3>
+        <p>«&nbsp;Explique-moi comment fonctionne le fichier <code>NotationContext.jsx</code>&nbsp;»<br>
+        «&nbsp;Qu'est-ce que <code>useParams()</code> fait dans cette page ?&nbsp;»</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-content">
+        <h3>Corriger un bug</h3>
+        <p>«&nbsp;La grille de notation s'affiche vide quand je sélectionne ce marché — regarde pourquoi&nbsp;»<br>
+        «&nbsp;J'ai cette erreur dans la console : [coller l'erreur] — comment la corriger ?&nbsp;»</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-content">
+        <h3>Ajouter une fonctionnalité</h3>
+        <p>«&nbsp;Dans <code>Notation.jsx</code>, ajoute un bouton "Exporter en PDF" qui télécharge la grille&nbsp;»<br>
+        «&nbsp;Ajoute une colonne "Commentaire" dans le tableau des fournisseurs&nbsp;»</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">→</div>
+      <div class="step-content">
+        <h3>Aide Git</h3>
+        <p>«&nbsp;J'ai un conflit sur ce fichier, aide-moi à le résoudre&nbsp;»<br>
+        «&nbsp;Je veux créer une nouvelle branche pour ajouter l'export PDF — comment faire ?&nbsp;»</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <div class="callout-icon">⚠️</div>
+    <div>
+      <strong>Toujours relire avant d'accepter.</strong> Claude peut se tromper sur la logique métier. Il ne connaît pas les règles Unicancer — toi oui. Lis ce qu'il propose avant de valider les modifications.
+    </div>
+  </div>
+
+  <h2>Bonnes pratiques avec Claude Code</h2>
+  <ul>
+    <li><strong>Une tâche à la fois.</strong> «&nbsp;Corrige ce bug&nbsp;» plutôt que «&nbsp;Corrige ce bug et refais tout le design&nbsp;».</li>
+    <li><strong>Travaille sur ta branche.</strong> Avant de demander à Claude de modifier des fichiers, vérifie que tu es bien sur ta branche (<code>git branch</code>).</li>
+    <li><strong>Commite après chaque modification.</strong> Si Claude fait une modif et que ça casse quelque chose, <code>git restore .</code> annule tout.</li>
+    <li><strong>Tu peux lui demander d'expliquer.</strong> Claude peut justifier chaque ligne qu'il écrit — n'hésite pas à demander «&nbsp;pourquoi tu fais ça comme ça ?&nbsp;»</li>
+  </ul>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Gestion Marchés — Unicancer — Guide équipe v1.0</span>
+    <span>github.com/t-reuze/gestion-marches</span>
+  </div>
+
+</div>
+</body>
+</html>
