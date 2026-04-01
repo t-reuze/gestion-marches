@@ -3,13 +3,17 @@
 // ═══════════════════════════════════════════════════════════
 
 export const SECTEURS = {
-  biomedical: { label: 'Biomédical',  icon: '🏥' },
-  pharma:     { label: 'Pharma',      icon: '💊' },
-  logistique: { label: 'Logistique',  icon: '🚚' },
+  biomedical: { label: 'Biomédical', icon: '🏥' },
+  logistique: { label: 'Logistique', icon: '🚚' },
+  controles:  { label: 'Contrôles',  icon: '🔬' },
 };
 
-export function getMarchesBySecteur(secteurId) {
-  return marches.filter(m => m.secteur === secteurId);
+export function getMarchesBySecteur() {
+  const result = {};
+  for (const key of Object.keys(SECTEURS)) {
+    result[key] = marches.filter(m => m.secteur === key);
+  }
+  return result;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -28,8 +32,8 @@ export const marches = [
   {
     id: 'acc-lin', reference: 'PPE033',
     nom: 'Accélérateurs de particules',
-    secteur: 'biomedical',
     description: "Acquisition d'accélérateurs linéaires de traitement pour les centres membres du réseau Unicancer — Lot 1.",
+    secteur: 'biomedical',
     statut: 'analyse',
     dateOuverture: '', dateLimiteDepot: '', dateAttributionPrevue: '',
     responsable: '', service: '',
@@ -40,8 +44,8 @@ export const marches = [
   {
     id: 'med-nuc', reference: 'PPE045',
     nom: 'Médecine Nucléaire',
-    secteur: 'biomedical',
     description: "Renouvellement du marché Médecine nucléaire PPE027 — gamma-caméras, TEP-scan pour les plateaux d'imagerie oncologique.",
+    secteur: 'biomedical',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2027-01-01', dateAttributionPrevue: '2030-01-01',
     responsable: 'Jean Noël BADEL', service: '',
@@ -52,8 +56,8 @@ export const marches = [
   {
     id: 'anapath', reference: 'PPE028',
     nom: 'Anatomopathologie',
-    secteur: 'biomedical',
     description: "Renouvellement prévu février 2026 — systèmes d'analyse numérique des lames et scanners de pathologie.",
+    secteur: 'biomedical',
     statut: 'attribution',
     dateOuverture: '', dateLimiteDepot: '2023-02-25', dateAttributionPrevue: '2027-02-25',
     responsable: 'Eloïse SALLES', service: '',
@@ -64,8 +68,8 @@ export const marches = [
   {
     id: 'bio-mol', reference: 'PPE044',
     nom: 'Biologie Moléculaire',
-    secteur: 'biomedical',
     description: "Renouvellement du marché Biologie moléculaire PPE025 — plateformes de séquençage NGS et équipements associés.",
+    secteur: 'biomedical',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2026-04-03', dateAttributionPrevue: '2029-04-03',
     responsable: 'Eloïse SALLES', service: '',
@@ -76,8 +80,8 @@ export const marches = [
   {
     id: 'telerad', reference: 'PPE029',
     nom: 'Téléradiologie',
-    secteur: 'biomedical',
     description: "Solution de téléradiologie mutualisée avec logistique — cahier des charges en cours de refecture, publication février 2026.",
+    secteur: 'logistique',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2026-08-20', dateAttributionPrevue: '',
     responsable: 'Gaëtan RAYMOND / Alban HARTMANN', service: '',
@@ -88,8 +92,8 @@ export const marches = [
   {
     id: 'rad-int', reference: 'PPE030',
     nom: 'Radiologie interventionnelle',
-    secteur: 'biomedical',
     description: "Salle avec base ConeBeam CT (CBCT) Canon, GE, Philips, Siemens + salle multi-modale avec base TDM et arceau fixe.",
+    secteur: 'biomedical',
     statut: 'analyse',
     dateOuverture: '', dateLimiteDepot: '2024-01-23', dateAttributionPrevue: '2026-01-23',
     responsable: 'Sergio RABENJASON', service: '',
@@ -100,8 +104,8 @@ export const marches = [
   {
     id: 'ia', reference: 'PPE055',
     nom: 'Intelligence Artificielle',
-    secteur: 'biomedical',
     description: "IA avec logistique — recensement des besoins en cours.",
+    secteur: 'biomedical',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '', dateAttributionPrevue: '',
     responsable: 'Gaëtan RAYMOND / Alban HARTMANN', service: '',
@@ -112,8 +116,8 @@ export const marches = [
   {
     id: 'lert', reference: 'PPE041',
     nom: 'LERT',
-    secteur: 'biomedical',
     description: "Nouveau marché LERT.",
+    secteur: 'biomedical',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2026-02-15', dateAttributionPrevue: '2029-02-15',
     responsable: 'Eloïse SALLES', service: '',
@@ -123,9 +127,9 @@ export const marches = [
   },
   {
     id: 'ctrl-regl-al109', reference: 'AL109',
-    nom: 'Radioprotection & Sûreté Radiologique',
-    secteur: 'biomedical',
+    nom: 'Contrôles Réglementaires (Radioprotection)',
     description: "Renouvellement — vérifications de radioprotection, missions CRP, logiciels de calcul, contrôle des effluents, caractérisation pièces activées. 15 lots.",
+    secteur: 'controles',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2027-01-23', dateAttributionPrevue: '2030-01-23',
     responsable: 'Claire FOURIS', service: '',
@@ -135,9 +139,9 @@ export const marches = [
   },
   {
     id: 'ctrl-qual-al083', reference: 'AL083',
-    nom: 'Contrôle Qualité Externe — Radiologie & Médecine Nucléaire',
-    secteur: 'biomedical',
+    nom: 'Contrôles Qualité Externes Radiologie & MN',
     description: "Renouvellement — Contrôles qualité externes en Radiologie et Médecine Nucléaire. 2 lots.",
+    secteur: 'controles',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2027-01-02', dateAttributionPrevue: '2030-01-02',
     responsable: 'Claire FOURIS', service: '',
@@ -147,9 +151,9 @@ export const marches = [
   },
   {
     id: 'ctrl-regl-al080', reference: 'AL080',
-    nom: 'Contrôle des Locaux & Effluents (Salles Blanches, EOLIA)',
-    secteur: 'biomedical',
+    nom: 'Contrôles Réglementaires (Locaux & Effluents)',
     description: "Contrôle des locaux à pollution spécifique (Infructueux), salles blanches, salles EOLIA, effluents liquides non-radioactifs.",
+    secteur: 'controles',
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2023-02-20', dateAttributionPrevue: '2026-02-20',
     responsable: 'Sergio RABENJASON', service: '',
@@ -240,7 +244,7 @@ export const formations = [
 
 export function formatDate(iso) {
   if (!iso) return '—';
-  if (!iso.includes('-')) return iso; // already formatted or approximate
+  if (!iso.includes('-')) return iso;
   const [y, m, d] = iso.split('-');
   if (!d) return iso;
   return d + '/' + m + '/' + y;
