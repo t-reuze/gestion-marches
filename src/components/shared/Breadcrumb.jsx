@@ -2,65 +2,67 @@ import { Link, useParams, useLocation } from 'react-router-dom';
 import { marches, SECTEURS } from '../../data/mockData';
 
 const TAB_LABELS = {
-  notation:       'Notation',
   analyse:        'AO / Analyse',
-  reporting:      'Reporting',
-  reponses:       'Réponses',
+  notation:       'Notation',
+  reponses:       'Réponses fournisseurs',
   infos:          'Informations',
+  reporting:      'Reporting',
   interlocuteurs: 'Interlocuteurs',
   erp:            'ERP · KPI',
 };
 
 export default function Breadcrumb() {
   const { id } = useParams();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const path = location.pathname;
 
-  const items = [];
-
-  const isMarches = pathname === '/' || pathname.startsWith('/marche');
-  if (!isMarches) return null;
-
-  // Root
-  items.push({ label: 'Marchés', to: '/' });
+  const crumbs = [{ label: 'Marchés', to: '/' }];
 
   if (id) {
-    const marche = marches.find((m) => m.id === id);
+    const marche = marches.find(m => m.id === id);
     if (marche) {
-      // Secteur
       const secteur = SECTEURS[marche.secteur];
       if (secteur) {
-        items.push({ label: secteur.label, to: '/' });
+        crumbs.push({ label: secteur.label, to: '/?secteur=' + marche.secteur });
       }
+      crumbs.push({ label: marche.nom, to: '/marche/' + id + '/analyse' });
 
-      // Marché
-      items.push({ label: marche.nom, to: '/marche/' + id });
-
-      // Tab (last path segment)
-      const segments = pathname.split('/').filter(Boolean);
-      const tabSlug  = segments[segments.length - 1];
-      if (tabSlug && TAB_LABELS[tabSlug]) {
-        items.push({ label: TAB_LABELS[tabSlug], to: null });
+      const tab = Object.keys(TAB_LABELS).find(t => path.includes('/' + t));
+      if (tab) {
+        crumbs.push({ label: TAB_LABELS[tab] });
       }
     }
+  } else if (path.includes('/formations')) {
+    crumbs.length = 0;
+    crumbs.push({ label: 'Formations', to: '/formations' });
+    if (path.match(/\/formations\/.+/)) {
+      crumbs.push({ label: 'Détail' });
+    }
+  } else if (path.includes('/reporting')) {
+    crumbs.length = 0;
+    crumbs.push({ label: 'Reporting' });
+  } else if (path.includes('/contacts')) {
+    crumbs.length = 0;
+    crumbs.push({ label: 'Contacts' });
   }
 
-  // Don't render on root dashboard (single item = not useful)
-  if (items.length <= 1) return null;
+  if (crumbs.length <= 1) return null;
 
   return (
-    <nav className="breadcrumb" aria-label="Fil d'Ariane">
-      {items.map((item, i) => (
-        <span key={i} className="breadcrumb-item">
-          {i > 0 && <span className="breadcrumb-sep">›</span>}
-          {item.to ? (
-            <Link to={item.to} className="breadcrumb-link">
-              {item.label}
-            </Link>
-          ) : (
-            <span className="breadcrumb-current">{item.label}</span>
-          )}
-        </span>
-      ))}
-    </nav>
+    <div className="breadcrumb">
+      {crumbs.map((crumb, i) => {
+        const isLast = i === crumbs.length - 1;
+        return (
+          <span key={i} className="breadcrumb-item">
+            {i > 0 && <span className="breadcrumb-sep">›</span>}
+            {isLast || !crumb.to ? (
+              <span className="breadcrumb-current">{crumb.label}</span>
+            ) : (
+              <Link to={crumb.to} className="breadcrumb-link">{crumb.label}</Link>
+            )}
+          </span>
+        );
+      })}
+    </div>
   );
 }
