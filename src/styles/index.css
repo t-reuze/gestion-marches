@@ -937,3 +937,177 @@ select.info-field-input   { cursor: pointer; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(15,23,42,.12); border-radius: var(--r-full); }
 ::-webkit-scrollbar-thumb:hover { background: rgba(15,23,42,.2); }
+
+/* ================================================================
+   NAVBAR — barre horizontale 4 sections
+================================================================ */
+.navbar {
+  height: 52px;
+  background: var(--sb-bg);
+  border-bottom: 1px solid var(--sb-border);
+  display: flex; align-items: center;
+  padding: 0 20px 0 0;
+  flex-shrink: 0; z-index: var(--z-sticky);
+  position: relative;
+}
+.navbar::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, rgba(232,80,26,.3), transparent 60%);
+}
+
+.navbar-logo {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 20px; height: 100%;
+  border-right: 1px solid var(--sb-border);
+  flex-shrink: 0; min-width: 244px;
+}
+.navbar-logo-text { display: flex; flex-direction: column; gap: 1px; }
+.navbar-brand {
+  font-size: 14px; font-weight: 700;
+  color: #fff; letter-spacing: -.01em;
+}
+.navbar-tagline {
+  font-size: 9.5px; color: rgba(255,255,255,.26);
+  letter-spacing: .02em;
+}
+
+.navbar-tabs {
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 16px; height: 100%; flex: 1;
+}
+.navbar-tab {
+  display: flex; align-items: center;
+  padding: 0 14px; height: 100%;
+  font-size: 12.5px; font-weight: 500;
+  color: rgba(255,255,255,.42);
+  border-bottom: 2px solid transparent;
+  transition: color var(--fast), border-color var(--fast);
+  white-space: nowrap;
+}
+.navbar-tab:hover { color: rgba(255,255,255,.72); }
+.navbar-tab.active {
+  color: #fff;
+  border-bottom-color: var(--orange);
+}
+
+.navbar-right {
+  margin-left: auto; display: flex; align-items: center; gap: 10px;
+}
+.navbar-version {
+  font-size: 9px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(255,255,255,.16);
+  padding: 3px 8px;
+  border: 1px solid var(--sb-border);
+  border-radius: var(--r-full);
+}
+
+/* ================================================================
+   APP BODY — layout sous la navbar (sidebar + main)
+================================================================ */
+.app-body {
+  display: flex; flex: 1; overflow: hidden;
+}
+
+/* ================================================================
+   SIDEBAR — recherche + secteurs collapsibles
+================================================================ */
+.sidebar--empty {
+  justify-content: flex-end;
+}
+
+/* Search */
+.sidebar-search {
+  position: relative; padding: 12px 10px 6px;
+  flex-shrink: 0;
+}
+.sidebar-search-icon {
+  position: absolute; left: 20px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,.22);
+  display: flex; align-items: center; pointer-events: none;
+}
+.sidebar-search-input {
+  width: 100%; height: 30px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--sb-border);
+  border-radius: var(--r-md);
+  padding: 0 10px 0 30px;
+  font-size: 11.5px; color: rgba(255,255,255,.7);
+  outline: none;
+  transition: border-color var(--fast), background var(--fast);
+}
+.sidebar-search-input::placeholder { color: rgba(255,255,255,.22); }
+.sidebar-search-input:focus {
+  border-color: rgba(232,80,26,.4);
+  background: rgba(255,255,255,.09);
+}
+
+/* Secteurs */
+.sidebar-secteur { margin-bottom: 2px; }
+
+.sidebar-secteur-label {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 6px 14px 6px 14px;
+  color: rgba(255,255,255,.28);
+  font-size: 9.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .12em;
+  cursor: pointer;
+  transition: color var(--fast);
+}
+.sidebar-secteur-label:hover { color: rgba(255,255,255,.55); }
+
+.sidebar-secteur-title {
+  display: flex; align-items: center; gap: 6px;
+}
+.sidebar-secteur-icon { font-size: 11px; }
+.sidebar-secteur-count {
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.3);
+  font-size: 9px; font-weight: 600;
+  padding: 1px 5px; border-radius: var(--r-full);
+  letter-spacing: 0;
+}
+.sidebar-secteur-chevron {
+  color: rgba(255,255,255,.2);
+  display: flex; align-items: center;
+}
+
+.sidebar-secteur-items {
+  padding-bottom: 4px;
+}
+.sidebar-secteur-empty {
+  padding: 4px 14px 8px 24px;
+  font-size: 11px; color: rgba(255,255,255,.18);
+  font-style: italic;
+}
+
+/* ================================================================
+   BREADCRUMB — fil d'Ariane cliquable
+================================================================ */
+.breadcrumb {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
+  padding: 8px 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.breadcrumb-item {
+  display: inline-flex; align-items: center; gap: 2px;
+}
+.breadcrumb-sep {
+  color: var(--text-3); font-size: 12px;
+  padding: 0 3px; user-select: none;
+}
+.breadcrumb-link {
+  font-size: 11.5px; color: var(--text-3); font-weight: 400;
+  transition: color var(--fast);
+  border-radius: var(--r-xs);
+  padding: 1px 3px;
+}
+.breadcrumb-link:hover { color: var(--orange); }
+.breadcrumb-current {
+  font-size: 11.5px; color: var(--text-2); font-weight: 600;
+  padding: 1px 3px;
+}
