@@ -1,4 +1,18 @@
 // ═══════════════════════════════════════════════════════════
+// SECTEURS
+// ═══════════════════════════════════════════════════════════
+
+export const SECTEURS = {
+  biomedical: { label: 'Biomédical',  icon: '🏥' },
+  pharma:     { label: 'Pharma',      icon: '💊' },
+  logistique: { label: 'Logistique',  icon: '🚚' },
+};
+
+export function getMarchesBySecteur(secteurId) {
+  return marches.filter(m => m.secteur === secteurId);
+}
+
+// ═══════════════════════════════════════════════════════════
 // DONNÉES MARCHÉS
 // ═══════════════════════════════════════════════════════════
 
@@ -14,6 +28,7 @@ export const marches = [
   {
     id: 'acc-lin', reference: 'PPE033',
     nom: 'Accélérateurs de particules',
+    secteur: 'biomedical',
     description: "Acquisition d'accélérateurs linéaires de traitement pour les centres membres du réseau Unicancer — Lot 1.",
     statut: 'analyse',
     dateOuverture: '', dateLimiteDepot: '', dateAttributionPrevue: '',
@@ -25,6 +40,7 @@ export const marches = [
   {
     id: 'med-nuc', reference: 'PPE045',
     nom: 'Médecine Nucléaire',
+    secteur: 'biomedical',
     description: "Renouvellement du marché Médecine nucléaire PPE027 — gamma-caméras, TEP-scan pour les plateaux d'imagerie oncologique.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2027-01-01', dateAttributionPrevue: '2030-01-01',
@@ -36,6 +52,7 @@ export const marches = [
   {
     id: 'anapath', reference: 'PPE028',
     nom: 'Anatomopathologie',
+    secteur: 'biomedical',
     description: "Renouvellement prévu février 2026 — systèmes d'analyse numérique des lames et scanners de pathologie.",
     statut: 'attribution',
     dateOuverture: '', dateLimiteDepot: '2023-02-25', dateAttributionPrevue: '2027-02-25',
@@ -47,6 +64,7 @@ export const marches = [
   {
     id: 'bio-mol', reference: 'PPE044',
     nom: 'Biologie Moléculaire',
+    secteur: 'biomedical',
     description: "Renouvellement du marché Biologie moléculaire PPE025 — plateformes de séquençage NGS et équipements associés.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2026-04-03', dateAttributionPrevue: '2029-04-03',
@@ -58,6 +76,7 @@ export const marches = [
   {
     id: 'telerad', reference: 'PPE029',
     nom: 'Téléradiologie',
+    secteur: 'biomedical',
     description: "Solution de téléradiologie mutualisée avec logistique — cahier des charges en cours de refecture, publication février 2026.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2026-08-20', dateAttributionPrevue: '',
@@ -69,6 +88,7 @@ export const marches = [
   {
     id: 'rad-int', reference: 'PPE030',
     nom: 'Radiologie interventionnelle',
+    secteur: 'biomedical',
     description: "Salle avec base ConeBeam CT (CBCT) Canon, GE, Philips, Siemens + salle multi-modale avec base TDM et arceau fixe.",
     statut: 'analyse',
     dateOuverture: '', dateLimiteDepot: '2024-01-23', dateAttributionPrevue: '2026-01-23',
@@ -80,6 +100,7 @@ export const marches = [
   {
     id: 'ia', reference: 'PPE055',
     nom: 'Intelligence Artificielle',
+    secteur: 'biomedical',
     description: "IA avec logistique — recensement des besoins en cours.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '', dateAttributionPrevue: '',
@@ -91,6 +112,7 @@ export const marches = [
   {
     id: 'lert', reference: 'PPE041',
     nom: 'LERT',
+    secteur: 'biomedical',
     description: "Nouveau marché LERT.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2026-02-15', dateAttributionPrevue: '2029-02-15',
@@ -101,18 +123,20 @@ export const marches = [
   },
   {
     id: 'ctrl-regl-al109', reference: 'AL109',
-    nom: 'Contrôles Réglementaires (Radioprotection)',
+    nom: 'Radioprotection & Sûreté Radiologique',
+    secteur: 'biomedical',
     description: "Renouvellement — vérifications de radioprotection, missions CRP, logiciels de calcul, contrôle des effluents, caractérisation pièces activées. 15 lots.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2027-01-23', dateAttributionPrevue: '2030-01-23',
     responsable: 'Claire FOURIS', service: '',
     nbLots: 15, nbOffresRecues: 0, hasAnalyse: false, hasReporting: false,
     budgetEstime: '', progression: 0,
-    tags: ["March\u00e9 prolong\u00e9 d'un an"],
+    tags: ["Marché prolongé d'un an"],
   },
   {
     id: 'ctrl-qual-al083', reference: 'AL083',
-    nom: 'Contrôles Qualité Externes Radiologie & MN',
+    nom: 'Contrôle Qualité Externe — Radiologie & Médecine Nucléaire',
+    secteur: 'biomedical',
     description: "Renouvellement — Contrôles qualité externes en Radiologie et Médecine Nucléaire. 2 lots.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2027-01-02', dateAttributionPrevue: '2030-01-02',
@@ -123,7 +147,8 @@ export const marches = [
   },
   {
     id: 'ctrl-regl-al080', reference: 'AL080',
-    nom: 'Contrôles Réglementaires (Locaux & Effluents)',
+    nom: 'Contrôle des Locaux & Effluents (Salles Blanches, EOLIA)',
+    secteur: 'biomedical',
     description: "Contrôle des locaux à pollution spécifique (Infructueux), salles blanches, salles EOLIA, effluents liquides non-radioactifs.",
     statut: 'ouvert',
     dateOuverture: '', dateLimiteDepot: '2023-02-20', dateAttributionPrevue: '2026-02-20',
