@@ -89,7 +89,38 @@ export default function Dashboard() {
   return (
     <Layout title="Tableau de bord" sub="Vue d'ensemble des marchés">
 
-      {/* Secteur Pills */}
+      {/* ── Hero Banner ──────────────────────────────────────── */}
+      <div className="hero-banner">
+        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div className="hero-eyebrow">Unicancer · Achats</div>
+          <div className="hero-title">Gestion des marchés publics</div>
+          <div className="hero-subtitle">
+            Suivez, analysez et pilotez l'ensemble de vos appels d'offres en temps réel.
+          </div>
+          <div className="hero-stats">
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#4ADE80' }} />
+              {actifs} marché{actifs > 1 ? 's' : ''} actif{actifs > 1 ? 's' : ''}
+            </span>
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#FBBF24' }} />
+              {enAnalyse} en analyse
+            </span>
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#60A5FA' }} />
+              {offres} offre{offres > 1 ? 's' : ''} reçue{offres > 1 ? 's' : ''}
+            </span>
+            {budgetTotal > 0 && (
+              <span className="hero-stat">
+                <span className="hero-stat-dot" style={{ background: '#E8501A' }} />
+                {formatBudget(budgetTotal)} estimé
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Secteur Pills ────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         <button
           className={'btn btn-sm ' + (filtreSecteur === 'tous' ? 'btn-primary' : 'btn-outline')}
@@ -109,7 +140,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* KPI Grid */}
+      {/* ── KPI Grid ─────────────────────────────────────────── */}
       <div className="kpi-grid">
         <KpiCard
           label="Total marchés"
@@ -141,7 +172,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Filters */}
+      {/* ── Filters ──────────────────────────────────────────── */}
       <div className="filters-row">
         <input
           className="filter-input"
@@ -163,7 +194,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cards */}
+      {/* ── Section Heading ──────────────────────────────────── */}
+      <div className="section-heading">
+        <span className="section-heading-label">Marchés</span>
+        <span className="section-heading-line" />
+        <span className="section-heading-count">
+          {marchesFiltres.length} résultat{marchesFiltres.length > 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {/* ── Cards ────────────────────────────────────────────── */}
       {marchesFiltres.length === 0 ? (
         <div className="empty-state">
           <div className="empty-title">Aucun marché trouvé</div>
