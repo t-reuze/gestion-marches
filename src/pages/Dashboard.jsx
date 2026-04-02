@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import StatusBadge from '../components/StatusBadge';
 import KpiCard from '../components/KpiCard';
-import { marches, STATUT_CONFIG, formatDate } from '../data/mockData';
+import { marches, SECTEURS, STATUT_CONFIG, formatDate } from '../data/mockData';
 import { useMarcheMeta } from '../context/MarcheMetaContext';
 
 /* ── KPI Icons ──────────────────────────────────────────────── */
@@ -40,6 +40,7 @@ function formatBudget(n) {
 export default function Dashboard() {
   const [filtre, setFiltre] = useState('tous');
   const [search, setSearch] = useState('');
+  const [filtreSecteur, setFiltreSecteur] = useState('tous');
   const navigate = useNavigate();
   const { getMeta } = useMarcheMeta();
 
@@ -60,6 +61,13 @@ export default function Dashboard() {
   const enAnalyse   = marchesMerged.filter(m => m.statut === 'analyse').length;
   const budgetTotal = marchesMerged.reduce((s, m) => s + parseBudget(m.budgetEstime), 0);
 
+  const secteurStats = Object.entries(SECTEURS).map(([key, s]) => ({
+    key,
+    label: s.label,
+    icon: s.icon,
+    count: marchesMerged.filter(m => m.secteur === key).length,
+  }));
+
   const filtres = [
     { value: 'tous',        label: 'Tous' },
     { value: 'ouvert',      label: 'Ouverts' },
@@ -70,15 +78,36 @@ export default function Dashboard() {
   ];
 
   const marchesFiltres = marchesMerged.filter(m => {
-    const matchStatut = filtre === 'tous' || m.statut === filtre;
-    const matchSearch = !search ||
+    const matchStatut  = filtre === 'tous' || m.statut === filtre;
+    const matchSecteur = filtreSecteur === 'tous' || m.secteur === filtreSecteur;
+    const matchSearch  = !search ||
       m.nom.toLowerCase().includes(search.toLowerCase()) ||
       m.reference.toLowerCase().includes(search.toLowerCase());
-    return matchStatut && matchSearch;
+    return matchStatut && matchSecteur && matchSearch;
   });
 
   return (
     <Layout title="Tableau de bord" sub="Vue d'ensemble des marchés">
+
+      {/* Secteur Pills */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <button
+          className={'btn btn-sm ' + (filtreSecteur === 'tous' ? 'btn-primary' : 'btn-outline')}
+          onClick={() => setFiltreSecteur('tous')}
+        >
+          Tous les secteurs ({marchesMerged.length})
+        </button>
+        {secteurStats.filter(s => s.count > 0).map(s => (
+          <button
+            key={s.key}
+            className={'btn btn-sm ' + (filtreSecteur === s.key ? 'btn-primary' : 'btn-outline')}
+            onClick={() => setFiltreSecteur(s.key)}
+            style={filtreSecteur === s.key ? {} : { opacity: 0.75 }}
+          >
+            {s.icon} {s.label} ({s.count})
+          </button>
+        ))}
+      </div>
 
       {/* KPI Grid */}
       <div className="kpi-grid">
