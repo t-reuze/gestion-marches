@@ -631,3 +631,156 @@ export function formatDate(iso) {
 export function getAnalyseData(_marcheId) {
   return null;
 }
+
+// ══════════════════════════════════════════════════════════════
+// CLCC  — Centres de Lutte Contre le Cancer (réseau Unicancer)
+// Source : Synthèse enquête CQE + liste bénéficiaires
+// ══════════════════════════════════════════════════════════════
+
+export const FONCTIONS = [
+  'Ingénieur Biomédical',
+  'Physicien Médical',
+  'Responsable Achats / Acheteur',
+  'DRH',
+  'Directeur',
+  'Pharmacien',
+  'Cadre de santé',
+  'Juriste',
+  'Autre',
+];
+
+export const clccs = [
+  {
+    id: 'ico',
+    nom: "Institut de Cancérologie de l'Ouest",
+    ville: 'Angers / Nantes',
+    region: 'Pays de la Loire',
+    contacts: [],
+  },
+  {
+    id: 'bergonie',
+    nom: 'Institut Bergonié',
+    ville: 'Bordeaux',
+    region: 'Nouvelle-Aquitaine',
+    contacts: [],
+  },
+  {
+    id: 'baclesse',
+    nom: 'Centre François Baclesse',
+    ville: 'Caen',
+    region: 'Normandie',
+    contacts: [],
+  },
+  {
+    id: 'jean-perrin',
+    nom: 'Centre Jean Perrin',
+    ville: 'Clermont-Ferrand',
+    region: 'Auvergne-Rhône-Alpes',
+    contacts: [],
+  },
+  {
+    id: 'cgfl',
+    nom: 'Centre Georges-François Leclerc',
+    ville: 'Dijon',
+    region: 'Bourgogne-Franche-Comté',
+    contacts: [],
+  },
+  {
+    id: 'oscar-lambret',
+    nom: 'Centre Oscar Lambret',
+    ville: 'Lille',
+    region: 'Hauts-de-France',
+    contacts: [],
+  },
+  {
+    id: 'leon-berard',
+    nom: 'Centre Léon Bérard',
+    ville: 'Lyon',
+    region: 'Auvergne-Rhône-Alpes',
+    contacts: [],
+  },
+  {
+    id: 'ipc',
+    nom: 'Institut Paoli-Calmettes',
+    ville: 'Marseille',
+    region: "Provence-Alpes-Côte d'Azur",
+    contacts: [],
+  },
+  {
+    id: 'icm',
+    nom: 'ICM — Institut du Cancer de Montpellier',
+    ville: 'Montpellier',
+    region: 'Occitanie',
+    contacts: [],
+  },
+  {
+    id: 'icl',
+    nom: 'ICL — Institut de Cancérologie de Lorraine',
+    ville: 'Nancy',
+    region: 'Grand Est',
+    contacts: [],
+  },
+  {
+    id: 'lacassagne',
+    nom: 'Centre Antoine Lacassagne',
+    ville: 'Nice',
+    region: "Provence-Alpes-Côte d'Azur",
+    contacts: [],
+  },
+  {
+    id: 'curie',
+    nom: 'Institut Curie',
+    ville: 'Paris / Saint-Cloud',
+    region: 'Île-de-France',
+    contacts: [],
+  },
+  {
+    id: 'godinot',
+    nom: 'Institut Jean Godinot',
+    ville: 'Reims',
+    region: 'Grand Est',
+    contacts: [],
+  },
+  {
+    id: 'eugene-marquis',
+    nom: 'Centre Eugène Marquis',
+    ville: 'Rennes',
+    region: 'Bretagne',
+    contacts: [],
+  },
+  {
+    id: 'becquerel',
+    nom: 'Centre Henri Becquerel',
+    ville: 'Rouen',
+    region: 'Normandie',
+    contacts: [],
+  },
+  {
+    id: 'paul-strauss',
+    nom: 'Centre Paul Strauss',
+    ville: 'Strasbourg',
+    region: 'Grand Est',
+    contacts: [],
+  },
+  {
+    id: 'iuct',
+    nom: 'IUCT Oncopole — Institut Claudius Regaud',
+    ville: 'Toulouse',
+    region: 'Occitanie',
+    contacts: [],
+  },
+  {
+    id: 'gustave-roussy',
+    nom: 'Gustave Roussy',
+    ville: 'Villejuif',
+    region: 'Île-de-France',
+    contacts: [],
+  },
+  {
+    id: 'sainte-catherine',
+    nom: 'Institut Sainte-Catherine',
+    ville: 'Avignon',
+    region: "Provence-Alpes-Côte d'Azur",
+    contacts: [],
+  },
+];

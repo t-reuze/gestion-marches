@@ -9,6 +9,7 @@ import FormationDetail      from './features/formations/FormationDetail';
 import AnalyseMarche        from './features/ao/AnalyseMarche';
 import AnalyseUnicancer     from './features/ao/AnalyseUnicancer';
 import ContactsAnnuaire     from './features/contacts/ContactsAnnuaire';
+import ClccContactForm      from './features/contacts/ClccContactForm';
 import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
 import ErpKpi               from './features/erp/ErpKpi';
 import { NotationProvider, useNotation } from './context/NotationContext';
@@ -33,6 +34,7 @@ const router = createHashRouter([
   { path: '/formations/:id',               element: <FormationDetail /> },
   { path: '/analyse-unicancer',             element: <AnalyseUnicancer /> },
   { path: '/contacts',                      element: <ContactsAnnuaire /> },
+  { path: '/contacts/:clccId/add',          element: <ClccContactForm /> },
   { path: '/marche/:id/reporting',          element: <Reporting /> },
   { path: '/marche/:id/notation',           element: <Notation /> },
   { path: '/marche/:id/reponses',           element: <Reponses /> },

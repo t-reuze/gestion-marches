@@ -16,5 +16,7 @@ export function MarcheMetaProvider({ children }) {
     try { localStorage.setItem('gm-metas', JSON.stringify(updated)); } catch(_) {}
   }
 
-  return <Ctx.Provider value={{ getMeta, setMeta }}>{children}</Ctx.Provider>;
+  function getAllMeta() { return metas; }
+
+  return <Ctx.Provider value={{ getMeta, setMeta, getAllMeta }}>{children}</Ctx.Provider>;
 }
