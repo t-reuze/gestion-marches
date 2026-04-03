@@ -120,14 +120,14 @@ export default function Reporting() {
       <MarcheNavTabs />
 
       <div className="kpi-grid">
-        <KpiCard label="Total marchés"  value={total}                         color="#1A4FA8" icon="&#x1F4CB;" sub={actifs + ' actif' + (actifs > 1 ? 's' : '')} />
-        <KpiCard label="Offres reçues"  value={offres}                        color="#10B981" icon="&#x1F4E5;" sub={'cumulées tous marchés'} />
-        <KpiCard label="En analyse"           value={marchesMerged.filter(m => m.statut === 'analyse').length} color="#F59E0B" icon="&#x1F50D;" sub={"marchés en cours d'éval."} />
-        <KpiCard label="Budget total"         value={budgetTotal > 0 ? formatBudget(budgetTotal) : '—'} color="#8B5CF6" icon="&#x1F4B6;" sub={'estimation cumulée'} />
+        <KpiCard label="Total marchés"  value={total}                         color="#1A4FA8" sub={actifs + ' actif' + (actifs > 1 ? 's' : '')} />
+        <KpiCard label="Offres reçues"  value={offres}                        color="#10B981" sub={'cumulées tous marchés'} />
+        <KpiCard label="En analyse"           value={marchesMerged.filter(m => m.statut === 'analyse').length} color="#F59E0B" sub={"marchés en cours d'éval."} />
+        <KpiCard label="Budget total"         value={budgetTotal > 0 ? formatBudget(budgetTotal) : '—'} color="#8B5CF6" sub={'estimation cumulée'} />
       </div>
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <div className="card-header"><span className="card-title">&#x1F4CA; Progression des marchés</span></div>
+        <div className="card-header"><span className="card-title">Progression des marchés</span></div>
         <div className="card-body" style={{ height: 300 }}><canvas ref={barRef} /></div>
       </div>
 
@@ -183,7 +183,7 @@ export default function Reporting() {
                         className={'btn btn-sm ' + (isEditing ? 'btn-primary' : 'btn-outline')}
                         style={{ fontSize: 11 }}
                         onClick={() => isEditing ? setEditingId(null) : startEdit(m)}
-                      >{isEditing ? 'Fermer' : '&#x270F;&#xFE0F; Éditer'}</button>
+                      >{isEditing ? 'Fermer' : 'Éditer'}</button>
                     </td>
                   </tr>
                   {isEditing && (
@@ -235,7 +235,7 @@ export default function Reporting() {
                             </div>
                           </div>
                           <div className="edit-meta-actions">
-                            <button className="btn btn-primary btn-sm" onClick={() => saveEdit(m.id)}>&#x2713; Sauvegarder</button>
+                            <button className="btn btn-primary btn-sm" onClick={() => saveEdit(m.id)}>✓ Sauvegarder</button>
                             <button className="btn btn-outline btn-sm" onClick={() => setEditingId(null)}>Annuler</button>
                           </div>
                         </div>

@@ -74,8 +74,8 @@ export default function ContactsAnnuaire() {
 
       {filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">&#x1F465;</div>
-          <div className="empty-title">Aucun contact trouv&#xe9;</div>
+          <div className="empty-icon"></div>
+          <div className="empty-title">Aucun contact trouvé</div>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
@@ -95,13 +95,13 @@ export default function ContactsAnnuaire() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{c.nom}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
-                      {total} responsabilit&#xe9;{total > 1 ? 's' : ''}
+                      {total} responsabilité{total > 1 ? 's' : ''}
                     </div>
 
                     {c.marches.length > 0 && (
                       <div style={{ marginBottom: 6 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          March&#xe9;s
+                          Marchés
                         </div>
                         {c.marches.map(m => (
                           <div

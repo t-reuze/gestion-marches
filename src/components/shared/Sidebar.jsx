@@ -85,7 +85,6 @@ export default function Sidebar() {
                     onClick={() => toggle(key)}
                   >
                     <span className="sidebar-secteur-title">
-                      <span className="sidebar-secteur-icon">{secteur.icon}</span>
                       {secteur.label}
                       {marches.length > 0 && (
                         <span className="sidebar-secteur-count">{marches.length}</span>

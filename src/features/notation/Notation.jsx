@@ -11,7 +11,7 @@ import MarcheNavTabs from '../../components/MarcheNavTabs';
 import SmartExcelImport from './SmartExcelImport';
 
 const VENDOR_COLORS = ['#B91C1C','#1A6B3A','#7C3AED','#1A4FA8','#0F7285','#9D3FAF'];
-const MEDALS = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+const MEDALS = ['1er','2e','3e','4e','5e','6e'];
 
 function noteColor(n) {
   if (n >= 4.25) return '#10B981';
@@ -279,7 +279,7 @@ export default function Notation() {
             className="btn btn-outline btn-sm"
             onClick={() => { if (window.confirm('Supprimer la session de notation pour ' + marche.reference + ' ?')) { clearSession(id); origBin.current = null; } }}
           >
-            &#x1F5D1; Réinitialiser
+            Réinitialiser
           </button>
         </div>
       }
@@ -301,8 +301,8 @@ export default function Notation() {
       </div>
 
       <div className="tabs">
-        <div className={'tab' + (tab === 'notation' ? ' active' : '')} onClick={() => setTab('notation')}>&#x270F;&#xFE0F; Notation</div>
-        <div className={'tab' + (tab === 'synthese' ? ' active' : '')} onClick={() => setTab('synthese')}>&#x1F4CA; Synthèse</div>
+        <div className={'tab' + (tab === 'notation' ? ' active' : '')} onClick={() => setTab('notation')}>Notation</div>
+        <div className={'tab' + (tab === 'synthese' ? ' active' : '')} onClick={() => setTab('synthese')}>Synthèse</div>
       </div>
 
       {tab === 'notation' && (
@@ -332,7 +332,7 @@ export default function Notation() {
               <div className="fq-header-num">{q.num}</div>
               <div className="fq-header-text">
                 <div className="fq-header-q">{q.question}</div>
-                {q.methode && q.methode !== '—' && <div className="fq-header-m">&#x1F4D0; Méthodologie : {q.methode}</div>}
+                {q.methode && q.methode !== '—' && <div className="fq-header-m">Méthodologie : {q.methode}</div>}
               </div>
             </div>
             <div className="fq-body">
@@ -443,11 +443,11 @@ export default function Notation() {
           </div>
           <div className="charts-grid" style={{ marginBottom: 20 }}>
             <div className="card">
-              <div className="card-header"><span className="card-title">&#x1F4CA; Notes par critère</span></div>
+              <div className="card-header"><span className="card-title">Notes par critère</span></div>
               <div className="card-body" style={{ height: 280 }}><canvas ref={barRef} /></div>
             </div>
             <div className="card">
-              <div className="card-header"><span className="card-title">&#x1F578; Radar multi-critères</span></div>
+              <div className="card-header"><span className="card-title">Radar multi-critères</span></div>
               <div className="card-body" style={{ height: 280 }}><canvas ref={radarRef} /></div>
             </div>
           </div>

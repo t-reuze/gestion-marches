@@ -10,7 +10,7 @@ import EmptyState from '../../components/EmptyState';
 import { marches, getAnalyseData, getClassement, noteColor, formatDate } from '../../data/mockData';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
 
-const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣'];
+const MEDALS = ['1er', '2e', '3e', '4e', '5e', '6e'];
 const ONGLETS = ['Vue d\'ensemble', 'Classement', 'Détail par critère', 'Fournisseurs'];
 
 export default function AnalyseOffres() {
@@ -81,19 +81,18 @@ export default function AnalyseOffres() {
     };
   }, [analyse, onglet]);
 
-  if (!marche) return <Layout title="Erreur"><EmptyState icon="❌" title="Marché introuvable" /></Layout>;
+  if (!marche) return <Layout title="Erreur"><EmptyState title="Marche introuvable" /></Layout>;
 
   if (!analyse) return (
     <Layout title={marche.reference + ' — ' + marche.nom} sub="— Analyse des offres">
       <MarcheNavTabs />
       <EmptyState
-        icon="🔍"
         title="Aucune analyse disponible"
-        sub="Les offres de ce marché ne sont pas encore disponibles pour l'analyse. Revenez une fois les offres reçues et analysées."
+        sub="Les offres de ce marche ne sont pas encore disponibles pour l'analyse. Revenez une fois les offres recues et analysees."
         action={
           marche.hasReporting
-            ? <button className="btn btn-primary" onClick={() => navigate('/marche/' + id + '/reporting')}>📈 Voir le reporting</button>
-            : <button className="btn btn-outline" onClick={() => navigate('/')}>← Retour au tableau de bord</button>
+            ? <button className="btn btn-primary" onClick={() => navigate('/marche/' + id + '/reporting')}>Voir le reporting</button>
+            : <button className="btn btn-outline" onClick={() => navigate('/')}>Retour au tableau de bord</button>
         }
       />
     </Layout>
@@ -113,7 +112,7 @@ export default function AnalyseOffres() {
           <StatusBadge statut={marche.statut} />
           {marche.hasReporting && (
             <button className="btn btn-outline btn-sm" onClick={() => navigate('/marche/' + id + '/reporting')}>
-              📈 Reporting
+              Reporting
             </button>
           )}
         </div>
@@ -122,10 +121,10 @@ export default function AnalyseOffres() {
       <MarcheNavTabs />
       {/* KPIs */}
       <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <KpiCard label="Fournisseurs évalués" value={analyse.fournisseurs.length} color="#1A4FA8" icon="🏭" sub={marche.nbLots + ' lot(s)'} />
-        <KpiCard label="Critères pondérés" value={analyse.criteres.length} color="#7C3AED" icon="⚖️" sub={analyse.criteres.map(c => c.poids + '%').join(' · ')} />
-        <KpiCard label="Meilleure offre" value={winner.produit} color="#10B981" icon="🥇" sub={'Note : ' + winner.noteGlobale.toFixed(3) + '/5'} />
-        <KpiCard label="Complétion" value={Math.round(analyse.completion * 100) + '%'} color="#F59E0B" icon="📊" sub={nbNotes + '/' + nbPossible + ' notes saisies'} />
+        <KpiCard label="Fournisseurs evalues" value={analyse.fournisseurs.length} color="#1A4FA8" sub={marche.nbLots + ' lot(s)'} />
+        <KpiCard label="Criteres ponderes" value={analyse.criteres.length} color="#7C3AED" sub={analyse.criteres.map(c => c.poids + '%').join(' · ')} />
+        <KpiCard label="Meilleure offre" value={winner.produit} color="#10B981" sub={'Note : ' + winner.noteGlobale.toFixed(3) + '/5'} />
+        <KpiCard label="Completion" value={Math.round(analyse.completion * 100) + '%'} color="#F59E0B" sub={nbNotes + '/' + nbPossible + ' notes saisies'} />
       </div>
 
       {/* Onglets */}
@@ -144,13 +143,13 @@ export default function AnalyseOffres() {
           </div>
           <div className="charts-grid">
             <div className="card">
-              <div className="card-header"><span className="card-title">📊 Notes par critère</span></div>
+              <div className="card-header"><span className="card-title">Notes par critere</span></div>
               <div className="card-body" style={{ height: 260 }}>
                 <canvas ref={barRef} />
               </div>
             </div>
             <div className="card">
-              <div className="card-header"><span className="card-title">🕸 Radar multi-critères</span></div>
+              <div className="card-header"><span className="card-title">Radar multi-criteres</span></div>
               <div className="card-body" style={{ height: 260 }}>
                 <canvas ref={radarRef} />
               </div>
