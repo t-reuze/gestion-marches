@@ -188,8 +188,8 @@ function parseAnalyseExcel(wb) {
     return { indicateur: String(r[0]).trim(), values };
   });
 
-  if (!offres.length) throw new Error("Feuille Offres vide ou non trouv\u00e9e");
-  if (!sections.length) throw new Error("Feuille Notation_Synthèse vide ou non trouv\u00e9e");
+  if (!offres.length) throw new Error("Feuille Offres vide ou non trouvée");
+  if (!sections.length) throw new Error("Feuille Notation_Synthèse vide ou non trouvée");
 
   return { marche, offres, fournisseurs, colors, classement, sections, criteres, prixTCO, totalScores, noteEquipements };
 }
@@ -511,7 +511,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
       <div style={{ marginBottom:16 }}>
         <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase",
           letterSpacing:1, marginBottom:8 }}>
-          Catégories &mdash; {notedTotal}/{criteres.length} questions not\u00e9es au total
+          Catégories &mdash; {notedTotal}/{criteres.length} questions notées au total
         </p>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {critNames.map(name => {
@@ -548,7 +548,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
             <strong style={{ color:"var(--color-primary)" }}>{selectedCrit}</strong>
             {" — Question "}<strong>{safeIdx + 1}</strong>/{total}
             {" — "}<strong style={{ color:"#16a34a" }}>{notedGroup}</strong>
-            <span style={{ color:"var(--text-muted)" }}> not\u00e9es</span>
+            <span style={{ color:"var(--text-muted)" }}> notées</span>
           </span>
           <span style={{ fontSize:11, color:"var(--text-muted)" }}>
             {section.name} · {section.poids}%
@@ -660,7 +660,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
           disabled={safeIdx === 0}
           style={{ minWidth:130 }}
         >
-          ← Pr\u00e9c\u00e9dente
+          ← Précédente
         </button>
 
         <div style={{ display:"flex", gap:4, alignItems:"center", flexWrap:"wrap", justifyContent:"center" }}>
@@ -737,7 +737,7 @@ function SectionTab({ section, data, onSetNote }) {
           { label:"Moyenne section", value:moyenne, sub:"sur 5", vc:scoreColor(parseFloat(moyenne)) },
           { label:"Poids", value:section.poids+"%", sub:"du score total", vc:"var(--color-primary)" },
           { label:"Meilleure offre", value:offresNotes[0]?.equipement||"—", sub:offresNotes[0]?.fournisseur||"", vc:colors[offresNotes[0]?.fournisseur]||"var(--text-primary)" },
-          { label:"Questions", value:sectionCriteres.length, sub:notedCriteres.length+" not\u00e9es", vc:"var(--text-primary)" },
+          { label:"Questions", value:sectionCriteres.length, sub:notedCriteres.length+" notées", vc:"var(--text-primary)" },
         ].map((kpi, i) => (
           <div key={i} style={{ background:"var(--surface-subtle)", border:"1px solid var(--color-border)", borderRadius:"var(--radius-lg)", padding:"12px 14px" }}>
             <p style={{ color:"var(--text-muted)", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{kpi.label}</p>
@@ -920,7 +920,7 @@ function SectionTab({ section, data, onSetNote }) {
 
 function TCOTab({ data }) {
   const { prixTCO, offres, colors } = data;
-  if (!prixTCO.length) return <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Donn\u00e9es financières non disponibles.</p>;
+  if (!prixTCO.length) return <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Données financières non disponibles.</p>;
 
   const equipements = Object.keys(prixTCO[0].values).filter(eq => offres.find(o => o.equipement === eq));
 
@@ -1075,7 +1075,7 @@ export default function AnalyseMarche() {
     <Layout title={layoutTitle} sub="— Analyse des offres"
       actions={
         <button className="btn btn-outline btn-sm" onClick={() => {
-          if (window.confirm("Supprimer les donn\u00e9es import\u00e9es ?")) {
+          if (window.confirm("Supprimer les données importées ?")) {
             setAnalysisData(null);
             setLocalNotes({});
             localStorage.removeItem("gm-analyse-" + id);

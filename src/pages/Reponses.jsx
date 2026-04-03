@@ -21,7 +21,7 @@ export default function Reponses() {
 
   if (!marche) return (
     <Layout title="Erreur">
-      <EmptyState icon="❌" title="Marché introuvable" />
+      <EmptyState title="Marche introuvable" />
     </Layout>
   );
 
@@ -31,8 +31,7 @@ export default function Reponses() {
     <Layout title={title} sub="— Réponses fournisseurs">
       <MarcheNavTabs />
       <EmptyState
-        icon="📋"
-        title="Aucun fichier chargé"
+        title="Aucun fichier charge"
         sub="Chargez un fichier Excel via l'onglet Notation pour voir les réponses fournisseurs."
       />
     </Layout>
@@ -120,7 +119,7 @@ export default function Reponses() {
                     <td style={{ fontSize: 11, fontWeight: 600, maxWidth: 220 }}>
                       <div style={{ lineHeight: 1.45 }}>{q.question}</div>
                       {q.methode && q.methode !== '—' && (
-                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>📐 {q.methode}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{q.methode}</div>
                       )}
                     </td>
                     <td>
@@ -129,7 +128,7 @@ export default function Reponses() {
                         : <div className="reponse-text">{ans}</div>
                       }
                       {!isSkipped && q.comments?.[v.name] && (
-                        <div className="reponse-comment">💬 {q.comments[v.name]}</div>
+                        <div className="reponse-comment">{q.comments[v.name]}</div>
                       )}
                     </td>
                     <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>

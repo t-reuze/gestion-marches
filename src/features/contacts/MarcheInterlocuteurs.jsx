@@ -6,7 +6,7 @@ import { marches } from '../../data/mockData';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 
 const ROLE_COLORS = {
-  'R\u00e9f\u00e9rent march\u00e9': '#1A4FA8',
+  'Référent marché': '#1A4FA8',
   'Acheteur': '#10B981',
   'Expert technique': '#8B5CF6',
   'Directeur': '#F59E0B',
@@ -15,22 +15,22 @@ const ROLE_COLORS = {
   'Autre': '#64748B',
 };
 
-const EMPTY_FORM = { nom: '', role: 'R\u00e9f\u00e9rent march\u00e9', service: '', email: '', telephone: '' };
+const EMPTY_FORM = { nom: '', role: 'Référent marché', service: '', email: '', telephone: '' };
 
 function initials(nom) {
   return nom.split(/\s+/).filter(Boolean).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
 
 function ContactForm({ form, setForm }) {
-  const roles = ['R\u00e9f\u00e9rent march\u00e9', 'Acheteur', 'Expert technique', 'Directeur', 'Juriste', 'Finance', 'Autre'];
+  const roles = ['Référent marché', 'Acheteur', 'Expert technique', 'Directeur', 'Juriste', 'Finance', 'Autre'];
   return (
     <div className="info-grid">
       <div className="info-field">
-        <label className="info-field-label">Nom Pr&#xe9;nom *</label>
+        <label className="info-field-label">Nom Prénom *</label>
         <input className="info-field-input" type="text" value={form.nom} placeholder="Dr Dupont Marie" onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} />
       </div>
       <div className="info-field">
-        <label className="info-field-label">R&#xf4;le</label>
+        <label className="info-field-label">Rôle</label>
         <select className="info-field-input" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
           {roles.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
@@ -44,7 +44,7 @@ function ContactForm({ form, setForm }) {
         <input className="info-field-input" type="email" value={form.email} placeholder="contact@unicancer.fr" onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
       </div>
       <div className="info-field">
-        <label className="info-field-label">T&#xe9;l&#xe9;phone</label>
+        <label className="info-field-label">Téléphone</label>
         <input className="info-field-input" type="tel" value={form.telephone} placeholder="+33 1 23 45 67 89" onChange={e => setForm(f => ({ ...f, telephone: e.target.value }))} />
       </div>
     </div>
@@ -61,8 +61,8 @@ export default function MarcheInterlocuteurs() {
   const [form, setForm] = useState(EMPTY_FORM);
 
   if (!marche) return (
-    <Layout title="March\u00e9 introuvable">
-      <div className="empty-state"><div className="empty-title">March\u00e9 introuvable</div></div>
+    <Layout title="Marché introuvable">
+      <div className="empty-state"><div className="empty-title">Marché introuvable</div></div>
     </Layout>
   );
 
@@ -95,10 +95,10 @@ export default function MarcheInterlocuteurs() {
     setMeta(id, { interlocuteurs: interlocuteurs.filter(il => il.id !== ilId) });
   }
 
-  const title = marche.reference + ' \u2014 ' + marche.nom;
+  const title = marche.reference + ' — ' + marche.nom;
 
   return (
-    <Layout title={title} sub="\u2014 Interlocuteurs">
+    <Layout title={title} sub="— Interlocuteurs">
       <MarcheNavTabs />
 
       {marche.responsable && (
@@ -114,7 +114,7 @@ export default function MarcheInterlocuteurs() {
             <div>
               <div style={{ fontWeight: 700, fontSize: 14 }}>{marche.responsable}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                R&#xe9;f&#xe9;rent principal · <em>Donn&#xe9;es statiques</em>
+                Référent principal · <em>Données statiques</em>
               </div>
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function MarcheInterlocuteurs() {
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div className="section-title" style={{ margin: 0 }}>Interlocuteurs suppl&#xe9;mentaires</div>
+        <div className="section-title" style={{ margin: 0 }}>Interlocuteurs supplémentaires</div>
         <button className="btn btn-primary btn-sm" onClick={startAdd}>+ Ajouter</button>
       </div>
 
@@ -132,7 +132,7 @@ export default function MarcheInterlocuteurs() {
           <div className="card-body">
             <ContactForm form={form} setForm={setForm} />
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button className="btn btn-primary btn-sm" onClick={saveAdd}>&#x2713; Ajouter</button>
+              <button className="btn btn-primary btn-sm" onClick={saveAdd}>✓ Ajouter</button>
               <button className="btn btn-outline btn-sm" onClick={() => setAdding(false)}>Annuler</button>
             </div>
           </div>
@@ -141,8 +141,8 @@ export default function MarcheInterlocuteurs() {
 
       {interlocuteurs.length === 0 && !adding ? (
         <div className="empty-state" style={{ padding: 32 }}>
-          <div className="empty-icon">&#x1F464;</div>
-          <div className="empty-sub">Aucun interlocuteur suppl&#xe9;mentaire renseign&#xe9;</div>
+          <div className="empty-icon"></div>
+          <div className="empty-sub">Aucun interlocuteur supplémentaire renseigné</div>
           <button className="btn btn-primary btn-sm" style={{ marginTop: 12 }} onClick={startAdd}>+ Ajouter un interlocuteur</button>
         </div>
       ) : (
@@ -156,7 +156,7 @@ export default function MarcheInterlocuteurs() {
                   <div className="card-body">
                     <ContactForm form={form} setForm={setForm} />
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                      <button className="btn btn-primary btn-sm" onClick={saveEdit}>&#x2713; Sauvegarder</button>
+                      <button className="btn btn-primary btn-sm" onClick={saveEdit}>✓ Sauvegarder</button>
                       <button className="btn btn-outline btn-sm" onClick={() => setEditingId(null)}>Annuler</button>
                     </div>
                   </div>
@@ -172,13 +172,13 @@ export default function MarcheInterlocuteurs() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{il.nom}</div>
                       <div style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 4 }}>{il.role}</div>
-                      {il.service && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F3E2; {il.service}</div>}
-                      {il.email && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x2709;&#xFE0F; {il.email}</div>}
-                      {il.telephone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {il.telephone}</div>}
+                      {il.service && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{il.service}</div>}
+                      {il.email && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{il.email}</div>}
+                      {il.telephone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{il.telephone}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }} onClick={() => startEdit(il)}>&#x270F;&#xFE0F;</button>
-                      <button className="btn btn-outline btn-sm" style={{ fontSize: 11, color: '#EF4444', borderColor: '#EF4444' }} onClick={() => remove(il.id)}>&#x2715;</button>
+                      <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }} onClick={() => startEdit(il)}></button>
+                      <button className="btn btn-outline btn-sm" style={{ fontSize: 11, color: '#EF4444', borderColor: '#EF4444' }} onClick={() => remove(il.id)}>✗</button>
                     </div>
                   </div>
                 )}

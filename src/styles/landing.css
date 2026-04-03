@@ -7,7 +7,7 @@
 .hero-banner {
   position: relative;
   background: var(--grad-navy);
-  border-radius: var(--r-xl);
+  border-radius: var(--r-md);
   padding: 36px 40px 32px;
   margin-bottom: 28px;
   overflow: hidden;
@@ -43,11 +43,12 @@
 }
 .hero-title {
   font-size: 26px;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
   letter-spacing: -.025em;
   line-height: 1.25;
   margin-bottom: 8px;
+  font-family: var(--font-display);
 }
 .hero-subtitle {
   font-size: 13px;

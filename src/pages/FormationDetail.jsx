@@ -6,23 +6,23 @@ import { useFormationsMeta } from '../context/FormationsMetaContext';
 
 const TABS = [
   { key: 'infos',         label: '&#x2139;&#xFE0F; Informations' },
-  { key: 'inscriptions',  label: '&#x1F465; Inscriptions' },
-  { key: 'documents',     label: '&#x1F4C2; Documents' },
-  { key: 'modele',        label: '&#x1F4B0; Mod&#xe8;le &#xe9;conomique' },
+  { key: 'inscriptions',  label: 'Inscriptions' },
+  { key: 'documents',     label: 'Documents' },
+  { key: 'modele',        label: 'Modèle économique' },
 ];
 
 const STATUTS_F = [
-  { value: 'planifie',      label: 'Planifi&#xe9;',            color: '#64748B' },
+  { value: 'planifie',      label: 'Planifié',            color: '#64748B' },
   { value: 'inscriptions',  label: 'Inscriptions ouvertes',    color: '#10B981' },
   { value: 'en_cours',      label: 'En cours',                 color: '#F59E0B' },
-  { value: 'termine',       label: 'Termin&#xe9;',             color: '#8B5CF6' },
-  { value: 'annule',        label: 'Annul&#xe9;',              color: '#EF4444' },
+  { value: 'termine',       label: 'Terminé',             color: '#8B5CF6' },
+  { value: 'annule',        label: 'Annulé',              color: '#EF4444' },
 ];
 
 const STATUTS_I = [
-  { value: 'confirme',    label: 'Confirm&#xe9;',  color: '#10B981' },
+  { value: 'confirme',    label: 'Confirmé',  color: '#10B981' },
   { value: 'en_attente',  label: 'En attente',      color: '#F59E0B' },
-  { value: 'annule',      label: 'Annul&#xe9;',     color: '#EF4444' },
+  { value: 'annule',      label: 'Annulé',     color: '#EF4444' },
 ];
 
 const EMPTY_MODELE = {
@@ -53,7 +53,7 @@ function calcModele(m) {
   return { coutPeda, pedaBase, pedaInscrit, coutFormateur, coutDeplac, coutTemps, coutAdmin, coutAutres, total, parParticipant: nb > 0 ? total / nb : 0 };
 }
 
-function euro(n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + '\u00a0\u20ac'; }
+function euro(n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' €'; }
 
 function StatutBadgeF({ value }) {
   const s = STATUTS_F.find(x => x.value === value) || STATUTS_F[0];
@@ -64,7 +64,7 @@ function StatutBadgeF({ value }) {
 }
 
 function formatDateF(d) {
-  if (!d) return '\u2014';
+  if (!d) return '—';
   if (!d.includes('-')) return d;
   const [y, m, day] = d.split('-');
   return day + '/' + m + '/' + y;
@@ -142,7 +142,7 @@ export default function FormationDetail() {
       };
       reader.readAsDataURL(file);
     } else {
-      const doc = { ...docBase, data: null, warning: 'Fichier > 1\u00a0Mo\u00a0: contenu non persist\u00e9' };
+      const doc = { ...docBase, data: null, warning: 'Fichier > 1 Mo : contenu non persisté' };
       addDoc(id, doc);
       setDocs(getDocs(id));
     }
@@ -169,12 +169,12 @@ export default function FormationDetail() {
           <div>
             <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 6 }}>{formation.nom}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
-              {formation.responsablePedagogique && <span style={{ marginRight: 16 }}>&#x1F4DA; {formation.responsablePedagogique}</span>}
-              {formation.contact && <span>&#x1F4DE; {formation.contact}</span>}
+              {formation.responsablePedagogique && <span style={{ marginRight: 16 }}>{formation.responsablePedagogique}</span>}
+              {formation.contact && <span>{formation.contact}</span>}
             </div>
             <div style={{ fontSize: 12, display: 'flex', gap: 16, color: 'var(--text-muted)' }}>
-              <span>&#x1F4C5; &#xc9;ch&#xe9;ance&#xa0;: {formatDateF(formation.dateEcheance)}</span>
-              {formation.renouvellement && <span style={{ color: '#10B981', fontWeight: 600 }}>&#x2713; Renouvellement 2026&#x2013;2027</span>}
+              <span>Échéance : {formatDateF(formation.dateEcheance)}</span>
+              {formation.renouvellement && <span style={{ color: '#10B981', fontWeight: 600 }}>✓ Renouvellement 2026&#x2013;2027</span>}
             </div>
             {formation.commentaires && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, fontStyle: 'italic' }}>{formation.commentaires}</div>}
           </div>
@@ -193,7 +193,7 @@ export default function FormationDetail() {
       {/* ── TAB: Informations ── */}
       {tab === 'infos' && (
         <div className="card">
-          <div className="card-header"><span className="card-title">&#x1F4CB; Statut &amp; Notes</span></div>
+          <div className="card-header"><span className="card-title">Statut &amp; Notes</span></div>
           <div className="card-body">
             <div style={{ marginBottom: 20 }}>
               <div className="info-field-label" style={{ marginBottom: 8 }}>Statut de la formation</div>
@@ -212,13 +212,13 @@ export default function FormationDetail() {
               <div className="info-field-label" style={{ marginBottom: 6 }}>Notes libres</div>
               <textarea
                 rows={5} style={{ width: '100%', resize: 'vertical', padding: '8px 10px', border: '1.5px solid var(--border)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', background: 'var(--bg-main)' }}
-                placeholder="Informations compl&#xe9;mentaires, retours d&#x27;exp&#xe9;rience, prochaines &#xe9;tapes..."
+                placeholder="Informations complémentaires, retours d&#x27;expérience, prochaines étapes..."
                 value={notes} onChange={e => setNotes(e.target.value)}
               />
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <button className="btn btn-primary" onClick={saveInfos}>&#x2713; Enregistrer</button>
-              {savedInfo && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>&#x2713; Enregistr&#xe9;</span>}
+              <button className="btn btn-primary" onClick={saveInfos}>✓ Enregistrer</button>
+              {savedInfo && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>✓ Enregistré</span>}
             </div>
           </div>
         </div>
@@ -228,14 +228,14 @@ export default function FormationDetail() {
       {tab === 'inscriptions' && (
         <div>
           <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            <div className="kpi-mini" style={{ background: '#D1FAE5', color: '#065F46' }}><span style={{ fontSize: 22, fontWeight: 800 }}>{nbConf}</span><span style={{ fontSize: 11 }}>Confirm&#xe9;(s)</span></div>
+            <div className="kpi-mini" style={{ background: '#D1FAE5', color: '#065F46' }}><span style={{ fontSize: 22, fontWeight: 800 }}>{nbConf}</span><span style={{ fontSize: 11 }}>Confirmé(s)</span></div>
             <div className="kpi-mini" style={{ background: '#FEF3C7', color: '#92400E' }}><span style={{ fontSize: 22, fontWeight: 800 }}>{nbAttente}</span><span style={{ fontSize: 11 }}>En attente</span></div>
             <div className="kpi-mini" style={{ background: '#EFF6FF', color: '#1e40af' }}><span style={{ fontSize: 22, fontWeight: 800 }}>{inscriptions.length}</span><span style={{ fontSize: 11 }}>Total inscrits</span></div>
           </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="card-title">&#x1F465; Liste des participants</span>
+              <span className="card-title">Liste des participants</span>
               <button className="btn btn-primary btn-sm" onClick={() => setAddingInsc(v => !v)}>
                 {addingInsc ? 'Annuler' : '+ Ajouter un participant'}
               </button>
@@ -244,24 +244,24 @@ export default function FormationDetail() {
               {addingInsc && (
                 <form onSubmit={handleAddInsc} style={{ background: 'var(--bg-alt)', borderRadius: 8, padding: 16, marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                   <div className="info-field" style={{ flex: '1 1 180px' }}>
-                    <label className="info-field-label">Nom Pr&#xe9;nom *</label>
+                    <label className="info-field-label">Nom Prénom *</label>
                     <input type="text" className="info-field-input" required value={newInsc.nom} placeholder="Dr Dupont Marie" onChange={e => setNewInsc(f => ({ ...f, nom: e.target.value }))} />
                   </div>
                   <div className="info-field" style={{ flex: '1 1 160px' }}>
                     <label className="info-field-label">Service</label>
-                    <input type="text" className="info-field-input" value={newInsc.service} placeholder="Radioth&#xe9;rapie" onChange={e => setNewInsc(f => ({ ...f, service: e.target.value }))} />
+                    <input type="text" className="info-field-input" value={newInsc.service} placeholder="Radiothérapie" onChange={e => setNewInsc(f => ({ ...f, service: e.target.value }))} />
                   </div>
                   <div className="info-field" style={{ flex: '1 1 140px' }}>
                     <label className="info-field-label">Statut</label>
                     <select className="info-field-input" value={newInsc.statut} onChange={e => setNewInsc(f => ({ ...f, statut: e.target.value }))}>
-                      {STATUTS_I.map(s => <option key={s.value} value={s.value}>{s.label.replace(/&#[^;]+;/g, c => { const m={'&#xe9;':'é','&#x9;':'\t'}; return m[c]||c; })}</option>)}
+                      {STATUTS_I.map(s => <option key={s.value} value={s.value}>{s.label.replace(/&#[^;]+;/g, c => { const m={'é':'é','&#x9;':'\t'}; return m[c]||c; })}</option>)}
                     </select>
                   </div>
                   <button type="submit" className="btn btn-primary btn-sm">Ajouter</button>
                 </form>
               )}
               {inscriptions.length === 0
-                ? <div className="empty-state" style={{ padding: 24 }}><div className="empty-icon">&#x1F465;</div><div className="empty-sub">Aucun participant inscrit</div></div>
+                ? <div className="empty-state" style={{ padding: 24 }}><div className="empty-icon"></div><div className="empty-sub">Aucun participant inscrit</div></div>
                 : (
                   <table>
                     <thead><tr><th>Participant</th><th>Service</th><th>Date inscription</th><th>Statut</th><th></th></tr></thead>
@@ -271,15 +271,15 @@ export default function FormationDetail() {
                         return (
                           <tr key={i.id}>
                             <td style={{ fontWeight: 600, fontSize: 13 }}>{i.nom}</td>
-                            <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{i.service || '\u2014'}</td>
-                            <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{i.dateInscription || '\u2014'}</td>
+                            <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{i.service || '—'}</td>
+                            <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{i.dateInscription || '—'}</td>
                             <td>
                               <select style={{ fontSize: 11, padding: '2px 6px', borderRadius: 6, border: '1px solid ' + s.color, color: s.color, background: s.color + '22', cursor: 'pointer' }}
                                 value={i.statut} onChange={e => updateInscription(id, i.id, { statut: e.target.value })}>
                                 {STATUTS_I.map(x => <option key={x.value} value={x.value}>{x.label.replace(/&#[^;]+;/g,'')}</option>)}
                               </select>
                             </td>
-                            <td><button className="btn btn-outline btn-sm" style={{ fontSize: 11, color: '#EF4444', borderColor: '#EF4444' }} onClick={() => removeInscription(id, i.id)}>&#x2715;</button></td>
+                            <td><button className="btn btn-outline btn-sm" style={{ fontSize: 11, color: '#EF4444', borderColor: '#EF4444' }} onClick={() => removeInscription(id, i.id)}>✗</button></td>
                           </tr>
                         );
                       })}
@@ -295,7 +295,7 @@ export default function FormationDetail() {
       {/* ── TAB: Documents ── */}
       {tab === 'documents' && (
         <div className="card">
-          <div className="card-header"><span className="card-title">&#x1F4C2; Documents attach&#xe9;s</span></div>
+          <div className="card-header"><span className="card-title">Documents attachés</span></div>
           <div className="card-body">
             <div
               style={{ border: '2px dashed var(--border)', borderRadius: 10, padding: '32px 16px', textAlign: 'center', cursor: 'pointer', marginBottom: 20, background: 'var(--bg-alt)', transition: 'border-color .2s' }}
@@ -303,31 +303,31 @@ export default function FormationDetail() {
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); [...e.dataTransfer.files].forEach(handleFileUpload); }}
             >
-              <div style={{ fontSize: 32, marginBottom: 8 }}>&#x1F4C4;</div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>D&#xe9;poser un fichier ici ou cliquer pour s&#xe9;lectionner</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Fichiers &lt; 1&#xa0;Mo stock&#xe9;s dans le navigateur &bull; Formats accept&#xe9;s&#xa0;: PDF, Word, Excel, images</div>
+              <div style={{ fontSize: 32, marginBottom: 8 }}></div>
+              <div style={{ fontWeight: 600, fontSize: 13 }}>Déposer un fichier ici ou cliquer pour sélectionner</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Fichiers &lt; 1 Mo stockés dans le navigateur &bull; Formats acceptés : PDF, Word, Excel, images</div>
             </div>
             <input ref={fileRef} type="file" multiple style={{ display: 'none' }} onChange={e => { [...e.target.files].forEach(handleFileUpload); e.target.value = ''; }} />
 
             {docs.length === 0
-              ? <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 16 }}>Aucun document attach&#xe9;</div>
+              ? <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 16 }}>Aucun document attaché</div>
               : (
                 <table>
-                  <thead><tr><th>Nom du fichier</th><th>Type</th><th>Taille</th><th>Date</th><th>Disponibilit&#xe9;</th><th></th></tr></thead>
+                  <thead><tr><th>Nom du fichier</th><th>Type</th><th>Taille</th><th>Date</th><th>Disponibilité</th><th></th></tr></thead>
                   <tbody>
                     {docs.map(d => (
                       <tr key={d.id}>
                         <td style={{ fontWeight: 600, fontSize: 12 }}>{d.nom}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.type || '\u2014'}</td>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.type || '—'}</td>
                         <td style={{ fontSize: 11, fontFamily: 'DM Mono,monospace' }}>{d.taille > 1024*1024 ? (d.taille/1024/1024).toFixed(1)+' Mo' : Math.round(d.taille/1024)+' Ko'}</td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.date}</td>
                         <td>
                           {d.data
-                            ? <a href={d.data} download={d.nom} className="btn btn-outline btn-sm" style={{ fontSize: 11 }}>&#x2B07; T&#xe9;l&#xe9;charger</a>
-                            : <span style={{ fontSize: 11, color: '#F59E0B' }}>&#x26A0; Non persist&#xe9;</span>
+                            ? <a href={d.data} download={d.nom} className="btn btn-outline btn-sm" style={{ fontSize: 11 }}>&#x2B07; Télécharger</a>
+                            : <span style={{ fontSize: 11, color: '#F59E0B' }}>&#x26A0; Non persisté</span>
                           }
                         </td>
-                        <td><button className="btn btn-outline btn-sm" style={{ fontSize: 11, color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleRemoveDoc(d.id)}>&#x2715;</button></td>
+                        <td><button className="btn btn-outline btn-sm" style={{ fontSize: 11, color: '#EF4444', borderColor: '#EF4444' }} onClick={() => handleRemoveDoc(d.id)}>✗</button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -343,25 +343,25 @@ export default function FormationDetail() {
           <div>
             {/* Paramètres */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header"><span className="card-title">&#x2699;&#xFE0F; Param&#xe8;tres g&#xe9;n&#xe9;raux</span></div>
+              <div className="card-header"><span className="card-title">&#x2699;&#xFE0F; Paramètres généraux</span></div>
               <div className="card-body">
                 <div className="info-grid">
                   {mfield('Nombre de participants', 'nbParticipants', modele, setModele, { min: 0, placeholder: '0', help: 'Nombre total de personnels inscrits à la formation' })}
-                  {mfield('Dur&#xe9;e (jours)', 'nbJours', modele, setModele, { min: 0, step: 0.5, placeholder: '1', help: 'Durée totale en jours (0,5 = demi-journée)' })}
+                  {mfield('Durée (jours)', 'nbJours', modele, setModele, { min: 0, step: 0.5, placeholder: '1', help: 'Durée totale en jours (0,5 = demi-journée)' })}
                 </div>
               </div>
             </div>
 
             {/* Coûts pédagogiques */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header"><span className="card-title">&#x1F4DA; Co&#xfb;ts p&#xe9;dagogiques</span></div>
+              <div className="card-header"><span className="card-title">Coûts pédagogiques</span></div>
               <div className="card-body">
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #3B82F6' }}>
                   Coûts liés au contenu pédagogique : frais de formation, supports, droits d&apos;accès aux ressources, frais d&apos;inscription et de certification individuelle.
                 </div>
                 <div className="info-grid">
-                  {mfield('Frais p&#xe9;dagogiques (&#x20ac; total)', 'fraisPeda', modele, setModele, { min: 0, placeholder: '0', help: 'Coût global de la prestation pédagogique (forfait organisme de formation)' })}
-                  {mfield('Mat&#xe9;riel / documentation (&#x20ac;)', 'fraisMateriel', modele, setModele, { min: 0, placeholder: '0', help: 'Impressions, supports de cours, livres, outils pédagogiques' })}
+                  {mfield('Frais pédagogiques (&#x20ac; total)', 'fraisPeda', modele, setModele, { min: 0, placeholder: '0', help: 'Coût global de la prestation pédagogique (forfait organisme de formation)' })}
+                  {mfield('Matériel / documentation (&#x20ac;)', 'fraisMateriel', modele, setModele, { min: 0, placeholder: '0', help: 'Impressions, supports de cours, livres, outils pédagogiques' })}
                   {mfield('Frais d&#x27;inscription (&#x20ac;/pers.)', 'fraisInscription', modele, setModele, { min: 0, placeholder: '0', help: "Droits d'inscription individuelle à la session ou à la plateforme" })}
                   {mfield('Frais de certification (&#x20ac;/pers.)', 'fraisCertification', modele, setModele, { min: 0, placeholder: '0', help: "Coût de passage d'examen, de certification ou d'habilitation" })}
                 </div>
@@ -375,7 +375,7 @@ export default function FormationDetail() {
 
             {/* Intervenants externes */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header"><span className="card-title">&#x1F3AB; Intervenant(s) externe(s)</span></div>
+              <div className="card-header"><span className="card-title">Intervenant(s) externe(s)</span></div>
               <div className="card-body">
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #10B981' }}>
                   Coûts liés aux formateurs ou experts extérieurs. Calcul : (honoraires × nb jours + frais déplacement) × nb formateurs.
@@ -383,7 +383,7 @@ export default function FormationDetail() {
                 <div className="info-grid">
                   {mfield('Nombre de formateurs', 'nbFormateurs', modele, setModele, { min: 0, placeholder: '1', help: "Nombre d'intervenants/formateurs rémunérés" })}
                   {mfield('Honoraires (&#x20ac;/jour/formateur)', 'honorairesFormateur', modele, setModele, { min: 0, placeholder: '0', help: "Tarif journalier moyen d'un intervenant externe (HT)" })}
-                  {mfield('D&#xe9;placement formateur (&#x20ac; total)', 'deplFormateur', modele, setModele, { min: 0, placeholder: '0', help: 'Transport + hébergement + repas du formateur (forfait total)' })}
+                  {mfield('Déplacement formateur (&#x20ac; total)', 'deplFormateur', modele, setModele, { min: 0, placeholder: '0', help: 'Transport + hébergement + repas du formateur (forfait total)' })}
                 </div>
                 {calc.coutFormateur > 0 && (
                   <div style={{ fontSize: 11, color: '#10B981', marginTop: 8, fontWeight: 500 }}>
@@ -395,15 +395,15 @@ export default function FormationDetail() {
 
             {/* Frais de déplacement participants */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header"><span className="card-title">&#x1F686; Frais de d&#xe9;placement (par participant)</span></div>
+              <div className="card-header"><span className="card-title">Frais de déplacement (par participant)</span></div>
               <div className="card-body">
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #F59E0B' }}>
                   Ces coûts sont multipliés par le nombre de participants. L&apos;hébergement est multiplié par le nombre de nuits, la restauration par le nombre de jours.
                 </div>
                 <div className="info-grid">
                   {mfield('Transport (&#x20ac;/pers.)', 'transport', modele, setModele, { min: 0, placeholder: '0', help: 'Train, avion, voiture… coût moyen aller-retour par personne' })}
-                  {mfield('Nb nuits h&#xe9;bergement', 'nbNuits', modele, setModele, { min: 0, placeholder: '0', help: 'Nombre de nuits par participant' })}
-                  {mfield('H&#xe9;bergement (&#x20ac;/nuit/pers.)', 'hebergement', modele, setModele, { min: 0, placeholder: '0', help: 'Tarif hôtel moyen par nuit et par personne' })}
+                  {mfield('Nb nuits hébergement', 'nbNuits', modele, setModele, { min: 0, placeholder: '0', help: 'Nombre de nuits par participant' })}
+                  {mfield('Hébergement (&#x20ac;/nuit/pers.)', 'hebergement', modele, setModele, { min: 0, placeholder: '0', help: 'Tarif hôtel moyen par nuit et par personne' })}
                   {mfield('Per diem restauration (&#x20ac;/jour/pers.)', 'restauration', modele, setModele, { min: 0, placeholder: '0', help: 'Remboursement repas journalier par participant (selon barème)' })}
                 </div>
                 {calc.coutDeplac > 0 && (
@@ -416,13 +416,13 @@ export default function FormationDetail() {
 
             {/* Coût du temps agents */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header"><span className="card-title">&#x23F1;&#xFE0F; Co&#xfb;t du temps agent (co&#xfb;t opportunit&#xe9;)</span></div>
+              <div className="card-header"><span className="card-title">&#x23F1;&#xFE0F; Coût du temps agent (coût opportunité)</span></div>
               <div className="card-body">
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #8B5CF6' }}>
                   Valorisation du temps de travail mobilisé. Formule : coût salarial journalier chargé × nb jours × nb participants.
                 </div>
                 <div className="info-grid">
-                  {mfield('Co&#xfb;t salarial journalier (&#x20ac;/jour/pers.)', 'coutSalarial', modele, setModele, { min: 0, placeholder: 'ex: 350', help: 'Salaire chargé moyen journalier (charges patronales incluses). Ex : 350 € pour un cadre hospitalier' })}
+                  {mfield('Coût salarial journalier (&#x20ac;/jour/pers.)', 'coutSalarial', modele, setModele, { min: 0, placeholder: 'ex: 350', help: 'Salaire chargé moyen journalier (charges patronales incluses). Ex : 350 € pour un cadre hospitalier' })}
                 </div>
                 {calc.coutTemps > 0 && (
                   <div style={{ fontSize: 11, color: '#8B5CF6', marginTop: 8, fontWeight: 500 }}>
@@ -434,7 +434,7 @@ export default function FormationDetail() {
 
             {/* Frais administratifs & autres */}
             <div className="card" style={{ marginBottom: 16 }}>
-              <div className="card-header"><span className="card-title">&#x1F4BC; Frais administratifs &amp; autres</span></div>
+              <div className="card-header"><span className="card-title">Frais administratifs &amp; autres</span></div>
               <div className="card-body">
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, padding: '6px 10px', background: 'var(--bg-alt)', borderRadius: 6, borderLeft: '3px solid #64748B' }}>
                   Frais de gestion interne, logistique ou toute dépense non catégorisée ci-dessus.
@@ -447,20 +447,20 @@ export default function FormationDetail() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <button className="btn btn-primary" onClick={saveModele}>&#x2713; Sauvegarder le mod&#xe8;le</button>
-              {savedMod && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>&#x2713; Enregistr&#xe9;</span>}
+              <button className="btn btn-primary" onClick={saveModele}>✓ Sauvegarder le modèle</button>
+              {savedMod && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>✓ Enregistré</span>}
             </div>
           </div>
 
           {/* Synthèse */}
           <div style={{ position: 'sticky', top: 20 }}>
             <div className="card">
-              <div className="card-header"><span className="card-title">&#x1F4CA; Synth&#xe8;se du co&#xfb;t</span></div>
+              <div className="card-header"><span className="card-title">Synthèse du coût</span></div>
               <div className="card-body" style={{ padding: 0 }}>
                 <table style={{ width: '100%' }}>
                   <tbody>
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '8px 16px', fontSize: 12, color: '#3B82F6', fontWeight: 600 }}>&#x1F4DA; Coûts pédagogiques</td>
+                      <td style={{ padding: '8px 16px', fontSize: 12, color: '#3B82F6', fontWeight: 600 }}>Coûts pédagogiques</td>
                       <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutPeda)}</td>
                     </tr>
                     {calc.pedaBase > 0 && (
@@ -477,12 +477,12 @@ export default function FormationDetail() {
                     )}
                     {calc.coutFormateur > 0 && (
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '8px 16px', fontSize: 12, color: '#10B981', fontWeight: 600 }}>&#x1F3AB; Intervenants externes</td>
+                        <td style={{ padding: '8px 16px', fontSize: 12, color: '#10B981', fontWeight: 600 }}>Intervenants externes</td>
                         <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutFormateur)}</td>
                       </tr>
                     )}
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '8px 16px', fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>&#x1F686; Déplacements participants</td>
+                      <td style={{ padding: '8px 16px', fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>Déplacements participants</td>
                       <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutDeplac)}</td>
                     </tr>
                     {Number(modele.transport) > 0 && Number(modele.nbParticipants) > 0 && (
@@ -509,7 +509,7 @@ export default function FormationDetail() {
                     </tr>
                     {(calc.coutAdmin > 0 || calc.coutAutres > 0) && (
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '8px 16px', fontSize: 12, color: '#64748B', fontWeight: 600 }}>&#x1F4BC; Admin &amp; autres</td>
+                        <td style={{ padding: '8px 16px', fontSize: 12, color: '#64748B', fontWeight: 600 }}>Admin &amp; autres</td>
                         <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutAdmin + calc.coutAutres)}</td>
                       </tr>
                     )}
@@ -519,7 +519,7 @@ export default function FormationDetail() {
                     </tr>
                     {Number(modele.nbParticipants) > 0 && (
                       <tr style={{ background: '#EFF6FF' }}>
-                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--blue)' }}>Co&#xfb;t par participant</td>
+                        <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--blue)' }}>Coût par participant</td>
                         <td style={{ padding: '10px 16px', fontFamily: 'DM Mono,monospace', fontSize: 14, fontWeight: 700, textAlign: 'right', color: 'var(--blue)' }}>{euro(calc.parParticipant)}</td>
                       </tr>
                     )}
@@ -531,19 +531,19 @@ export default function FormationDetail() {
             {/* Répartition visuelle */}
             {calc.total > 0 && (
               <div className="card" style={{ marginTop: 16 }}>
-                <div className="card-header"><span className="card-title">R&#xe9;partition</span></div>
+                <div className="card-header"><span className="card-title">Répartition</span></div>
                 <div className="card-body">
                   {[
-                    { label: 'P&#xe9;dagogique',    value: calc.coutPeda,                    color: '#3B82F6' },
+                    { label: 'Pédagogique',    value: calc.coutPeda,                    color: '#3B82F6' },
                     { label: 'Intervenants',         value: calc.coutFormateur,               color: '#10B981' },
-                    { label: 'D&#xe9;placements',    value: calc.coutDeplac,                  color: '#F59E0B' },
+                    { label: 'Déplacements',    value: calc.coutDeplac,                  color: '#F59E0B' },
                     { label: 'Temps agents',          value: calc.coutTemps,                   color: '#8B5CF6' },
                     { label: 'Admin &amp; autres',   value: calc.coutAdmin + calc.coutAutres, color: '#64748B' },
                   ].filter(r => r.value > 0).map(r => (
                     <div key={r.label} style={{ marginBottom: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
                         <span dangerouslySetInnerHTML={{ __html: r.label }} />
-                        <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 600 }}>{Math.round(r.value / calc.total * 100)}&#xa0;%</span>
+                        <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 600 }}>{Math.round(r.value / calc.total * 100)} %</span>
                       </div>
                       <div className="progress">
                         <div className="progress-fill" style={{ width: (r.value / calc.total * 100) + '%', background: r.color }} />

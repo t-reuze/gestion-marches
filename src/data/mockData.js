@@ -3,10 +3,10 @@
 // ═══════════════════════════════════════════════════════════
 
 export const SECTEURS = {
-  investissements: { label: 'Investissements', icon: '🏥' },
-  pharma:          { label: 'Pharma',          icon: '💊' },
-  logistique:      { label: 'Logistique',      icon: '🚚' },
-  rd:              { label: 'R&D',             icon: '🔬' },
+  investissements: { label: 'Investissements' },
+  pharma:          { label: 'Pharma' },
+  logistique:      { label: 'Logistique' },
+  rd:              { label: 'R&D' },
 };
 
 export function getMarchesBySecteur(secteurId) {
