@@ -8,6 +8,7 @@ import Layout from '../../components/Layout';
 import { marches } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
+import SmartExcelImport from './SmartExcelImport';
 
 const VENDOR_COLORS = ['#B91C1C','#1A6B3A','#7C3AED','#1A4FA8','#0F7285','#9D3FAF'];
 const MEDALS = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
@@ -65,8 +66,6 @@ export default function Notation() {
 
   const [activeQ, setActiveQ] = useState(0);
   const [tab, setTab] = useState('notation');
-  const [isDrag, setIsDrag] = useState(false);
-  const [importErr, setImportErr] = useState('');
   const [exporting, setExporting] = useState(false);
   const origBin = useRef(null);
   const barRef   = useRef(null);
@@ -74,40 +73,32 @@ export default function Notation() {
   const barChart   = useRef(null);
   const radarChart = useRef(null);
 
-  function loadFile(file) {
-    if (!file?.name.match(/\.xlsx?$/i)) { setImportErr('Fichier .xlsx requis'); return; }
-    setImportErr('');
-    const reader = new FileReader();
-    reader.onload = e => {
+  function handleSmartImport({ wb, fileName, buf }) {
+    try {
+      const data = parseExcel(wb, fileName);
+      origBin.current = buf.slice(0);
       try {
-        const buf = e.target.result;
-        const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
-        const data = parseExcel(wb, file.name);
-        origBin.current = buf.slice(0);
-        try {
-          const saved = JSON.parse(localStorage.getItem('gm-notation-' + id) || 'null');
-          if (saved?.fileName === file.name) {
-            data.questions.forEach(q => {
-              if (saved.notes?.[q.xlsxRowIdx]) {
-                data.vendors.forEach(v => {
-                  const n = saved.notes[q.xlsxRowIdx][v.name];
-                  if (n !== undefined) q.notes[v.name] = n;
-                });
-              }
-              if (saved.skipped?.[q.xlsxRowIdx]) {
-                data.vendors.forEach(v => {
-                  if (saved.skipped[q.xlsxRowIdx]?.[v.name]) q.skipped[v.name] = true;
-                });
-              }
-            });
-          }
-        } catch(_) {}
-        setSession(id, data);
-        setActiveQ(0);
-        setTab('notation');
-      } catch(err) { setImportErr('Erreur : ' + err.message); }
-    };
-    reader.readAsArrayBuffer(file);
+        const saved = JSON.parse(localStorage.getItem('gm-notation-' + id) || 'null');
+        if (saved?.fileName === fileName) {
+          data.questions.forEach(q => {
+            if (saved.notes?.[q.xlsxRowIdx]) {
+              data.vendors.forEach(v => {
+                const n = saved.notes[q.xlsxRowIdx][v.name];
+                if (n !== undefined) q.notes[v.name] = n;
+              });
+            }
+            if (saved.skipped?.[q.xlsxRowIdx]) {
+              data.vendors.forEach(v => {
+                if (saved.skipped[q.xlsxRowIdx]?.[v.name]) q.skipped[v.name] = true;
+              });
+            }
+          });
+        }
+      } catch(_) {}
+      setSession(id, data);
+      setActiveQ(0);
+      setTab('notation');
+    } catch(_) {}
   }
 
   function persist(data) {
@@ -260,31 +251,8 @@ export default function Notation() {
   if (!session) {
     return (
       <Layout title={title} sub="— Notation des offres">
-        <div className="import-zone-wrapper">
-          <MarcheNavTabs />
-          <div className="page-header">
-            <div className="page-title">Charger un fichier d'évaluation</div>
-            <div className="page-sub">Chargez le fichier Excel issu du template d'évaluation des fournisseurs</div>
-          </div>
-          {importErr && <div className="info-box red" style={{ marginBottom: 16 }}>{importErr}</div>}
-          <div
-            className={'drop-zone' + (isDrag ? ' drag-over' : '')}
-            onDragOver={e => { e.preventDefault(); setIsDrag(true); }}
-            onDragLeave={() => setIsDrag(false)}
-            onDrop={e => { e.preventDefault(); setIsDrag(false); loadFile(e.dataTransfer.files[0]); }}
-          >
-            <div className="drop-icon">{'\u{1F4C2}'[0] === '\\' ? '📂' : '📂'}</div>
-            <div className="drop-title">Glissez-déposez votre fichier ici</div>
-            <div className="drop-sub">Format .xlsx · Template d'évaluation fournisseurs Unicancer</div>
-            <label className="btn btn-primary" style={{ marginTop: 16, cursor: 'pointer' }}>
-              Parcourir…
-              <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
-            </label>
-          </div>
-          <div className="info-box blue" style={{ marginTop: 16 }}>
-            <strong>Format attendu :</strong> feuille 1 — ligne 4 = en-têtes fournisseurs (colonnes D–I pour les réponses, J–O pour les notes), lignes 5+ = questions/critères.
-          </div>
-        </div>
+        <MarcheNavTabs />
+        <SmartExcelImport onImport={handleSmartImport} marcheReference={marche.reference} />
       </Layout>
     );
   }
