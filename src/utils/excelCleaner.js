@@ -166,6 +166,72 @@ function _colLetter(idx) {
 }
 
 /**
+ * unmerge(ws)
+ * Dé-fusionne les cellules d'un worksheet XLSX et propage les valeurs.
+ * Chaque cellule fusionnée reçoit la valeur de la cellule en haut à gauche du merge.
+ *
+ * @param {object} ws - worksheet XLSX (modifié in-place)
+ * @returns {number} nombre de cellules dé-fusionnées
+ */
+export function unmerge(ws) {
+  const merges = ws['!merges'];
+  if (!merges || !merges.length) return 0;
+
+  let count = 0;
+  for (const m of merges) {
+    const originAddr = XLSX.utils.encode_cell({ r: m.s.r, c: m.s.c });
+    const originCell = ws[originAddr];
+    const originValue = originCell ? originCell.v : undefined;
+    const originType = originCell ? originCell.t : 's';
+
+    for (let r = m.s.r; r <= m.e.r; r++) {
+      for (let c = m.s.c; c <= m.e.c; c++) {
+        if (r === m.s.r && c === m.s.c) continue;
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (originValue !== undefined) {
+          ws[addr] = { v: originValue, t: originType };
+          count++;
+        }
+      }
+    }
+  }
+
+  delete ws['!merges'];
+  return count;
+}
+
+/**
+ * preview(ws, maxRows)
+ * Génère un aperçu structuré d'un worksheet pour validation utilisateur.
+ * Combine détection de structure + premières lignes de données.
+ *
+ * @param {object} ws - worksheet XLSX
+ * @param {number} maxRows - nombre max de lignes de données à retourner (défaut 20)
+ * @returns {{ structure: object, headers: string[], sampleRows: Array[], totalRows: number }}
+ */
+export function preview(ws, maxRows = 20) {
+  const structure = detectStructure(ws);
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  const headers = (raw[structure.headerRow] || [])
+    .slice(0, 30)
+    .map(c => String(c || '').trim());
+
+  const dataStart = structure.headerRow + 1;
+  const sampleRows = raw
+    .slice(dataStart, dataStart + maxRows)
+    .filter(row => row.some(c => String(c || '').trim()))
+    .map(row => row.slice(0, headers.length).map(c => String(c ?? '').trim()));
+
+  return {
+    structure,
+    headers,
+    sampleRows,
+    totalRows: raw.length - dataStart,
+  };
+}
+
+/**
  * normalize(raw, profile)
  * Nettoie un tableau brut selon un profil de template.
  * - Applique headerRow pour identifier les colonnes

@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Chart, BarController, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
-Chart.register(BarController, CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 
 import Layout from '../../components/Layout';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
@@ -25,9 +24,6 @@ export default function Reporting() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getMeta, setMeta } = useMarcheMeta();
-  const barRef   = useRef(null);
-  const barChart = useRef(null);
-
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
@@ -49,33 +45,6 @@ export default function Reporting() {
   const offres      = marchesMerged.reduce((s, m) => s + (Number(m.nbOffresRecues) || 0), 0);
   const budgetTotal = marchesMerged.reduce((s, m) => s + parseBudget(m.budgetEstime), 0);
   const chartData   = [...marchesMerged].sort((a, b) => b.progression - a.progression);
-
-  useEffect(() => {
-    if (barChart.current) { barChart.current.destroy(); barChart.current = null; }
-    if (!barRef.current) return;
-    barChart.current = new Chart(barRef.current.getContext('2d'), {
-      type: 'bar',
-      data: {
-        labels: chartData.map(m => m.nom),
-        datasets: [{
-          label: 'Progression (%)',
-          data: chartData.map(m => m.progression || 0),
-          backgroundColor: chartData.map(m => (STATUT_CONFIG[m.statut]?.color || '#3B82F6') + 'BB'),
-          borderColor:     chartData.map(m =>  STATUT_CONFIG[m.statut]?.color || '#3B82F6'),
-          borderWidth: 1, borderRadius: 6,
-        }],
-      },
-      options: {
-        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { min: 0, max: 100, ticks: { callback: v => v + '%' } },
-          y: { ticks: { font: { size: 11 } } },
-        },
-      },
-    });
-    return () => { if (barChart.current) { barChart.current.destroy(); barChart.current = null; } };
-  }, [JSON.stringify(chartData.map(m => [m.nom, m.progression, m.statut]))]);
 
   function startEdit(m) {
     const meta = getMeta(m.id);
@@ -128,7 +97,25 @@ export default function Reporting() {
 
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-header"><span className="card-title">Progression des marchés</span></div>
-        <div className="card-body" style={{ height: 300 }}><canvas ref={barRef} /></div>
+        <div className="card-body" style={{ height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              layout="vertical"
+              data={chartData.map(m => ({ nom: m.nom, progression: m.progression || 0, color: STATUT_CONFIG[m.statut]?.color || '#3B82F6' }))}
+              margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" domain={[0, 100]} tickFormatter={v => v + '%'} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="nom" width={160} tick={{ fontSize: 11 }} />
+              <RechartsTooltip formatter={(value) => [value + '%', 'Progression']} />
+              <Bar dataKey="progression" radius={[0, 4, 4, 0]}>
+                {chartData.map((m, i) => (
+                  <Cell key={i} fill={(STATUT_CONFIG[m.statut]?.color || '#3B82F6') + 'BB'} stroke={STATUT_CONFIG[m.statut]?.color || '#3B82F6'} strokeWidth={1} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="section-title">Tableau de synthèse</div>

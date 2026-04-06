@@ -236,9 +236,10 @@ export const marches = [
     statut: 'ouvert',
     dateOuverture: '2027-07-01', dateLimiteDepot: '2030-07-01', dateAttributionPrevue: '2031-07-01',
     responsable: 'Yaël GLIKSMAN', service: '',
-    nbLots: 4, nbOffresRecues: 0, hasAnalyse: false, hasReporting: false,
+    nbLots: 4, nbOffresRecues: 0, hasAnalyse: true, hasReporting: false,
     budgetEstime: '', progression: 0,
     tags: ['Travaux nov. 2026'],
+    analyseConfigId: 'interim-recrutement-2026',
   },
 
   // ── Pharma ───────────────────────────────────────────────
@@ -617,6 +618,72 @@ export const formations = [
 ];
 
 // ═══════════════════════════════════════════════════════════
+// CONFIGURATIONS ANALYSE PAR MARCHÉ
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Chaque config décrit la structure d'un AO pour l'analyse de dossier :
+ * - lots : liste des lots avec label et numéro
+ * - docLabels : documents attendus par fournisseur (pour l'annuaire)
+ * - bpuReq : colonnes BPU obligatoires par lot (index 0-based)
+ * - bpuReqCols : mêmes colonnes, format simplifié pour compileQT
+ * - lotSheets : config des feuilles BPU (nom de feuille Excel, colonnes clé, colonne prix)
+ * - chiffrageLotSheets : noms des feuilles de chiffrage
+ * - docRules : règles de détection documentaire (any/exclude/ext)
+ */
+export const ANALYSE_CONFIGS = {
+  'interim-recrutement-2026': {
+    label: 'AO Recrutement de Personnel 2026',
+    lots: [
+      { num: 1, label: 'LOT 1 MAD Personnel' },
+      { num: 2, label: 'LOT 2 Recrutement' },
+      { num: 3, label: 'LOT 3 Freelance' },
+    ],
+    docLabels: [
+      'Lot 1 MAD Personnel', 'Lot 2 Recrutement', 'Lot 3 Freelance',
+      'BPU (Annexe 5)', 'Optim. Tarifaire', 'QT (Annexe 1)',
+      'BPU Chiffrage', 'Questionnaire RSE', 'CCAP signé',
+      'CCTP signé', 'DC1', 'DC2', 'ATTRI1', 'Fiche Contacts',
+    ],
+    bpuReq: {
+      1: [{ col: 2, name: 'PUHT/jour' }, { col: 3, name: '% Remise' }],
+      2: [{ col: 1, name: '% Taux' }],
+      3: [{ col: 2, name: 'PUHT/jour' }, { col: 3, name: 'PUHT/heure' }, { col: 4, name: '% Remise' }],
+    },
+    bpuReqCols: { 1: [2, 3], 2: [1], 3: [2, 4] },
+    lotSheets: [
+      { name: 'LOT 1 \u2013 MAD Personnel', keyFn: 'profil-niveau', priceCol: 4, headers: ['Profil', 'Niveau exp\u00e9rience'] },
+      { name: 'LOT 2 \u2013 Recrutement',   keyFn: 'profil',        priceCol: 1, headers: ['Profil'] },
+      { name: 'LOT 3 \u2013 Freelance',     keyFn: 'profil-niveau', priceCol: 5, headers: ['Profil', 'Niveau exp\u00e9rience'] },
+      { name: 'Optimisation Tarifaire',     keyFn: 'profil',        priceCol: 1, headers: ['Condition'] },
+    ],
+    chiffrageLotSheets: ['LOT 1 \u2013 MAD Personnel', 'LOT 3 \u2013 Freelance'],
+  },
+};
+
+/** Config par défaut pour les marchés sans config spécifique */
+export const DEFAULT_ANALYSE_CONFIG = {
+  label: 'Analyse des offres',
+  lots: [],
+  docLabels: [
+    'BPU', 'QT', 'Questionnaire RSE', 'CCAP signé',
+    'CCTP signé', 'DC1', 'DC2', 'ATTRI1', 'Fiche Contacts',
+  ],
+  bpuReq: {},
+  bpuReqCols: {},
+  lotSheets: [],
+  chiffrageLotSheets: [],
+};
+
+export function getAnalyseConfig(marcheId) {
+  const marche = marches.find(m => m.id === marcheId);
+  if (marche?.analyseConfigId && ANALYSE_CONFIGS[marche.analyseConfigId]) {
+    return ANALYSE_CONFIGS[marche.analyseConfigId];
+  }
+  return DEFAULT_ANALYSE_CONFIG;
+}
+
+// ═══════════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════════
 
@@ -628,6 +695,3 @@ export function formatDate(iso) {
   return d + '/' + m + '/' + y;
 }
 
-export function getAnalyseData(_marcheId) {
-  return null;
-}
