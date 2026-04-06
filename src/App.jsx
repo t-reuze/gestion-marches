@@ -7,7 +7,6 @@ import MarcheInfos          from './pages/MarcheInfos';
 import Formations           from './features/formations/Formations';
 import FormationDetail      from './features/formations/FormationDetail';
 import AnalyseMarche        from './features/ao/AnalyseMarche';
-import AnalyseUnicancer     from './features/ao/AnalyseUnicancer';
 import ContactsAnnuaire     from './features/contacts/ContactsAnnuaire';
 import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
 import ErpKpi               from './features/erp/ErpKpi';
@@ -31,7 +30,6 @@ const router = createHashRouter([
   { path: '/reporting',                     element: <Reporting /> },
   { path: '/formations',                    element: <Formations /> },
   { path: '/formations/:id',               element: <FormationDetail /> },
-  { path: '/analyse-unicancer',             element: <AnalyseUnicancer /> },
   { path: '/contacts',                      element: <ContactsAnnuaire /> },
   { path: '/marche/:id/reporting',          element: <Reporting /> },
   { path: '/marche/:id/notation',           element: <Notation /> },
