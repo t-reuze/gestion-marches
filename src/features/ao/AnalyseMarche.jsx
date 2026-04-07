@@ -1302,14 +1302,11 @@ export default function AnalyseMarche() {
   // ── Onglets ──
   const tabs = [
     { id:"__annuaire__", label:"Annuaire" },
-    { id:"__qt__", label:"Compilation QT" },
-    { id:"__bpu__", label:"Comparatif BPU" },
-    { id:"__bpu_std__", label:"Standardisation BPU" },
-    { id:"__qt_std__", label:"Standardisation QT" },
-    { id:"__rse_std__", label:"Standardisation RSE" },
-    { id:"__qc__", label:"Contrôle qualité" },
-    { id:"__rse__", label:"RSE" },
+    { id:"__bpu_std__", label:"BPU" },
+    { id:"__qt_std__", label:"QT" },
+    { id:"__rse_std__", label:"RSE" },
     { id:"__chiffrage__", label:"Chiffrage" },
+    { id:"__qc__", label:"Contrôle qualité" },
   ];
 
   // Ajout des onglets d'analyse xlsx si des données ont été importées
@@ -1322,20 +1319,6 @@ export default function AnalyseMarche() {
   return (
     <Layout title={layoutTitle} sub={"\u2014 Analyse des offres"}>
       <MarcheNavTabs />
-
-      <div className="card" style={{ marginBottom: 16, border: '2px dashed #f59e0b', background: '#fffbeb' }}>
-        <div className="card-body">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <h3 style={{ margin: 0, color: '#b45309' }}>🧪 Module de test — Pipeline standardisation BPU</h3>
-            <span style={{ fontSize: 11, padding: '2px 8px', background: '#f59e0b', color: 'white', borderRadius: 4 }}>BETA</span>
-          </div>
-          <p style={{ margin: '4px 0 12px', fontSize: 13, color: '#92400e' }}>
-            Détection par contenu, mapping fuzzy semi-auto, persistance des corrections.
-            Sélectionne un dossier ci-dessous puis lance le pipeline.
-          </p>
-          <StandardisationBpuTab dirHandle={dirHandle} marcheId={id} />
-        </div>
-      </div>
 
       <FolderPickerZone
         onScan={handleFolderAction}
@@ -1358,23 +1341,6 @@ export default function AnalyseMarche() {
         <AnnuaireTab annuaire={annuaire} edits={edits} setCell={setCell} config={config} />
       )}
 
-      {activeTab === "__qt__" && (
-        <CompilationQTTab qtData={qtData} config={config} onCompile={handleCompileQT} compiling={compilingQt} />
-      )}
-
-      {activeTab === "__bpu__" && (
-        <div className="fade-in">
-          <div className="card" style={{ marginBottom:16 }}>
-            <div className="card-body" style={{ display:"flex", gap:12, alignItems:"center" }}>
-              <button className="btn btn-primary" onClick={handleCompileBPU} disabled={compilingBpu || !dirHandle}>
-                {compilingBpu ? 'Compilation\u2026' : 'Compiler les BPU'}
-              </button>
-            </div>
-          </div>
-          <ComparatifTab data={bpuData} title="BPU" emptyMsg="Aucune donn\u00e9e BPU" />
-        </div>
-      )}
-
       {activeTab === "__bpu_std__" && (
         <StandardisationBpuTab dirHandle={dirHandle} marcheId={id} />
       )}
@@ -1389,19 +1355,6 @@ export default function AnalyseMarche() {
 
       {activeTab === "__qc__" && (
         <QualityControlTab annuaire={annuaire} />
-      )}
-
-      {activeTab === "__rse__" && (
-        <div className="fade-in">
-          <div className="card" style={{ marginBottom:16 }}>
-            <div className="card-body" style={{ display:"flex", gap:12, alignItems:"center" }}>
-              <button className="btn btn-primary" onClick={handleCompileRSE} disabled={compilingRse || !dirHandle}>
-                {compilingRse ? 'Compilation\u2026' : 'Compiler les RSE'}
-              </button>
-            </div>
-          </div>
-          <ComparatifTab data={rseData} title="RSE" emptyMsg="Aucune donn\u00e9e RSE" />
-        </div>
       )}
 
       {activeTab === "__chiffrage__" && (
