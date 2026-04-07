@@ -486,11 +486,12 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     docLabels = [...lots.map(l => l.label), ...docLabels];
   }
 
-  // Index global des fichiers xlsx contacts (recherchés partout sous root)
+  // Index global des fichiers contacts (xlsx exploitables + pdf en marqueur)
   onProgress('Recherche fichiers contacts…');
   const allRootFiles = await getAllFiles(rootHandle);
   const contactFiles = allRootFiles.filter(f => {
-    if (!/\.xlsx?$/i.test(f.name) || f.name.startsWith('~')) return false;
+    if (f.name.startsWith('~')) return false;
+    if (!/\.(xlsx?|pdf)$/i.test(f.name)) return false;
     const p = normSupName(f.path);
     return p.includes('contact') || p.includes('annexe 4') || p.includes('interlocuteur');
   });
@@ -511,19 +512,27 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       const files = await getAllFiles(folder.handle);
       raw = detectDocs(files, lots);
     }
-    // Recherche fichier contacts par nom de fournisseur dans tout le dossier root
-    const contactFile = contactFiles.find(f => {
-      const fn = normSupName(f.name);
-      return fn.includes(n) || n.includes(fn.replace(/contact|annexe|fiche|interlocuteur/g, '').trim());
+    // Match par chemin (le nom du fournisseur est dans le dossier parent,
+    // pas forcément dans le nom du fichier "Annexe 4 - Fiche contacts.pdf")
+    const supTokens = n.split(/\s+/).filter(t => t.length > 2);
+    const supCandidates = contactFiles.filter(f => {
+      const p = normSupName(f.path);
+      return supTokens.some(t => p.includes(t));
     });
-    if (contactFile) {
+    // Priorité xlsx (extractible) > pdf (marqueur seulement)
+    const contactXlsx = supCandidates.find(f => /\.xlsx?$/i.test(f.name));
+    const contactPdf = supCandidates.find(f => /\.pdf$/i.test(f.name));
+    if (contactXlsx) {
       try {
-        const file = await contactFile.handle.getFile();
+        const file = await contactXlsx.handle.getFile();
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: 'array' });
         const contacts = extractContactsFromWorkbook(wb);
         if (contacts.length) contact = contacts[0];
       } catch {}
+    } else if (contactPdf) {
+      // PDF présent mais pas extractible — on marque
+      contact = { prenom: '', nom: '', tel: '', mail: '', _pdfFound: true };
     }
 
     const bpuMissing = info.bpuMissing || {};
@@ -579,6 +588,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     row['NOM'] = contact.nom || '';
     row['TEL'] = contact.tel || '';
     row['MAIL'] = contact.mail || '';
+    row._contactPdfOnly = contact._pdfFound === true;
     row._bpuMissing = bpuMissing;
 
     rows.push(row);

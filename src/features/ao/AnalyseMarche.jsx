@@ -1061,16 +1061,18 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
                 {['PRENOM', 'NOM', 'TEL', 'MAIL'].map(field => {
                   const v = row[field] || '';
                   const empty = !v;
+                  const pdfOnly = empty && row._contactPdfOnly;
                   return (
                     <td key={field} className="td-center" style={{ padding:'3px 4px' }}>
                       <input value={v} onChange={e => setCell(ri, field, e.target.value)}
+                        title={pdfOnly ? 'Fiche Contacts trouvée en PDF — saisis les valeurs manuellement' : undefined}
                         style={{ width: field === 'MAIL' ? 180 : field === 'TEL' ? 110 : 90,
                           textAlign: 'left', fontSize: 11, padding: '2px 6px',
-                          border: `1px solid ${empty ? '#fca5a5' : '#e5e7eb'}`, borderRadius: 4,
-                          background: empty ? '#fef2f2' : 'white',
-                          color: empty ? '#b91c1c' : '#111827',
+                          border: `1px solid ${empty ? (pdfOnly ? '#fbbf24' : '#fca5a5') : '#e5e7eb'}`, borderRadius: 4,
+                          background: empty ? (pdfOnly ? '#fffbeb' : '#fef2f2') : 'white',
+                          color: empty ? (pdfOnly ? '#92400e' : '#b91c1c') : '#111827',
                           fontStyle: empty ? 'italic' : 'normal' }}
-                        placeholder={empty ? 'non fourni' : ''} />
+                        placeholder={pdfOnly ? '📄 PDF — à saisir' : 'non fourni'} />
                     </td>
                   );
                 })}
