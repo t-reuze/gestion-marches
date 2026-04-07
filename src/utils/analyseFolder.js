@@ -280,6 +280,62 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
 
   let warning = '';
 
+  // ── Helpers de traitement réutilisables (std + per-supplier) ──
+  const isNum = v => {
+    if (v == null || v === '') return false;
+    if (typeof v === 'number') return Number.isFinite(v);
+    const s = String(v).replace(/\s/g, '').replace(',', '.').replace(/[€%]/g, '');
+    return !Number.isNaN(parseFloat(s)) && Number.isFinite(parseFloat(s));
+  };
+  function processBpuWb(wb, n) {
+    ensure(n, n);
+    supInfo[n].hasBpu = true;
+    if (!supInfo[n].lotStatus) supInfo[n].lotStatus = {};
+    for (const s of wb.SheetNames) {
+      if (/optim/i.test(s)) {
+        const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+        const hasContent = rawSheet.slice(1).some(r => r.slice(1).some(v => isRealVal(v)));
+        supInfo[n].hasOptim = true;
+        supInfo[n].optimFilled = hasContent;
+        continue;
+      }
+      let lotNum = 0;
+      const autoMatch = s.match(/lot\s*(\d+)/i);
+      if (autoMode && autoMatch) {
+        lotNum = parseInt(autoMatch[1], 10);
+        autoLots.add(lotNum);
+      } else {
+        for (const lot of lots) {
+          if (new RegExp(`lot\\s*${lot.num}`, 'i').test(s)) { lotNum = lot.num; break; }
+        }
+      }
+      if (!lotNum) continue;
+      const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+      const dataRows = rawSheet.slice(1).filter(r => String(r[0] || '').trim());
+      const reqCols = bpuReq[lotNum] || [];
+      const totalLines = dataRows.length;
+      let filledLines = 0;
+      const missing = [];
+      for (const { col, name: colName } of reqCols) {
+        const filled = dataRows.filter(r => isRealVal(r[col])).length;
+        if (filled === 0) missing.push(colName);
+      }
+      for (const r of dataRows) {
+        const isFilled = reqCols.length
+          ? reqCols.some(({ col }) => isRealVal(r[col]))
+          : r.slice(1).some(isNum);
+        if (isFilled) filledLines++;
+      }
+      let status;
+      if (totalLines === 0 || filledLines === 0) status = 'vide';
+      else if (filledLines < totalLines || missing.length > 0) status = 'partiel';
+      else status = 'rempli';
+      supInfo[n].lotStatus[lotNum] = { status, filledLines, totalLines, missing };
+      if (status !== 'vide') supInfo[n].lots.add(lotNum);
+      if (missing.length) supInfo[n].bpuMissing[lotNum] = missing;
+    }
+  }
+
   const stdHandle = await findStdDir(rootHandle);
   if (stdHandle) {
     // QT
@@ -302,8 +358,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       } catch {}
     }
 
-    // BPU — on enregistre par lot un statut sémantique riche
-    // 'rempli' | 'partiel' | 'vide' | 'absent'
+    // BPU — on délègue à processBpuWb (réutilisé en mode fallback)
     onProgress('Lecture BPU standardisés…');
     const bpuDir = await findSubdirByName(stdHandle, 'BPU');
     if (bpuDir) {
@@ -312,69 +367,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
         const display = name.replace(/_BPU_standardis[eé]\.xlsx$/i, '').trim();
         const n = normSupName(display);
         ensure(n, display);
-        supInfo[n].hasBpu = true;
-        if (!supInfo[n].lotStatus) supInfo[n].lotStatus = {};
-        try {
-          const wb = await readXlsxHandle(handle);
-          for (const s of wb.SheetNames) {
-            if (/optim/i.test(s)) {
-              // Détecte si l'onglet optim a au moins une valeur
-              const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
-              const hasContent = rawSheet.slice(1).some(r => r.slice(1).some(v => isRealVal(v)));
-              supInfo[n].hasOptim = true;
-              supInfo[n].optimFilled = hasContent;
-              continue;
-            }
-            let lotNum = 0;
-            const autoMatch = s.match(/lot\s*(\d+)/i);
-            if (autoMode && autoMatch) {
-              lotNum = parseInt(autoMatch[1], 10);
-              autoLots.add(lotNum);
-            } else {
-              for (const lot of lots) {
-                if (new RegExp(`lot\\s*${lot.num}`, 'i').test(s)) { lotNum = lot.num; break; }
-              }
-            }
-            if (!lotNum) continue;
-
-            const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
-            const dataRows = rawSheet.slice(1).filter(r => String(r[0] || '').trim());
-
-            const reqCols = bpuReq[lotNum] || [];
-            const totalLines = dataRows.length;
-            let filledLines = 0;
-            const missing = [];
-            for (const { col, name: colName } of reqCols) {
-              const filled = dataRows.filter(r => isRealVal(r[col])).length;
-              if (filled === 0) missing.push(colName);
-            }
-            // Une ligne est "remplie" si au moins une colonne requise est renseignée.
-            // Fallback (mode auto sans bpuReq) : au moins une cellule numérique
-            // (prix, taux, %) — évite de compter les colonnes texte type Profil.
-            const isNum = v => {
-              if (v == null || v === '') return false;
-              if (typeof v === 'number') return Number.isFinite(v);
-              const s = String(v).replace(/\s/g, '').replace(',', '.').replace(/[€%]/g, '');
-              return !Number.isNaN(parseFloat(s)) && Number.isFinite(parseFloat(s));
-            };
-            for (const r of dataRows) {
-              const isFilled = reqCols.length
-                ? reqCols.some(({ col }) => isRealVal(r[col]))
-                : r.slice(1).some(isNum);
-              if (isFilled) filledLines++;
-            }
-
-            let status;
-            if (totalLines === 0) status = 'vide';
-            else if (filledLines === 0) status = 'vide';
-            else if (filledLines < totalLines || missing.length > 0) status = 'partiel';
-            else status = 'rempli';
-
-            supInfo[n].lotStatus[lotNum] = { status, filledLines, totalLines, missing };
-            if (status !== 'vide') supInfo[n].lots.add(lotNum);
-            if (missing.length) supInfo[n].bpuMissing[lotNum] = missing;
-          }
-        } catch {}
+        try { processBpuWb(await readXlsxHandle(handle), n); } catch {}
       }
     }
 
@@ -403,8 +396,43 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
         supInfo[n].hasChiffrage = true;
       }
     }
-  } else {
-    warning = 'Dossier "Standardisés" introuvable — données Excel absentes, seuls les PDFs seront détectés.';
+  }
+
+  // ── Fallback DCE-style : scan des sous-dossiers fournisseur ──
+  // Pour chaque sous-dossier, cherche xlsx BPU/QT/RSE/Chiffrage par nom de fichier.
+  onProgress('Scan dossiers fournisseur…');
+  const rootSubdirs = await getSubdirs(rootHandle);
+  const SKIP_FALLBACK = new Set(['standardises', 'compilation', '__pycache__',
+    'qt', 'bpu', 'rse', 'chiffrage', 'consignes', 'instructions',
+    'template', 'modele', 'modeles']);
+  for (const { name: dirName, handle: dirHandle } of rootSubdirs) {
+    const norm = normSupName(dirName);
+    if (SKIP_FALLBACK.has(norm)) continue;
+    const files = await getAllFiles(dirHandle);
+    const xlsxFiles = files.filter(f => /\.xlsx$/i.test(f.name) && !f.name.startsWith('~'));
+    if (!xlsxFiles.length) continue;
+    ensure(norm, dirName);
+    for (const f of xlsxFiles) {
+      const lower = f.name.toLowerCase();
+      // Skip si déjà traité par std mode
+      if (/standardis/i.test(lower)) continue;
+      try {
+        const wb = await readXlsxHandle(f.handle);
+        if (/bpu|prix|tarif|bordereau/i.test(lower) && !supInfo[norm].hasBpu) {
+          processBpuWb(wb, norm);
+        } else if (/qt|questionnaire.tech|technique/i.test(lower) && !supInfo[norm].hasQT) {
+          supInfo[norm].hasQT = true;
+        } else if (/rse|durable|environn/i.test(lower) && !supInfo[norm].hasRse) {
+          supInfo[norm].hasRse = true;
+        } else if (/chiffrage|simulation/i.test(lower) && !supInfo[norm].hasChiffrage) {
+          supInfo[norm].hasChiffrage = true;
+        }
+      } catch {}
+    }
+  }
+
+  if (!stdHandle && Object.keys(supInfo).length === 0) {
+    warning = 'Aucun fichier xlsx exploitable trouvé — vérifie la structure du dossier.';
   }
 
   // Scan PDF
