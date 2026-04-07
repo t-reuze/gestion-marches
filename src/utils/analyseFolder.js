@@ -76,9 +76,64 @@ export async function listXlsxFiles(dirHandle, suffixRe) {
 const NA_VALS = new Set(['na', 'n/a', 'n.a.', 'n.a', 'non applicable', 'néant', 'neant', '-']);
 export const isRealVal = v => { const s = String(v || '').trim().toLowerCase(); return s !== '' && !NA_VALS.has(s); };
 
-export const normSupName = s => s.toLowerCase()
-  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .replace(/\s+ok$/i, '').replace(/\s+/g, ' ').trim();
+/**
+ * Normalisation aggressive pour rapprocher les noms fournisseurs entre sources.
+ * Ex : "CAMO" ≈ "Camo medical", "DERODES" ≈ "DERODES PARTNERS",
+ *      "AGATE life sciences" ≈ "AGATE LIFE SCIENCES"
+ *
+ * Stratégie : minuscules, sans accents, sans suffixes corporate, sans
+ * mots génériques (life sciences, partners, sas, sa, sarl, group, etc.)
+ */
+const SUP_STOPWORDS = new Set([
+  'sas', 'sa', 'sarl', 'sasu', 'eurl', 'snc', 'scop', 'gie', 'sci',
+  'group', 'groupe', 'holding', 'company', 'co', 'inc', 'ltd', 'llc', 'plc',
+  'partners', 'partner', 'consulting', 'consultants', 'consultant',
+  'services', 'service', 'solutions', 'solution',
+  'life', 'sciences', 'science', 'health', 'healthcare', 'medical', 'pharma',
+  'france', 'fr', 'international', 'intl', 'europe', 'eu',
+  'agency', 'agence', 'societe', 'cie',
+]);
+
+export const normSupName = s => {
+  const base = String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+ok$/i, '')
+    .replace(/[\(\)\[\]\.,;:'"\/\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // Garde la version "loose" : tokens significatifs (≥ 2 caractères, pas stopwords)
+  const tokens = base.split(' ').filter(t => t.length >= 2 && !SUP_STOPWORDS.has(t));
+  return tokens.length ? tokens.join(' ') : base;
+};
+
+/**
+ * Cherche dans un index la meilleure correspondance d'un nom fournisseur.
+ * @param {string} target - nom à matcher
+ * @param {string[]} candidates - noms candidats (déjà normalisés)
+ * @returns {{match: string|null, score: number}}
+ */
+export function fuzzyMatchSupplier(target, candidates) {
+  const t = normSupName(target);
+  if (!t) return { match: null, score: 0 };
+  let best = null, bestScore = 0;
+  for (const c of candidates) {
+    let score = 0;
+    if (c === t) score = 1;
+    else if (c.includes(t) || t.includes(c)) {
+      score = Math.min(c.length, t.length) / Math.max(c.length, t.length);
+    } else {
+      // Jaccard sur tokens
+      const tt = new Set(t.split(' '));
+      const cc = new Set(c.split(' '));
+      const inter = [...tt].filter(x => cc.has(x)).length;
+      const union = new Set([...tt, ...cc]).size;
+      score = union > 0 ? inter / union : 0;
+    }
+    if (score > bestScore) { bestScore = score; best = c; }
+  }
+  return { match: bestScore >= 0.5 ? best : null, score: bestScore };
+}
 
 export async function readXlsxHandle(fileHandle) {
   const file = await fileHandle.getFile();
@@ -243,7 +298,8 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       } catch {}
     }
 
-    // BPU
+    // BPU — on enregistre par lot un statut sémantique riche
+    // 'rempli' | 'partiel' | 'vide' | 'absent'
     onProgress('Lecture BPU standardisés…');
     const bpuDir = await findSubdirByName(stdHandle, 'BPU');
     if (bpuDir) {
@@ -253,10 +309,18 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
         const n = normSupName(display);
         ensure(n, display);
         supInfo[n].hasBpu = true;
+        if (!supInfo[n].lotStatus) supInfo[n].lotStatus = {};
         try {
           const wb = await readXlsxHandle(handle);
           for (const s of wb.SheetNames) {
-            if (/optim/i.test(s)) { supInfo[n].hasOptim = true; continue; }
+            if (/optim/i.test(s)) {
+              // Détecte si l'onglet optim a au moins une valeur
+              const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+              const hasContent = rawSheet.slice(1).some(r => r.slice(1).some(v => isRealVal(v)));
+              supInfo[n].hasOptim = true;
+              supInfo[n].optimFilled = hasContent;
+              continue;
+            }
             let lotNum = 0;
             for (const lot of lots) {
               if (new RegExp(`lot\\s*${lot.num}`, 'i').test(s)) { lotNum = lot.num; break; }
@@ -265,20 +329,29 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
 
             const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
             const dataRows = rawSheet.slice(1).filter(r => String(r[0] || '').trim());
-            if (!dataRows.length) continue;
 
             const reqCols = bpuReq[lotNum] || [];
-            let anyFilled = false;
+            const totalLines = dataRows.length;
+            let filledLines = 0;
             const missing = [];
             for (const { col, name: colName } of reqCols) {
-              const filled = dataRows.some(r => isRealVal(r[col]));
-              if (filled) anyFilled = true;
-              else missing.push(colName);
+              const filled = dataRows.filter(r => isRealVal(r[col])).length;
+              if (filled === 0) missing.push(colName);
             }
-            if (anyFilled) {
-              supInfo[n].lots.add(lotNum);
-              if (missing.length) supInfo[n].bpuMissing[lotNum] = missing;
+            // Une ligne est "remplie" si au moins une colonne requise est renseignée
+            for (const r of dataRows) {
+              if (reqCols.some(({ col }) => isRealVal(r[col]))) filledLines++;
             }
+
+            let status;
+            if (totalLines === 0) status = 'vide';
+            else if (filledLines === 0) status = 'vide';
+            else if (filledLines < totalLines || missing.length > 0) status = 'partiel';
+            else status = 'rempli';
+
+            supInfo[n].lotStatus[lotNum] = { status, filledLines, totalLines, missing };
+            if (status !== 'vide') supInfo[n].lots.add(lotNum);
+            if (missing.length) supInfo[n].bpuMissing[lotNum] = missing;
           }
         } catch {}
       }
@@ -354,30 +427,53 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
 
     const bpuMissing = info.bpuMissing || {};
     const bpuHasMissing = Object.keys(bpuMissing).length > 0;
+    const lotStatus = info.lotStatus || {};
     const bpuVal = info.hasBpu
       ? (bpuHasMissing ? 'partiel' : 'x')
-      : (raw['BPU (Annexe 5)'] ? 'x' : '');
+      : (raw['BPU (Annexe 5)'] ? 'x' : 'non fourni');
 
     const row = { 'Nom fournisseur': info.displayName };
 
-    // Lots dynamiques
+    // Lots dynamiques — sémantique riche par lot
+    // 'x' (rempli) | 'partiel' | 'vide' (template présent mais pas rempli) | '' (absent)
     for (const lot of lots) {
       const lotLabel = docLabels.find(l => l.includes(`Lot ${lot.num}`)) || `Lot ${lot.num}`;
-      row[lotLabel] = val(info.lots.has(lot.num) || raw[`Lot ${lot.num}`]);
+      const ls = lotStatus[lot.num];
+      let v = '';
+      if (ls) {
+        if (ls.status === 'rempli') v = 'x';
+        else if (ls.status === 'partiel') v = `partiel ${ls.filledLines}/${ls.totalLines}`;
+        else v = 'vide';
+      } else if (info.lots.has(lot.num) || raw[`Lot ${lot.num}`]) {
+        v = 'x';
+      }
+      row[lotLabel] = v;
     }
+    row._lotStatus = lotStatus;
 
-    // Documents
+    // Documents — on écrit sous les deux jeux de clés (court + long)
+    // pour gérer DEFAULT_ANALYSE_CONFIG (BPU/QT) et configs détaillées
+    // 'x' = présent et rempli · 'vide' = template présent non rempli · 'non fourni' = absent
+    const docVal = (present, filled = true) => {
+      if (!present) return 'non fourni';
+      return filled ? 'x' : 'vide';
+    };
     row['BPU (Annexe 5)'] = bpuVal;
-    row['Optim. Tarifaire'] = val(info.hasOptim || raw['Optim. Tarifaire']);
-    row['QT (Annexe 1)'] = val(info.hasQT || raw['QT (Annexe 1)']);
-    row['BPU Chiffrage'] = val(info.hasChiffrage || raw['BPU Chiffrage']);
-    row['Questionnaire RSE'] = val(info.hasRse || raw['Questionnaire RSE']);
-    row['CCAP signé'] = val(raw['CCAP signé']);
-    row['CCTP signé'] = val(raw['CCTP signé']);
-    row['DC1'] = val(raw['DC1']);
-    row['DC2'] = val(raw['DC2']);
-    row['ATTRI1'] = val(raw['ATTRI1']);
-    row['Fiche Contacts'] = val(raw['Fiche Contacts']);
+    row['BPU'] = bpuVal;
+    row['Optim. Tarifaire'] = info.hasOptim
+      ? (info.optimFilled ? 'x' : 'vide')
+      : (raw['Optim. Tarifaire'] ? 'x' : 'non fourni');
+    row['QT (Annexe 1)'] = docVal(info.hasQT || raw['QT (Annexe 1)']);
+    row['QT'] = docVal(info.hasQT || raw['QT (Annexe 1)']);
+    row['BPU Chiffrage'] = docVal(info.hasChiffrage || raw['BPU Chiffrage']);
+    row['Chiffrage'] = docVal(info.hasChiffrage || raw['BPU Chiffrage']);
+    row['Questionnaire RSE'] = docVal(info.hasRse || raw['Questionnaire RSE']);
+    row['CCAP signé'] = docVal(raw['CCAP signé']);
+    row['CCTP signé'] = docVal(raw['CCTP signé']);
+    row['DC1'] = docVal(raw['DC1']);
+    row['DC2'] = docVal(raw['DC2']);
+    row['ATTRI1'] = docVal(raw['ATTRI1']);
+    row['Fiche Contacts'] = docVal(raw['Fiche Contacts']);
     row._bpuMissing = bpuMissing;
 
     rows.push(row);

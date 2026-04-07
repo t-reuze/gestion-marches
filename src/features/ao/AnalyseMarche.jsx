@@ -12,6 +12,7 @@ import { marches, getAnalyseConfig } from "../../data/mockData";
 import {
   scanAnnuaire, compileQT, compileRSE, compileBPU, compileChiffrage, download,
 } from "../../utils/analyseFolder";
+import StandardisationBpuTab from "./StandardisationBpuTab";
 
 // PALETTE & HELPERS
 
@@ -1009,18 +1010,40 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
                 <td style={{ fontWeight:600, fontSize:12 }}>{row['Nom fournisseur']}</td>
                 {docLabels.map(col => {
                   const v = row[col] || '';
-                  const isX = v.toLowerCase() === 'x';
-                  const isPartiel = v.toLowerCase() === 'partiel';
-                  const tooltip = isPartiel && col.includes('BPU') && row._bpuMissing
-                    ? 'Colonnes manquantes : ' + Object.entries(row._bpuMissing).map(([l, cs]) => `Lot ${l} : ${cs.join(', ')}`).join(' | ')
-                    : undefined;
+                  const vl = v.toLowerCase();
+                  const isX = vl === 'x';
+                  const isVide = vl === 'vide';
+                  const isPartiel = vl.startsWith('partiel');
+                  const isNonFourni = vl === 'non fourni';
+                  const isLotCol = col.toLowerCase().includes('lot');
+                  // Tooltip détaillé pour les lots
+                  let tooltip;
+                  if (isLotCol && row._lotStatus) {
+                    const lotMatch = col.match(/lot\s*(\d+)/i);
+                    if (lotMatch) {
+                      const ls = row._lotStatus[parseInt(lotMatch[1], 10)];
+                      if (ls) {
+                        tooltip = `${ls.filledLines}/${ls.totalLines} lignes remplies`;
+                        if (ls.missing?.length) tooltip += ` · Manquants : ${ls.missing.join(', ')}`;
+                      }
+                    }
+                  }
+                  if (!tooltip && isPartiel && col.includes('BPU') && row._bpuMissing) {
+                    tooltip = 'Manquants : ' + Object.entries(row._bpuMissing).map(([l, cs]) => `Lot ${l} : ${cs.join(', ')}`).join(' | ');
+                  }
+                  // Couleurs sémantiques
+                  let bg = '#f9fafb', color = '#9ca3af', border = '#e5e7eb', fw = 400;
+                  if (isX) { bg = '#dcfce7'; color = '#15803d'; border = '#86efac'; fw = 700; }
+                  else if (isPartiel) { bg = '#fef3c7'; color = '#92400e'; border = '#fcd34d'; fw = 600; }
+                  else if (isVide) { bg = '#fee2e2'; color = '#b91c1c'; border = '#fca5a5'; fw = 600; }
+                  else if (isNonFourni) { bg = '#fef2f2'; color = '#dc2626'; border = '#fecaca'; fw = 500; }
                   return (
                     <td key={col} className="td-center" style={{ padding:"3px 2px" }}>
                       <input value={v} onChange={e => setCell(ri, col, e.target.value)}
                         title={tooltip}
-                        style={{ width:40, textAlign:"center", border:"1px solid var(--border)", borderRadius:4, padding:"2px 4px", fontSize:12,
-                          background: isX ? '#dcfce7' : v ? '#fef9c3' : '#fef2f2',
-                          color: isX ? '#15803d' : v ? '#92400e' : '#be185d', fontWeight: isX ? 700 : 400 }} />
+                        style={{ width: isPartiel ? 70 : 50, textAlign:"center",
+                          border: `1px solid ${border}`, borderRadius:4, padding:"2px 4px", fontSize:11,
+                          background: bg, color, fontWeight: fw }} />
                     </td>
                   );
                 })}
@@ -1279,6 +1302,7 @@ export default function AnalyseMarche() {
     { id:"__annuaire__", label:"Annuaire" },
     { id:"__qt__", label:"Compilation QT" },
     { id:"__bpu__", label:"Comparatif BPU" },
+    { id:"__bpu_std__", label:"Standardisation BPU" },
     { id:"__rse__", label:"RSE" },
     { id:"__chiffrage__", label:"Chiffrage" },
   ];
@@ -1293,6 +1317,20 @@ export default function AnalyseMarche() {
   return (
     <Layout title={layoutTitle} sub={"\u2014 Analyse des offres"}>
       <MarcheNavTabs />
+
+      <div className="card" style={{ marginBottom: 16, border: '2px dashed #f59e0b', background: '#fffbeb' }}>
+        <div className="card-body">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <h3 style={{ margin: 0, color: '#b45309' }}>🧪 Module de test — Pipeline standardisation BPU</h3>
+            <span style={{ fontSize: 11, padding: '2px 8px', background: '#f59e0b', color: 'white', borderRadius: 4 }}>BETA</span>
+          </div>
+          <p style={{ margin: '4px 0 12px', fontSize: 13, color: '#92400e' }}>
+            Détection par contenu, mapping fuzzy semi-auto, persistance des corrections.
+            Sélectionne un dossier ci-dessous puis lance le pipeline.
+          </p>
+          <StandardisationBpuTab dirHandle={dirHandle} marcheId={id} />
+        </div>
+      </div>
 
       <FolderPickerZone
         onScan={handleFolderAction}
@@ -1330,6 +1368,10 @@ export default function AnalyseMarche() {
           </div>
           <ComparatifTab data={bpuData} title="BPU" emptyMsg="Aucune donn\u00e9e BPU" />
         </div>
+      )}
+
+      {activeTab === "__bpu_std__" && (
+        <StandardisationBpuTab dirHandle={dirHandle} marcheId={id} />
       )}
 
       {activeTab === "__rse__" && (
