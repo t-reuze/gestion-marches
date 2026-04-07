@@ -211,7 +211,7 @@ function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nb
       <div className="card-body">
         <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
           <button className="btn btn-outline" onClick={() => onScan('pick')} disabled={!supportsApi || scanning}>
-            S\u00e9lectionner le dossier\u2026
+            Sélectionner le dossier…
           </button>
           {dirPath && (
             <>
@@ -226,13 +226,13 @@ function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nb
           )}
           {nbFournisseurs > 0 && !scanning && (
             <span style={{ fontSize:12, color:"#15803d", fontWeight:600, background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:6, padding:"3px 10px" }}>
-              \u2713 {nbFournisseurs} fournisseur{nbFournisseurs > 1 ? 's' : ''} d\u00e9tect\u00e9{nbFournisseurs > 1 ? 's' : ''}
+              ✓ {nbFournisseurs} fournisseur{nbFournisseurs > 1 ? 's' : ''} détecté{nbFournisseurs > 1 ? 's' : ''}
             </span>
           )}
         </div>
         {!supportsApi && (
           <div style={{ marginTop:8, fontSize:12, color:"#d97706" }}>
-            Navigateur non compatible \u2014 Chrome ou Edge requis.
+            Navigateur non compatible — Chrome ou Edge requis.
           </div>
         )}
         {warning && <div style={{ marginTop:8, fontSize:12, color:"#d97706" }}>Avertissement : {warning}</div>}
@@ -991,8 +991,8 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
 
   if (!rows.length) return (
     <div className="empty-state">
-      <div className="empty-title">Aucune donn\u00e9e</div>
-      <div className="empty-sub">S\u00e9lectionnez le dossier de l&apos;AO et cliquez sur Analyser.</div>
+      <div className="empty-title">Aucune donnée</div>
+      <div className="empty-sub">Sélectionnez le dossier de l&apos;AO et cliquez sur Analyser.</div>
     </div>
   );
 
@@ -1068,7 +1068,7 @@ function CompilationQTTab({ qtData, config, onCompile, compiling }) {
   return (
     <div className="fade-in">
       <div className="card" style={{ marginBottom:16 }}>
-        <div className="card-header"><span className="card-title">Lots \u00e0 compiler</span></div>
+        <div className="card-header"><span className="card-title">Lots à compiler</span></div>
         <div className="card-body" style={{ display:"flex", gap:16, alignItems:"center", flexWrap:"wrap" }}>
           {lots.map(lot => (
             <label key={lot.num} style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontSize:13 }}>
@@ -1109,7 +1109,7 @@ function CompilationQTTab({ qtData, config, onCompile, compiling }) {
       ) : (
         <div className="empty-state">
           <div className="empty-title">Aucune compilation</div>
-          <div className="empty-sub">S\u00e9lectionnez le dossier de l&apos;AO puis compilez.</div>
+          <div className="empty-sub">Sélectionnez le dossier de l&apos;AO puis compilez.</div>
         </div>
       )}
     </div>
@@ -1222,22 +1222,23 @@ export default function AnalyseMarche() {
 
   // ── Handlers ──
   async function handleFolderAction(action) {
+    let root = dirHandle;
     if (action === 'pick') {
       try {
-        const root = await window.showDirectoryPicker();
+        root = await window.showDirectoryPicker();
         setDirHandle(root);
         setDirPath(root.name);
         setAnnuaire([]); setEdits({}); setDirWarning('');
-      } catch (e) { if (e.name !== 'AbortError') console.error(e); }
-    } else if (action === 'scan' && dirHandle) {
-      setScanning(true); setAnnuaire([]); setEdits({});
-      try {
-        const { rows, warning } = await scanAnnuaire(dirHandle, config, setScanProgress);
-        setAnnuaire(rows);
-        if (warning) setDirWarning(warning);
-      } catch (e) { console.error(e); }
-      setScanning(false); setScanProgress('');
+      } catch (e) { if (e.name !== 'AbortError') console.error(e); return; }
     }
+    if (!root) return;
+    setScanning(true); setAnnuaire([]); setEdits({});
+    try {
+      const { rows, warning } = await scanAnnuaire(root, config, setScanProgress);
+      setAnnuaire(rows);
+      if (warning) setDirWarning(warning);
+    } catch (e) { console.error(e); }
+    setScanning(false); setScanProgress('');
   }
 
   async function handleCompileQT(selectedLots) {
