@@ -990,98 +990,231 @@ function TCOTab({ data }) {
 
 // ─── Onglet Annuaire ──────────────────────────────────────────────────────────
 
+function StatusBadge({ value, tooltip, isLot }) {
+  const v = (value || '').toString();
+  const vl = v.toLowerCase();
+  const isX = vl === 'x';
+  const isPartiel = vl.startsWith('partiel');
+  const isVide = vl === 'vide';
+  const isNonFourni = vl === 'non fourni' || vl === '';
+
+  let label, bg, color, dot;
+  if (isX) { label = '✓'; bg = '#ecfdf5'; color = '#047857'; dot = '#10b981'; }
+  else if (isPartiel) {
+    const m = v.match(/(\d+)\/(\d+)/);
+    label = m ? `${m[1]}/${m[2]}` : 'Partiel';
+    bg = '#fffbeb'; color = '#b45309'; dot = '#f59e0b';
+  } else if (isVide) { label = '○'; bg = '#fef2f2'; color = '#b91c1c'; dot = '#ef4444'; }
+  else { label = '—'; bg = '#f9fafb'; color = '#9ca3af'; dot = '#d1d5db'; }
+
+  return (
+    <div title={tooltip} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6,
+      padding: '4px 10px', borderRadius: 999,
+      background: bg, color, fontSize: 11, fontWeight: 600,
+      whiteSpace: 'nowrap', border: `1px solid ${dot}33`,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot }} />
+      {label}
+    </div>
+  );
+}
+
 function AnnuaireTab({ annuaire, edits, setCell, config }) {
   const { docLabels } = config;
-  const rows = annuaire.map((row, i) => ({ ...row, ...(edits[i] || {}) }));
+  const [filter, setFilter] = useState('');
+  const allRows = annuaire.map((row, i) => ({ ...row, ...(edits[i] || {}), _idx: i }));
+  const rows = filter
+    ? allRows.filter(r => (r['Nom fournisseur'] || '').toLowerCase().includes(filter.toLowerCase()))
+    : allRows;
 
-  if (!rows.length) return (
-    <div className="empty-state">
-      <div className="empty-title">Aucune donnée</div>
-      <div className="empty-sub">Sélectionnez le dossier de l&apos;AO et cliquez sur Analyser.</div>
+  if (!allRows.length) return (
+    <div className="empty-state" style={{ padding: 60 }}>
+      <div className="empty-title" style={{ fontSize: 18, fontWeight: 600 }}>Aucune donnée</div>
+      <div className="empty-sub" style={{ marginTop: 8, color: '#6b7280' }}>
+        Sélectionnez le dossier de l&apos;AO et cliquez sur Analyser.
+      </div>
     </div>
   );
 
+  // Stats globales
+  const totalSups = allRows.length;
+  const lotCols = docLabels.filter(l => /lot/i.test(l));
+  const completeSups = allRows.filter(r => lotCols.some(l => (r[l] || '').toLowerCase() === 'x')).length;
+  const withContact = allRows.filter(r => r.MAIL || r.TEL).length;
+
   return (
     <div className="fade-in">
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style={{ minWidth:180 }}>Fournisseur</th>
-              {docLabels.map(l => <th key={l} className="td-center" style={{ fontSize:10, padding:"6px 3px", minWidth:58 }}>{l}</th>)}
-              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>PRÉNOM</th>
-              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>NOM</th>
-              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>TEL</th>
-              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>MAIL</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, ri) => (
-              <tr key={ri}>
-                <td style={{ fontWeight:600, fontSize:12 }}>{row['Nom fournisseur']}</td>
-                {docLabels.map(col => {
-                  const v = row[col] || '';
-                  const vl = v.toLowerCase();
-                  const isX = vl === 'x';
-                  const isVide = vl === 'vide';
-                  const isPartiel = vl.startsWith('partiel');
-                  const isNonFourni = vl === 'non fourni';
-                  const isLotCol = col.toLowerCase().includes('lot');
-                  // Tooltip détaillé pour les lots
-                  let tooltip;
-                  if (isLotCol && row._lotStatus) {
-                    const lotMatch = col.match(/lot\s*(\d+)/i);
-                    if (lotMatch) {
-                      const ls = row._lotStatus[parseInt(lotMatch[1], 10)];
-                      if (ls) {
-                        tooltip = `${ls.filledLines}/${ls.totalLines} lignes remplies`;
-                        if (ls.missing?.length) tooltip += ` · Manquants : ${ls.missing.join(', ')}`;
+      {/* KPI cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+        <KpiCard label="Fournisseurs" value={totalSups} accent="#6366f1" />
+        <KpiCard label="Avec lot positionné" value={`${completeSups}/${totalSups}`} accent="#10b981" />
+        <KpiCard label="Avec contact renseigné" value={`${withContact}/${totalSups}`} accent="#f59e0b" />
+        <KpiCard label="Lots détectés" value={lotCols.length} accent="#ec4899" />
+      </div>
+
+      {/* Toolbar */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <input
+          type="text"
+          placeholder="🔍 Rechercher un fournisseur…"
+          value={filter}
+          onChange={e => setFilter(e.target.value)}
+          style={{
+            flex: 1, maxWidth: 320, padding: '8px 14px', fontSize: 13,
+            border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff',
+            outline: 'none', transition: 'border-color 0.15s',
+          }}
+          onFocus={e => e.target.style.borderColor = '#6366f1'}
+          onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+        />
+        <span style={{ fontSize: 12, color: '#6b7280' }}>
+          {rows.length} affiché{rows.length > 1 ? 's' : ''} sur {totalSups}
+        </span>
+      </div>
+
+      {/* Table */}
+      <div style={{
+        background: '#fff', borderRadius: 12, overflow: 'hidden',
+        border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: 'linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%)' }}>
+                <th style={thStyle({ left: true, sticky: true })}>Fournisseur</th>
+                {docLabels.map(l => (
+                  <th key={l} style={thStyle({ center: true })}>
+                    {l.replace(/^Lot\s*/, 'L').replace('Questionnaire RSE', 'RSE')
+                       .replace('Optim. Tarifaire', 'Optim').replace('BPU Chiffrage', 'Chiffrage')}
+                  </th>
+                ))}
+                <th style={thStyle({ center: true, contact: true })}>Prénom</th>
+                <th style={thStyle({ center: true, contact: true })}>Nom</th>
+                <th style={thStyle({ center: true, contact: true })}>Téléphone</th>
+                <th style={thStyle({ center: true, contact: true })}>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri} style={{
+                  borderTop: '1px solid #f3f4f6',
+                  transition: 'background 0.1s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#fafbfc'}
+                  onMouseLeave={e => e.currentTarget.style.background = ''}>
+                  <td style={{
+                    padding: '12px 16px', fontWeight: 600, fontSize: 13,
+                    color: '#111827', position: 'sticky', left: 0,
+                    background: 'inherit', borderRight: '1px solid #f3f4f6',
+                  }}>
+                    {row['Nom fournisseur']}
+                  </td>
+                  {docLabels.map(col => {
+                    const v = row[col] || '';
+                    const isLotCol = col.toLowerCase().includes('lot');
+                    let tooltip;
+                    if (isLotCol && row._lotStatus) {
+                      const lm = col.match(/lot\s*(\d+)/i);
+                      if (lm) {
+                        const ls = row._lotStatus[parseInt(lm[1], 10)];
+                        if (ls) {
+                          tooltip = `${ls.filledLines}/${ls.totalLines} lignes`;
+                          if (ls.missing?.length) tooltip += ` · Manquants : ${ls.missing.join(', ')}`;
+                        }
                       }
                     }
-                  }
-                  if (!tooltip && isPartiel && col.includes('BPU') && row._bpuMissing) {
-                    tooltip = 'Manquants : ' + Object.entries(row._bpuMissing).map(([l, cs]) => `Lot ${l} : ${cs.join(', ')}`).join(' | ');
-                  }
-                  // Couleurs sémantiques
-                  let bg = '#f9fafb', color = '#9ca3af', border = '#e5e7eb', fw = 400;
-                  if (isX) { bg = '#dcfce7'; color = '#15803d'; border = '#86efac'; fw = 700; }
-                  else if (isPartiel) { bg = '#fef3c7'; color = '#92400e'; border = '#fcd34d'; fw = 600; }
-                  else if (isVide) { bg = '#fee2e2'; color = '#b91c1c'; border = '#fca5a5'; fw = 600; }
-                  else if (isNonFourni) { bg = '#fef2f2'; color = '#dc2626'; border = '#fecaca'; fw = 500; }
-                  return (
-                    <td key={col} className="td-center" style={{ padding:"3px 2px" }}>
-                      <input value={v} onChange={e => setCell(ri, col, e.target.value)}
-                        title={tooltip}
-                        style={{ width: isPartiel ? 70 : 50, textAlign:"center",
-                          border: `1px solid ${border}`, borderRadius:4, padding:"2px 4px", fontSize:11,
-                          background: bg, color, fontWeight: fw }} />
-                    </td>
-                  );
-                })}
-                {['PRENOM', 'NOM', 'TEL', 'MAIL'].map(field => {
-                  const v = row[field] || '';
-                  const empty = !v;
-                  const pdfOnly = empty && row._contactPdfOnly;
-                  return (
-                    <td key={field} className="td-center" style={{ padding:'3px 4px' }}>
-                      <input value={v} onChange={e => setCell(ri, field, e.target.value)}
-                        title={pdfOnly ? 'Fiche Contacts trouvée en PDF — saisis les valeurs manuellement' : undefined}
-                        style={{ width: field === 'MAIL' ? 180 : field === 'TEL' ? 110 : 90,
-                          textAlign: 'left', fontSize: 11, padding: '2px 6px',
-                          border: `1px solid ${empty ? (pdfOnly ? '#fbbf24' : '#fca5a5') : '#e5e7eb'}`, borderRadius: 4,
-                          background: empty ? (pdfOnly ? '#fffbeb' : '#fef2f2') : 'white',
-                          color: empty ? (pdfOnly ? '#92400e' : '#b91c1c') : '#111827',
-                          fontStyle: empty ? 'italic' : 'normal' }}
-                        placeholder={pdfOnly ? '📄 PDF — à saisir' : 'non fourni'} />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    return (
+                      <td key={col} style={{ padding: '8px 6px', textAlign: 'center' }}>
+                        <StatusBadge value={v} tooltip={tooltip} isLot={isLotCol} />
+                      </td>
+                    );
+                  })}
+                  {['PRENOM', 'NOM', 'TEL', 'MAIL'].map(field => {
+                    const v = row[field] || '';
+                    const empty = !v;
+                    const pdfOnly = empty && row._contactPdfOnly;
+                    return (
+                      <td key={field} style={{ padding: '6px 4px' }}>
+                        <input
+                          value={v}
+                          onChange={e => setCell(row._idx, field, e.target.value)}
+                          title={pdfOnly ? 'Fiche Contacts en PDF — saisis manuellement' : undefined}
+                          placeholder={pdfOnly ? '📄 à saisir' : '—'}
+                          style={{
+                            width: field === 'MAIL' ? 200 : field === 'TEL' ? 130 : 100,
+                            padding: '6px 10px', fontSize: 12, borderRadius: 6,
+                            border: `1px solid ${empty ? (pdfOnly ? '#fde68a' : '#f3f4f6') : '#e5e7eb'}`,
+                            background: empty ? (pdfOnly ? '#fffbeb' : '#fafafa') : '#fff',
+                            color: empty ? (pdfOnly ? '#92400e' : '#9ca3af') : '#111827',
+                            outline: 'none', transition: 'all 0.15s',
+                          }}
+                          onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.background = '#fff'; }}
+                          onBlur={e => { e.target.style.borderColor = empty ? (pdfOnly ? '#fde68a' : '#f3f4f6') : '#e5e7eb'; e.target.style.background = empty ? (pdfOnly ? '#fffbeb' : '#fafafa') : '#fff'; }}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Légende */}
+      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 11, color: '#6b7280', flexWrap: 'wrap' }}>
+        <LegendDot color="#10b981" label="Rempli" />
+        <LegendDot color="#f59e0b" label="Partiel" />
+        <LegendDot color="#ef4444" label="Vide / template" />
+        <LegendDot color="#d1d5db" label="Non fourni" />
       </div>
     </div>
+  );
+}
+
+function thStyle({ left, center, contact, sticky }) {
+  return {
+    padding: '12px 14px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: contact ? '#9d174d' : '#6b7280',
+    textAlign: left ? 'left' : center ? 'center' : 'left',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    borderBottom: '1px solid #e5e7eb',
+    background: contact ? '#fdf2f8' : undefined,
+    position: sticky ? 'sticky' : undefined,
+    left: sticky ? 0 : undefined,
+    zIndex: sticky ? 1 : undefined,
+  };
+}
+
+function KpiCard({ label, value, accent }) {
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 12, padding: '16px 18px',
+      border: '1px solid #e5e7eb', position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: accent,
+      }} />
+      <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 700, color: '#111827', marginTop: 4 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function LegendDot({ color, label }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+      {label}
+    </span>
   );
 }
 
