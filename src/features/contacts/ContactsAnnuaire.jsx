@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { clccs, FONCTIONS, marches } from '../../data/mockData';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
+import { isConfigured, loginMicrosoft, getAccount, logoutMicrosoft, initMsal } from '../../utils/msalConfig';
+import { syncAllToOutlook, syncClccToOutlook, exportContactsVCF } from '../../utils/outlookSync';
 
 const COLORS = ['#1A4FA8', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#0891B2', '#DB2777', '#0D9488', '#DC2626', '#7C3AED'];
 
@@ -21,6 +23,12 @@ export default function ContactsAnnuaire() {
   const [search, setSearch] = useState('');
   const [selectedClcc, setSelectedClcc] = useState(null);
   const [filtreFonction, setFiltreFonction] = useState('tous');
+
+  // Outlook sync state
+  const [msAccount, setMsAccount] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
+  const outlookReady = isConfigured();
 
   // Collect all contacts saved via MarcheInterlocuteurs (per-marché)
   // + static responsables from mockData
@@ -203,6 +211,72 @@ export default function ContactsAnnuaire() {
   // ── CLCC list view (main) ─────────────────────────────
   return (
     <Layout title="Contacts" sub="— Annuaire par CLCC">
+      {/* ── Toolbar : Export VCF + Sync Outlook ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={() => {
+            const ok = exportContactsVCF(clccs, allMeta, marches);
+            if (!ok) alert('Aucun contact à exporter. Ajoutez des contacts dans les CLCCs.');
+          }}
+        >
+          &#x1F4E5; Exporter VCF (Outlook / iPhone)
+        </button>
+
+        {outlookReady ? (
+          msAccount ? (
+            <>
+              <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>
+                &#x2713; {msAccount.username}
+              </span>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true); setSyncResult(null);
+                  try {
+                    const r = await syncAllToOutlook(enrichedClccs, allMeta, marches);
+                    setSyncResult(r);
+                  } catch (err) { setSyncResult({ errors: [{ error: err.message }] }); }
+                  setSyncing(false);
+                }}
+              >
+                {syncing ? 'Synchronisation...' : '&#x1F504; Sync Outlook 365'}
+              </button>
+              <button className="btn btn-ghost btn-sm" onClick={async () => { await logoutMicrosoft(); setMsAccount(null); }}>
+                Déconnexion
+              </button>
+            </>
+          ) : (
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={async () => {
+                try {
+                  await initMsal();
+                  const res = await loginMicrosoft();
+                  if (res) setMsAccount(res.account);
+                } catch (err) { alert('Erreur connexion Microsoft : ' + err.message); }
+              }}
+            >
+              &#x1F512; Se connecter à Outlook 365
+            </button>
+          )
+        ) : (
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            Outlook 365 : ajouter VITE_AZURE_CLIENT_ID dans .env pour activer la synchro
+          </span>
+        )}
+
+        {syncResult && (
+          <span style={{ fontSize: 11, color: syncResult.errors?.length > 0 ? 'var(--red)' : 'var(--green)', fontWeight: 600 }}>
+            {syncResult.created > 0 && syncResult.created + ' créé(s) '}
+            {syncResult.updated > 0 && syncResult.updated + ' mis à jour '}
+            {syncResult.errors?.length > 0 && syncResult.errors.length + ' erreur(s)'}
+            {syncResult.created === 0 && syncResult.updated === 0 && !syncResult.errors?.length && 'Aucun contact à synchroniser'}
+          </span>
+        )}
+      </div>
+
       <div className="info-box blue" style={{ marginBottom: 20 }}>
         <strong>Annuaire CLCC</strong> — Sélectionnez un centre pour voir et gérer ses interlocuteurs par fonction.
       </div>
