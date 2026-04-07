@@ -8,6 +8,7 @@
 import XLSX from 'xlsx-js-style';
 import JSZip from 'jszip';
 import { extractContactsFromWorkbook } from './analysePipeline/contactExtractor.js';
+import { extractContactFromPdfFile } from './analysePipeline/pdfContact.js';
 
 // ─── Helpers fichiers ─────────────────────────────────────────────────────────
 
@@ -542,7 +543,6 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       } catch {}
     } else if (contactPdf) {
       try {
-        const { extractContactFromPdfFile } = await import('./analysePipeline/pdfContact.js');
         const c = await extractContactFromPdfFile(contactPdf.handle);
         if (c && (c.mail || c.tel || c.nom || c.prenom)) contact = c;
         else contact = { prenom: '', nom: '', tel: '', mail: '', _pdfFound: true };
