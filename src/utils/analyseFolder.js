@@ -398,41 +398,63 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     }
   }
 
-  // ── Fallback DCE-style : scan des sous-dossiers fournisseur ──
-  // Pour chaque sous-dossier, cherche xlsx BPU/QT/RSE/Chiffrage par nom de fichier.
+  // ── Fallback : scan récursif et classification par nom de fichier ──
+  // Couvre les structures DCE brutes (Reponses AO/Fournisseur/.../BPU Lot 1.xls)
+  // ou dossier de templates au root.
   onProgress('Scan dossiers fournisseur…');
-  const rootSubdirs = await getSubdirs(rootHandle);
   const SKIP_FALLBACK = new Set(['standardises', 'compilation', '__pycache__',
-    'qt', 'bpu', 'rse', 'chiffrage', 'consignes', 'instructions',
-    'template', 'modele', 'modeles']);
+    'consignes', 'instructions', 'template', 'modele', 'modeles']);
+
+  function classifyAndProcess(file, supplierName) {
+    const lower = file.name.toLowerCase();
+    if (/standardis/i.test(lower)) return; // déjà traité
+    const isBpu = /bpu|annexe.?5|bordereau|prix|tarif/i.test(lower) && !/chiffrage|mission.type/i.test(lower);
+    const isChiffrage = /chiffrage|annexe.?3|mission.type|simulation/i.test(lower);
+    const isQt = /\bqt\b|questionnaire.tech|technique|annexe.?1/i.test(lower);
+    const isRse = /rse|durable|environn|developpement.durable/i.test(lower);
+    if (!isBpu && !isChiffrage && !isQt && !isRse) return;
+    return (async () => {
+      try {
+        const wb = await readXlsxHandle(file.handle);
+        const norm = normSupName(supplierName);
+        ensure(norm, supplierName);
+        if (isBpu && !supInfo[norm].hasBpu) processBpuWb(wb, norm);
+        if (isChiffrage) supInfo[norm].hasChiffrage = true;
+        if (isQt) supInfo[norm].hasQT = true;
+        if (isRse) supInfo[norm].hasRse = true;
+      } catch {}
+    })();
+  }
+
+  // Cas 1 : sous-dossiers fournisseur (chacun = un fournisseur)
+  const rootSubdirs = await getSubdirs(rootHandle);
+  let processedAny = false;
   for (const { name: dirName, handle: dirHandle } of rootSubdirs) {
     const norm = normSupName(dirName);
     if (SKIP_FALLBACK.has(norm)) continue;
     const files = await getAllFiles(dirHandle);
-    const xlsxFiles = files.filter(f => /\.xlsx$/i.test(f.name) && !f.name.startsWith('~'));
-    if (!xlsxFiles.length) continue;
-    ensure(norm, dirName);
-    for (const f of xlsxFiles) {
-      const lower = f.name.toLowerCase();
-      // Skip si déjà traité par std mode
-      if (/standardis/i.test(lower)) continue;
-      try {
-        const wb = await readXlsxHandle(f.handle);
-        if (/bpu|prix|tarif|bordereau/i.test(lower) && !supInfo[norm].hasBpu) {
-          processBpuWb(wb, norm);
-        } else if (/qt|questionnaire.tech|technique/i.test(lower) && !supInfo[norm].hasQT) {
-          supInfo[norm].hasQT = true;
-        } else if (/rse|durable|environn/i.test(lower) && !supInfo[norm].hasRse) {
-          supInfo[norm].hasRse = true;
-        } else if (/chiffrage|simulation/i.test(lower) && !supInfo[norm].hasChiffrage) {
-          supInfo[norm].hasChiffrage = true;
-        }
-      } catch {}
+    const xlsFiles = files.filter(f => /\.xlsx?$/i.test(f.name) && !f.name.startsWith('~'));
+    if (!xlsFiles.length) continue;
+    // Display name : retire suffixes "ok", "OK", trailing punctuation
+    const display = dirName.replace(/\s+(ok|OK|valid[eé])\s*$/i, '').trim();
+    for (const f of xlsFiles) await classifyAndProcess(f, display);
+    processedAny = true;
+  }
+
+  // Cas 2 : pas de sous-dossier fournisseur exploitable → fichiers au root
+  // (cas DCE templates), on les traite comme un fournisseur unique
+  if (!processedAny && !stdHandle) {
+    const rootFiles = [];
+    for await (const [name, handle] of rootHandle.entries()) {
+      if (handle.kind === 'file' && /\.xlsx?$/i.test(name) && !name.startsWith('~')) {
+        rootFiles.push({ name, handle });
+      }
     }
+    for (const f of rootFiles) await classifyAndProcess(f, 'Templates AO');
   }
 
   if (!stdHandle && Object.keys(supInfo).length === 0) {
-    warning = 'Aucun fichier xlsx exploitable trouvé — vérifie la structure du dossier.';
+    warning = 'Aucun fichier xlsx/xls exploitable trouvé — vérifie la structure du dossier.';
   }
 
   // Scan PDF
