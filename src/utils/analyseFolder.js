@@ -7,6 +7,7 @@
  */
 import XLSX from 'xlsx-js-style';
 import JSZip from 'jszip';
+import { extractContactsFromWorkbook } from './analysePipeline/contactExtractor.js';
 
 // ─── Helpers fichiers ─────────────────────────────────────────────────────────
 
@@ -419,10 +420,26 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     onProgress(`${i + 1}/${allNorms.length} — ${info.displayName}`);
 
     let raw = {};
+    let contact = { prenom: '', nom: '', tel: '', mail: '' };
     const folder = folderMap[n];
     if (folder) {
       const files = await getAllFiles(folder.handle);
       raw = detectDocs(files, lots);
+      // Extraction contacts depuis xlsx "Fiche Contacts" si présent
+      const contactFile = files.find(f => {
+        const p = f.path.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return /\.xlsx?$/i.test(f.name)
+          && (p.includes('contact') || p.includes('annexe 4') || p.includes('interlocuteur'));
+      });
+      if (contactFile) {
+        try {
+          const file = await contactFile.handle.getFile();
+          const buf = await file.arrayBuffer();
+          const wb = XLSX.read(buf, { type: 'array' });
+          const contacts = extractContactsFromWorkbook(wb);
+          if (contacts.length) contact = contacts[0];
+        } catch {}
+      }
     }
 
     const bpuMissing = info.bpuMissing || {};
@@ -474,6 +491,10 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     row['DC2'] = docVal(raw['DC2']);
     row['ATTRI1'] = docVal(raw['ATTRI1']);
     row['Fiche Contacts'] = docVal(raw['Fiche Contacts']);
+    row['PRENOM'] = contact.prenom || '';
+    row['NOM'] = contact.nom || '';
+    row['TEL'] = contact.tel || '';
+    row['MAIL'] = contact.mail || '';
     row._bpuMissing = bpuMissing;
 
     rows.push(row);

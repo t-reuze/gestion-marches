@@ -1004,6 +1004,10 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
             <tr>
               <th style={{ minWidth:180 }}>Fournisseur</th>
               {docLabels.map(l => <th key={l} className="td-center" style={{ fontSize:10, padding:"6px 3px", minWidth:58 }}>{l}</th>)}
+              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>PRÉNOM</th>
+              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>NOM</th>
+              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>TEL</th>
+              <th className="td-center" style={{ fontSize:10, padding:"6px 6px", background:'#fee2e2' }}>MAIL</th>
             </tr>
           </thead>
           <tbody>
@@ -1046,6 +1050,22 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
                         style={{ width: isPartiel ? 70 : 50, textAlign:"center",
                           border: `1px solid ${border}`, borderRadius:4, padding:"2px 4px", fontSize:11,
                           background: bg, color, fontWeight: fw }} />
+                    </td>
+                  );
+                })}
+                {['PRENOM', 'NOM', 'TEL', 'MAIL'].map(field => {
+                  const v = row[field] || '';
+                  const empty = !v;
+                  return (
+                    <td key={field} className="td-center" style={{ padding:'3px 4px' }}>
+                      <input value={v} onChange={e => setCell(ri, field, e.target.value)}
+                        style={{ width: field === 'MAIL' ? 180 : field === 'TEL' ? 110 : 90,
+                          textAlign: 'left', fontSize: 11, padding: '2px 6px',
+                          border: `1px solid ${empty ? '#fca5a5' : '#e5e7eb'}`, borderRadius: 4,
+                          background: empty ? '#fef2f2' : 'white',
+                          color: empty ? '#b91c1c' : '#111827',
+                          fontStyle: empty ? 'italic' : 'normal' }}
+                        placeholder={empty ? 'non fourni' : ''} />
                     </td>
                   );
                 })}
