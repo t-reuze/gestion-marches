@@ -112,5 +112,20 @@ export async function extractContactFromPdfFile(fileHandle) {
   const file = await fileHandle.getFile();
   const buf = await file.arrayBuffer();
   const { text, lines, formValues } = await pdfExtract(buf);
-  return extractContactFromText(text, lines, formValues);
+  const result = extractContactFromText(text, lines, formValues);
+  // Debug : permet d'inspecter le contenu extrait dans la console
+  if (typeof window !== 'undefined') {
+    window.__pdfContactDebug = window.__pdfContactDebug || [];
+    window.__pdfContactDebug.push({
+      file: fileHandle.name,
+      textLength: text.length,
+      lineCount: lines.length,
+      formFieldCount: formValues.length,
+      firstLines: lines.slice(0, 30),
+      formValues,
+      result,
+    });
+    console.log('[pdfContact]', fileHandle.name, { lines: lines.length, form: formValues.length, result });
+  }
+  return result;
 }
