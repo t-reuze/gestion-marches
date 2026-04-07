@@ -11,6 +11,7 @@ import AnalyseUnicancer from './pages/AnalyseUnicancer';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider } from './context/MarcheMetaContext';
 import { FormationsMetaProvider } from './context/FormationsMetaContext';
+import { ReportingDataProvider } from './context/ReportingDataContext';
 import { marches }     from './data/mockData';
 
 function MarcheRedirect() {
@@ -42,9 +43,11 @@ export default function App() {
   return (
     <FormationsMetaProvider>
     <MarcheMetaProvider>
+    <ReportingDataProvider>
     <NotationProvider>
       <RouterProvider router={router} />
     </NotationProvider>
+    </ReportingDataProvider>
     </MarcheMetaProvider>
     </FormationsMetaProvider>
   );
