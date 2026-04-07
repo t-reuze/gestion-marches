@@ -1,0 +1,170 @@
+/* ================================================================
+   LANDING PAGE UI — Hero Banner · Stats · Glass · Section Headings
+   Inspiré de : Free Landing Page for Design Subscription (Figma)
+================================================================ */
+
+/* ── Hero Banner ──────────────────────────────────────────────── */
+.hero-banner {
+  position: relative;
+  background: var(--grad-navy);
+  border-radius: var(--r-md);
+  padding: 36px 40px 32px;
+  margin-bottom: 28px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232,80,26,.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -100px; left: 25%;
+  width: 240px; height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 8px;
+}
+.hero-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -.025em;
+  line-height: 1.25;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+}
+.hero-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,.48);
+  line-height: 1.65;
+  max-width: 480px;
+}
+.hero-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.hero-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--r-full);
+  padding: 5px 13px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background var(--fast), border-color var(--fast);
+}
+.hero-stat:hover {
+  background: rgba(255,255,255,.11);
+  border-color: rgba(255,255,255,.18);
+}
+.hero-stat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── KPI accent bar ───────────────────────────────────────────── */
+.kpi-accent-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+/* ── KPI card — hover lift ───────────────────────────────────── */
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--e-3);
+}
+
+/* ── Section heading ─────────────────────────────────────────── */
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.section-heading-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.section-heading-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.section-heading-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  padding: 2px 9px;
+  border-radius: var(--r-full);
+  font-family: var(--font-mono);
+}
+
+/* ── Glass card ──────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: var(--r-xl);
+  box-shadow: var(--e-3);
+}
+
+/* ── Marché card — glow hover ────────────────────────────────── */
+.marche-card:hover {
+  box-shadow: var(--e-3), 0 0 0 1px rgba(232,80,26,.12);
+}
+
+/* ── Navbar — gradient underline ────────────────────────────── */
+.navbar-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 14px; right: 14px;
+  height: 2px;
+  background: var(--grad-orange);
+  border-radius: var(--r-full);
+}
+.navbar-tab { position: relative; }
+
+/* ── Topbar title — larger on dashboard ─────────────────────── */
+.topbar-title {
+  letter-spacing: -.025em;
+}
+
+/* ── Sidebar footer — subtle glow ────────────────────────────── */
+.sidebar-footer {
+  background: linear-gradient(0deg, rgba(232,80,26,.04) 0%, transparent 100%);
+}

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import Layout from '../components/Layout';
-import { formations } from '../data/mockData';
-import { useFormationsMeta } from '../context/FormationsMetaContext';
+import Layout from '../../components/Layout';
+import { formations } from '../../data/mockData';
+import { useFormationsMeta } from '../../context/FormationsMetaContext';
 
 function formatDateFormation(d) {
   if (!d) return '—';
@@ -33,9 +33,9 @@ function TableFormations({ rows, metas, navigate }) {
         <thead>
           <tr>
             <th>Domaine</th>
-            <th>Date d&#x27;&#xe9;ch&#xe9;ance</th>
+            <th>Date d&#x27;échéance</th>
             <th className="td-center">Renouvellement 2026&#x2013;2027</th>
-            <th>Responsable p&#xe9;dagogique CLCC / Ext&#xe9;rieur</th>
+            <th>Responsable pédagogique CLCC / Extérieur</th>
             <th>Contact</th>
             <th>Statut</th><th>Commentaires</th>
           </tr>
@@ -76,12 +76,12 @@ export default function Formations() {
 
   return (
     <Layout title="Formations" sub="— Formations à renouveler et en cours">
-      <div className="section-title">&#x1F4DA; Formations &#xe0; renouveler et formations en cours</div>
+      <div className="section-title">Formations à renouveler et formations en cours</div>
       <TableFormations rows={aRenouveler} metas={metas} navigate={navigate} />
 
       {autres.length > 0 && (
         <>
-          <div className="section-title">&#x1F4C5; Autres formations suivies</div>
+          <div className="section-title">Autres formations suivies</div>
           <TableFormations rows={autres} metas={metas} navigate={navigate} />
         </>
       )}

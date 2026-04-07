@@ -6,9 +6,12 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend,
 } from "recharts";
 
-import Layout from "../components/Layout";
-import MarcheNavTabs from "../components/MarcheNavTabs";
-import { marches } from "../data/mockData";
+import Layout from "../../components/Layout";
+import MarcheNavTabs from "../../components/MarcheNavTabs";
+import { marches, getAnalyseConfig } from "../../data/mockData";
+import {
+  scanAnnuaire, compileQT, compileRSE, compileBPU, compileChiffrage, download,
+} from "../../utils/analyseFolder";
 
 // PALETTE & HELPERS
 
@@ -188,71 +191,48 @@ function parseAnalyseExcel(wb) {
     return { indicateur: String(r[0]).trim(), values };
   });
 
-  if (!offres.length) throw new Error("Feuille Offres vide ou non trouv\u00e9e");
-  if (!sections.length) throw new Error("Feuille Notation_Synthèse vide ou non trouv\u00e9e");
+  if (!offres.length) throw new Error("Feuille Offres vide ou non trouvée");
+  if (!sections.length) throw new Error("Feuille Notation_Synthèse vide ou non trouvée");
 
   return { marche, offres, fournisseurs, colors, classement, sections, criteres, prixTCO, totalScores, noteEquipements };
 }
 
-// IMPORT ZONE
+// FOLDER PICKER ZONE
 
-function ImportZone({ onImport, error }) {
-  const inputRef = useRef(null);
-  const [isDrag, setIsDrag] = useState(false);
-
-  function processFile(file) {
-    if (!file?.name.match(/\.xlsx?$/i)) { onImport(null, "Fichier .xlsx requis"); return; }
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type:"array" });
-        onImport(parseAnalyseExcel(wb), null);
-      } catch (err) { onImport(null, "Erreur de parsing : " + err.message); }
-    };
-    reader.readAsArrayBuffer(file);
-  }
+function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nbFournisseurs }) {
+  const supportsApi = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
   return (
-    <div style={{ maxWidth:560, margin:"60px auto", textAlign:"center" }}>
-      <div
-        onDragOver={e => { e.preventDefault(); setIsDrag(true); }}
-        onDragLeave={() => setIsDrag(false)}
-        onDrop={e => { e.preventDefault(); setIsDrag(false); processFile(e.dataTransfer.files[0]); }}
-        onClick={() => inputRef.current?.click()}
-        style={{
-          border: `2px dashed ${isDrag ? "var(--color-primary)" : "var(--color-border)"}`,
-          borderRadius: "var(--radius-xl)",
-          padding: "48px 32px",
-          cursor: "pointer",
-          background: isDrag ? "var(--color-primary-bg)" : "var(--surface)",
-          transition: "all 0.2s",
-        }}
-      >
-        <div style={{ fontSize:40, marginBottom:12 }}>&#128194;</div>
-        <p style={{ fontWeight:700, fontSize:16, color:"var(--text-primary)", marginBottom:6 }}>
-          Importer un fichier d&apos;analyse
-        </p>
-        <p style={{ fontSize:13, color:"var(--text-muted)", marginBottom:16 }}>
-          Glisser-d&eacute;poser ou cliquer pour s&eacute;lectionner un fichier .xlsx
-        </p>
-        <button className="btn btn-primary" onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}>
-          Choisir un fichier
-        </button>
-        <input ref={inputRef} type="file" accept=".xlsx,.xls" style={{ display:"none" }} onChange={e => processFile(e.target.files[0])} />
-      </div>
-      {error && (
-        <div className="info-box red" style={{ marginTop:16, textAlign:"left" }}>{error}</div>
-      )}
-      <div style={{ marginTop:20, padding:"14px 16px", background:"var(--surface-subtle)", borderRadius:"var(--radius-md)", textAlign:"left" }}>
-        <p style={{ fontSize:12, fontWeight:700, color:"var(--text-secondary)", marginBottom:8 }}>
-          Format attendu &mdash; feuilles obligatoires :
-        </p>
-        {["Offres","Notation_Synthèse","Classement_Final","Critères_Détaillés"].map(s => (
-          <div key={s} style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-            <span style={{ fontSize:10, color:"#16a34a" }}>&#10003;</span>
-            <span style={{ fontSize:12, fontFamily:"monospace", color:"var(--text-secondary)" }}>{s}</span>
+    <div className="card" style={{ marginBottom:16 }}>
+      <div className="card-header"><span className="card-title">Dossier de l&apos;AO</span></div>
+      <div className="card-body">
+        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+          <button className="btn btn-outline" onClick={() => onScan('pick')} disabled={!supportsApi || scanning}>
+            S\u00e9lectionner le dossier\u2026
+          </button>
+          {dirPath && (
+            <>
+              <div>
+                <div style={{ fontSize:11, color:"var(--text-muted)", marginBottom:2 }}>Dossier :</div>
+                <code style={{ background:"var(--bg)", border:"1px solid var(--border)", padding:"4px 10px", borderRadius:5, fontSize:12 }}>{dirPath}</code>
+              </div>
+              <button className="btn btn-primary" onClick={() => onScan('scan')} disabled={scanning}>
+                {scanning ? scanProgress : 'Analyser'}
+              </button>
+            </>
+          )}
+          {nbFournisseurs > 0 && !scanning && (
+            <span style={{ fontSize:12, color:"#15803d", fontWeight:600, background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:6, padding:"3px 10px" }}>
+              \u2713 {nbFournisseurs} fournisseur{nbFournisseurs > 1 ? 's' : ''} d\u00e9tect\u00e9{nbFournisseurs > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        {!supportsApi && (
+          <div style={{ marginTop:8, fontSize:12, color:"#d97706" }}>
+            Navigateur non compatible \u2014 Chrome ou Edge requis.
           </div>
-        ))}
+        )}
+        {warning && <div style={{ marginTop:8, fontSize:12, color:"#d97706" }}>Avertissement : {warning}</div>}
       </div>
     </div>
   );
@@ -511,7 +491,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
       <div style={{ marginBottom:16 }}>
         <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase",
           letterSpacing:1, marginBottom:8 }}>
-          Catégories &mdash; {notedTotal}/{criteres.length} questions not\u00e9es au total
+          Catégories &mdash; {notedTotal}/{criteres.length} questions notées au total
         </p>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {critNames.map(name => {
@@ -548,7 +528,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
             <strong style={{ color:"var(--color-primary)" }}>{selectedCrit}</strong>
             {" — Question "}<strong>{safeIdx + 1}</strong>/{total}
             {" — "}<strong style={{ color:"#16a34a" }}>{notedGroup}</strong>
-            <span style={{ color:"var(--text-muted)" }}> not\u00e9es</span>
+            <span style={{ color:"var(--text-muted)" }}> notées</span>
           </span>
           <span style={{ fontSize:11, color:"var(--text-muted)" }}>
             {section.name} · {section.poids}%
@@ -660,7 +640,7 @@ function StepNotationView({ criteres, offresNotes, section, onSetNote }) {
           disabled={safeIdx === 0}
           style={{ minWidth:130 }}
         >
-          ← Pr\u00e9c\u00e9dente
+          ← Précédente
         </button>
 
         <div style={{ display:"flex", gap:4, alignItems:"center", flexWrap:"wrap", justifyContent:"center" }}>
@@ -737,7 +717,7 @@ function SectionTab({ section, data, onSetNote }) {
           { label:"Moyenne section", value:moyenne, sub:"sur 5", vc:scoreColor(parseFloat(moyenne)) },
           { label:"Poids", value:section.poids+"%", sub:"du score total", vc:"var(--color-primary)" },
           { label:"Meilleure offre", value:offresNotes[0]?.equipement||"—", sub:offresNotes[0]?.fournisseur||"", vc:colors[offresNotes[0]?.fournisseur]||"var(--text-primary)" },
-          { label:"Questions", value:sectionCriteres.length, sub:notedCriteres.length+" not\u00e9es", vc:"var(--text-primary)" },
+          { label:"Questions", value:sectionCriteres.length, sub:notedCriteres.length+" notées", vc:"var(--text-primary)" },
         ].map((kpi, i) => (
           <div key={i} style={{ background:"var(--surface-subtle)", border:"1px solid var(--color-border)", borderRadius:"var(--radius-lg)", padding:"12px 14px" }}>
             <p style={{ color:"var(--text-muted)", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{kpi.label}</p>
@@ -920,7 +900,7 @@ function SectionTab({ section, data, onSetNote }) {
 
 function TCOTab({ data }) {
   const { prixTCO, offres, colors } = data;
-  if (!prixTCO.length) return <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Donn\u00e9es financières non disponibles.</p>;
+  if (!prixTCO.length) return <p style={{ color:"var(--text-muted)", fontSize:13, padding:"20px 0" }}>Données financières non disponibles.</p>;
 
   const equipements = Object.keys(prixTCO[0].values).filter(eq => offres.find(o => o.equipement === eq));
 
@@ -1000,25 +980,277 @@ function TCOTab({ data }) {
   );
 }
 
+// ─── Onglet Annuaire ──────────────────────────────────────────────────────────
+
+function AnnuaireTab({ annuaire, edits, setCell, config }) {
+  const { docLabels } = config;
+  const rows = annuaire.map((row, i) => ({ ...row, ...(edits[i] || {}) }));
+
+  if (!rows.length) return (
+    <div className="empty-state">
+      <div className="empty-title">Aucune donn\u00e9e</div>
+      <div className="empty-sub">S\u00e9lectionnez le dossier de l&apos;AO et cliquez sur Analyser.</div>
+    </div>
+  );
+
+  return (
+    <div className="fade-in">
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style={{ minWidth:180 }}>Fournisseur</th>
+              {docLabels.map(l => <th key={l} className="td-center" style={{ fontSize:10, padding:"6px 3px", minWidth:58 }}>{l}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={ri}>
+                <td style={{ fontWeight:600, fontSize:12 }}>{row['Nom fournisseur']}</td>
+                {docLabels.map(col => {
+                  const v = row[col] || '';
+                  const isX = v.toLowerCase() === 'x';
+                  const isPartiel = v.toLowerCase() === 'partiel';
+                  const tooltip = isPartiel && col.includes('BPU') && row._bpuMissing
+                    ? 'Colonnes manquantes : ' + Object.entries(row._bpuMissing).map(([l, cs]) => `Lot ${l} : ${cs.join(', ')}`).join(' | ')
+                    : undefined;
+                  return (
+                    <td key={col} className="td-center" style={{ padding:"3px 2px" }}>
+                      <input value={v} onChange={e => setCell(ri, col, e.target.value)}
+                        title={tooltip}
+                        style={{ width:40, textAlign:"center", border:"1px solid var(--border)", borderRadius:4, padding:"2px 4px", fontSize:12,
+                          background: isX ? '#dcfce7' : v ? '#fef9c3' : '#fef2f2',
+                          color: isX ? '#15803d' : v ? '#92400e' : '#be185d', fontWeight: isX ? 700 : 400 }} />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Onglet Compilation QT ────────────────────────────────────────────────────
+
+function CompilationQTTab({ qtData, config, onCompile, compiling }) {
+  const { lots = [] } = config;
+  const [lotsSelected, setLotsSelected] = useState(lots.map(l => l.num));
+  const hasQT = Object.keys(qtData).length > 0;
+
+  return (
+    <div className="fade-in">
+      <div className="card" style={{ marginBottom:16 }}>
+        <div className="card-header"><span className="card-title">Lots \u00e0 compiler</span></div>
+        <div className="card-body" style={{ display:"flex", gap:16, alignItems:"center", flexWrap:"wrap" }}>
+          {lots.map(lot => (
+            <label key={lot.num} style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontSize:13 }}>
+              <input type="checkbox" checked={lotsSelected.includes(lot.num)}
+                onChange={e => setLotsSelected(s => e.target.checked ? [...s, lot.num].sort() : s.filter(l => l !== lot.num))} />
+              {lot.label}
+            </label>
+          ))}
+          <button className="btn btn-primary" style={{ marginLeft:8 }} onClick={() => onCompile(lotsSelected)}
+            disabled={compiling || !lotsSelected.length}>
+            {compiling ? 'Compilation\u2026' : 'Compiler les QT'}
+          </button>
+        </div>
+      </div>
+
+      {hasQT ? (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12 }}>
+          {Object.entries(qtData).map(([lot, { questions, supStatus }]) => (
+            <div key={lot} className="card">
+              <div className="card-header">
+                <span className="card-title">LOT {lot}</span>
+                <span style={{ fontSize:11, color:"var(--text-muted)", marginLeft:8 }}>{questions.length} questions</span>
+              </div>
+              <div className="card-body">
+                {Object.entries(supStatus).map(([sup, { status, filled, total }]) => (
+                  <div key={sup} style={{ display:"flex", justifyContent:"space-between", fontSize:12, padding:"4px 0", borderBottom:"1px solid var(--border)" }}>
+                    <span style={{ fontWeight:500 }}>{sup}</span>
+                    <span style={{ color: status === 'ok' ? '#15803d' : status === 'partial' ? '#d97706' : status === 'absent' ? '#dc2626' : '#64748b', fontWeight:600 }}>
+                      {status === 'ok' ? 'Complet' : status === 'partial' ? 'Partiel' : status === 'absent' ? 'Absent' : 'Vide'}
+                      {status !== 'absent' && <span style={{ fontWeight:400, fontSize:11, marginLeft:6, opacity:0.8 }}>({filled}/{total})</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <div className="empty-title">Aucune compilation</div>
+          <div className="empty-sub">S\u00e9lectionnez le dossier de l&apos;AO puis compilez.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Onglet Comparatif (BPU / Chiffrage / RSE) ───────────────────────────────
+
+function ComparatifTab({ data, title, emptyMsg }) {
+  if (!data || !Object.keys(data).length) {
+    if (data?.compiled) {
+      // RSE format : { compiled, supNames }
+      return (
+        <div className="fade-in">
+          <div className="table-container">
+            <table>
+              <thead><tr>{data.compiled[0].map((h, ci) => <th key={ci} style={{ fontSize:11, padding:"6px 8px" }}>{h}</th>)}</tr></thead>
+              <tbody>
+                {data.compiled.slice(1).map((row, ri) => (
+                  <tr key={ri}>{row.map((cell, ci) => (
+                    <td key={ci} style={{ fontSize:11, padding:"4px 8px", verticalAlign:"top", fontWeight:ci===0?600:400 }}>
+                      {cell === '' ? '\u2014' : cell}
+                    </td>
+                  ))}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+    return <div className="empty-state"><div className="empty-title">{emptyMsg}</div></div>;
+  }
+
+  return (
+    <div className="fade-in" style={{ display:"flex", flexDirection:"column", gap:16 }}>
+      {Object.entries(data).map(([lotName, { compiled, supNames }]) => {
+        if (!compiled?.length) return null;
+        const keyColCount = compiled[0].length - (supNames?.length || 0);
+        return (
+          <div key={lotName} className="card">
+            <div className="card-header">
+              <span className="card-title">{lotName}</span>
+              <span style={{ fontSize:11, color:"var(--text-muted)", marginLeft:8 }}>{supNames?.length || 0} fournisseur{(supNames?.length || 0) > 1 ? 's' : ''}</span>
+            </div>
+            <div className="card-body" style={{ padding:0 }}>
+              <div className="table-container">
+                <table>
+                  <thead><tr>{compiled[0].map((h, ci) => (
+                    <th key={ci} style={{ fontSize:11, padding:"6px 8px", textAlign:ci >= keyColCount ? "right" : "left" }}>{h}</th>
+                  ))}</tr></thead>
+                  <tbody>
+                    {compiled.slice(1).map((row, ri) => (
+                      <tr key={ri}>{row.map((cell, ci) => {
+                        const isPrice = ci >= keyColCount;
+                        return (
+                          <td key={ci} style={{ fontSize:12, textAlign:isPrice?"right":"left", padding:"4px 8px" }}>
+                            {cell === '' ? '\u2014' : cell}
+                          </td>
+                        );
+                      })}</tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // PAGE
 
 export default function AnalyseMarche() {
   const { id } = useParams();
   const marche = marches.find(m => m.id === id);
+  const config = getAnalyseConfig(id);
 
+  // ── Dossier state ──
+  const [dirHandle, setDirHandle] = useState(null);
+  const [dirPath, setDirPath] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState('');
+  const [dirWarning, setDirWarning] = useState('');
+
+  // ── Annuaire ──
+  const [annuaire, setAnnuaire] = useState([]);
+  const [edits, setEdits] = useState({});
+
+  // ── Compilations ──
+  const [qtData, setQtData] = useState({});
+  const [rseData, setRseData] = useState({});
+  const [bpuData, setBpuData] = useState({});
+  const [chiffrageData, setChiffrageData] = useState({});
+  const [compilingQt, setCompilingQt] = useState(false);
+  const [compilingRse, setCompilingRse] = useState(false);
+  const [compilingBpu, setCompilingBpu] = useState(false);
+  const [compilingChiffrage, setCompilingChiffrage] = useState(false);
+
+  // ── Analyse xlsx (conservé pour compatibilité) ──
   const [analysisData, setAnalysisData] = useState(() => {
     try { return JSON.parse(localStorage.getItem("gm-analyse-" + id) || "null"); }
     catch { return null; }
   });
   const [localNotes, setLocalNotes] = useState({});
-  const [activeTab, setActiveTab] = useState("__overview__");
-  const [importErr, setImportErr] = useState("");
+
+  const [activeTab, setActiveTab] = useState("__annuaire__");
+
+  // ── Handlers ──
+  async function handleFolderAction(action) {
+    if (action === 'pick') {
+      try {
+        const root = await window.showDirectoryPicker();
+        setDirHandle(root);
+        setDirPath(root.name);
+        setAnnuaire([]); setEdits({}); setDirWarning('');
+      } catch (e) { if (e.name !== 'AbortError') console.error(e); }
+    } else if (action === 'scan' && dirHandle) {
+      setScanning(true); setAnnuaire([]); setEdits({});
+      try {
+        const { rows, warning } = await scanAnnuaire(dirHandle, config, setScanProgress);
+        setAnnuaire(rows);
+        if (warning) setDirWarning(warning);
+      } catch (e) { console.error(e); }
+      setScanning(false); setScanProgress('');
+    }
+  }
+
+  async function handleCompileQT(selectedLots) {
+    if (!dirHandle) return;
+    setCompilingQt(true);
+    try { setQtData(await compileQT(dirHandle, config, selectedLots)); }
+    catch (e) { console.error(e); setDirWarning(e.message); }
+    setCompilingQt(false);
+  }
+
+  async function handleCompileRSE() {
+    if (!dirHandle) return;
+    setCompilingRse(true);
+    try { setRseData(await compileRSE(dirHandle)); }
+    catch (e) { console.error(e); setDirWarning(e.message); }
+    setCompilingRse(false);
+  }
+
+  async function handleCompileBPU() {
+    if (!dirHandle) return;
+    setCompilingBpu(true);
+    try { setBpuData(await compileBPU(dirHandle, config)); }
+    catch (e) { console.error(e); setDirWarning(e.message); }
+    setCompilingBpu(false);
+  }
+
+  async function handleCompileChiffrage() {
+    if (!dirHandle) return;
+    setCompilingChiffrage(true);
+    try { setChiffrageData(await compileChiffrage(dirHandle, config)); }
+    catch (e) { console.error(e); setDirWarning(e.message); }
+    setCompilingChiffrage(false);
+  }
+
+  const setCell = (ri, col, value) => setEdits(e => ({ ...e, [ri]: { ...(e[ri] || {}), [col]: value } }));
 
   const setNote = useCallback((qKey, equipement, value) => {
-    setLocalNotes(prev => ({
-      ...prev,
-      [qKey]: { ...(prev[qKey] || {}), [equipement]: value },
-    }));
+    setLocalNotes(prev => ({ ...prev, [qKey]: { ...(prev[qKey] || {}), [equipement]: value } }));
   }, []);
 
   const mergedData = useMemo(() => {
@@ -1040,73 +1272,95 @@ export default function AnalyseMarche() {
     };
   }, [analysisData, localNotes]);
 
-  function handleImport(data, err) {
-    if (err) { setImportErr(err); return; }
-    setAnalysisData(data);
-    setLocalNotes({});
-    setActiveTab("__overview__");
-    try { localStorage.setItem("gm-analyse-" + id, JSON.stringify(data)); } catch {}
-  }
+  const layoutTitle = marche ? marche.reference + " \u2014 " + marche.nom : "Analyse des offres";
 
-  const layoutTitle = analysisData
-    ? (analysisData.marche.reference + " — " + analysisData.marche.lot)
-    : (marche ? marche.reference + " — " + marche.nom : "Analyse des offres");
-
-  if (!analysisData) return (
-    <Layout title={layoutTitle} sub="— Analyse des offres">
-      <MarcheNavTabs />
-      <ImportZone onImport={handleImport} error={importErr} />
-    </Layout>
-  );
-
+  // ── Onglets ──
   const tabs = [
-    { id:"__overview__", label:"Vue d'ensemble", icon:"\u{1F3E0}" },
-    ...analysisData.sections.map(s => ({ id:s.name, label:s.name, icon:s.icon })),
-    { id:"__tco__", label:"Finances", icon:"\u{1F4B0}" },
+    { id:"__annuaire__", label:"Annuaire" },
+    { id:"__qt__", label:"Compilation QT" },
+    { id:"__bpu__", label:"Comparatif BPU" },
+    { id:"__rse__", label:"RSE" },
+    { id:"__chiffrage__", label:"Chiffrage" },
   ];
 
-  const sectionMoyennes = analysisData.sections.reduce((acc, s) => {
-    const vals = Object.values(s.scoreParOffre).filter(v=>v!=null);
-    acc[s.name] = vals.length ? parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2)) : null;
-    return acc;
-  }, {});
+  // Ajout des onglets d'analyse xlsx si des données ont été importées
+  if (analysisData) {
+    tabs.push({ id:"__overview__", label:"Vue d'ensemble" });
+    analysisData.sections.forEach(s => tabs.push({ id:s.name, label:s.name }));
+    tabs.push({ id:"__tco__", label:"Finances" });
+  }
 
   return (
-    <Layout title={layoutTitle} sub="— Analyse des offres"
-      actions={
-        <button className="btn btn-outline btn-sm" onClick={() => {
-          if (window.confirm("Supprimer les donn\u00e9es import\u00e9es ?")) {
-            setAnalysisData(null);
-            setLocalNotes({});
-            localStorage.removeItem("gm-analyse-" + id);
-          }
-        }}>
-          &#8635; Changer de fichier
-        </button>
-      }
-    >
+    <Layout title={layoutTitle} sub={"\u2014 Analyse des offres"}>
       <MarcheNavTabs />
-      <div style={{ display:"flex", gap:0, overflowX:"auto", borderBottom:"1px solid var(--color-border)", marginBottom:24 }}>
-        {tabs.map(tab => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-              padding:"10px 16px", border:"none", cursor:"pointer", background:"transparent",
-              color: isActive ? "var(--color-primary)" : "var(--text-tertiary)",
-              fontWeight: isActive ? 700 : 500, fontSize:13,
-              display:"flex", flexDirection:"column", alignItems:"center", gap:2, minWidth:90,
-              borderBottom: isActive ? "2px solid var(--color-primary)" : "2px solid transparent",
-              transition:"all 0.15s", whiteSpace:"nowrap", flexShrink:0,
-            }}>
-              <span>{tab.icon} {tab.label}</span>
-            </button>
-          );
-        })}
+
+      <FolderPickerZone
+        onScan={handleFolderAction}
+        scanning={scanning}
+        scanProgress={scanProgress}
+        dirPath={dirPath}
+        warning={dirWarning}
+        nbFournisseurs={annuaire.length}
+      />
+
+      <div className="tabs" style={{ marginBottom:16 }}>
+        {tabs.map(tab => (
+          <div key={tab.id} className={'tab' + (activeTab === tab.id ? ' active' : '')} onClick={() => setActiveTab(tab.id)}>
+            {tab.label}
+          </div>
+        ))}
       </div>
 
-      {activeTab === "__overview__" && <OverviewTab data={mergedData} />}
-      {activeTab === "__tco__" && <TCOTab data={mergedData} />}
-      {analysisData.sections.map(s =>
+      {activeTab === "__annuaire__" && (
+        <AnnuaireTab annuaire={annuaire} edits={edits} setCell={setCell} config={config} />
+      )}
+
+      {activeTab === "__qt__" && (
+        <CompilationQTTab qtData={qtData} config={config} onCompile={handleCompileQT} compiling={compilingQt} />
+      )}
+
+      {activeTab === "__bpu__" && (
+        <div className="fade-in">
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-body" style={{ display:"flex", gap:12, alignItems:"center" }}>
+              <button className="btn btn-primary" onClick={handleCompileBPU} disabled={compilingBpu || !dirHandle}>
+                {compilingBpu ? 'Compilation\u2026' : 'Compiler les BPU'}
+              </button>
+            </div>
+          </div>
+          <ComparatifTab data={bpuData} title="BPU" emptyMsg="Aucune donn\u00e9e BPU" />
+        </div>
+      )}
+
+      {activeTab === "__rse__" && (
+        <div className="fade-in">
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-body" style={{ display:"flex", gap:12, alignItems:"center" }}>
+              <button className="btn btn-primary" onClick={handleCompileRSE} disabled={compilingRse || !dirHandle}>
+                {compilingRse ? 'Compilation\u2026' : 'Compiler les RSE'}
+              </button>
+            </div>
+          </div>
+          <ComparatifTab data={rseData} title="RSE" emptyMsg="Aucune donn\u00e9e RSE" />
+        </div>
+      )}
+
+      {activeTab === "__chiffrage__" && (
+        <div className="fade-in">
+          <div className="card" style={{ marginBottom:16 }}>
+            <div className="card-body" style={{ display:"flex", gap:12, alignItems:"center" }}>
+              <button className="btn btn-primary" onClick={handleCompileChiffrage} disabled={compilingChiffrage || !dirHandle}>
+                {compilingChiffrage ? 'Compilation\u2026' : 'Compiler le Chiffrage'}
+              </button>
+            </div>
+          </div>
+          <ComparatifTab data={chiffrageData} title="Chiffrage" emptyMsg="Aucune donn\u00e9e Chiffrage" />
+        </div>
+      )}
+
+      {activeTab === "__overview__" && mergedData && <OverviewTab data={mergedData} />}
+      {activeTab === "__tco__" && mergedData && <TCOTab data={mergedData} />}
+      {analysisData && analysisData.sections.map(s =>
         activeTab === s.name
           ? <SectionTab key={s.name} section={s} data={mergedData} onSetNote={setNote} />
           : null
