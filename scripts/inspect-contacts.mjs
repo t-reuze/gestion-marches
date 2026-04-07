@@ -9,12 +9,13 @@ for (const sub of ['BPU', 'QT', 'RSE', 'Chiffrage']) {
   for (const f of files.filter(x => /\.xlsx$/i.test(x) && !x.startsWith('~'))) {
     const buf = await fs.readFile(path.join(dir, f));
     const wb = XLSX.read(buf, { type: 'buffer' });
+    // Look for sheets containing contact/coord/identif/présentation
     for (const sn of wb.SheetNames) {
-      const m = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '' });
-      const flat = m.flat().filter(c => typeof c === 'string').join(' ');
-      const mail = flat.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) || [];
-      const tel = flat.match(/(?:\+33|0)\s*[1-9](?:[\s.-]*\d{2}){4}/g) || [];
-      if (mail.length || tel.length) console.log(`${sub}/${f} [${sn}]`, 'mail:', mail.slice(0,2), 'tel:', tel.slice(0,2));
+      if (/contact|coord|identif|present|interloc|fournisseur/i.test(sn)) {
+        const m = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '' });
+        console.log(`\n${sub}/${f} [${sn}]`);
+        m.slice(0, 15).forEach((r, i) => console.log(`  ${i}:`, r.filter(c => c !== '').slice(0, 6)));
+      }
     }
   }
 }
