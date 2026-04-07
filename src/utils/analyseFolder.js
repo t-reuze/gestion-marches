@@ -348,9 +348,13 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
               const filled = dataRows.filter(r => isRealVal(r[col])).length;
               if (filled === 0) missing.push(colName);
             }
-            // Une ligne est "remplie" si au moins une colonne requise est renseignée
+            // Une ligne est "remplie" si au moins une colonne requise est renseignée.
+            // Fallback (mode auto sans bpuReq) : toute cellule non-libellé renseignée.
             for (const r of dataRows) {
-              if (reqCols.some(({ col }) => isRealVal(r[col]))) filledLines++;
+              const isFilled = reqCols.length
+                ? reqCols.some(({ col }) => isRealVal(r[col]))
+                : r.slice(1).some(isRealVal);
+              if (isFilled) filledLines++;
             }
 
             let status;
