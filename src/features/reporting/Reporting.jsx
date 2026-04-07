@@ -6,6 +6,8 @@ import Layout from '../../components/Layout';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
 import KpiCard from '../../components/KpiCard';
 import StatusBadge from '../../components/StatusBadge';
+import ReportingDashboard from '../../components/reporting/ReportingDashboard';
+import ReportingMaintenance from '../../components/reporting/ReportingMaintenance';
 import { marches, STATUT_CONFIG, formatDate } from '../../data/mockData';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 
@@ -26,6 +28,7 @@ export default function Reporting() {
   const { getMeta, setMeta } = useMarcheMeta();
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [activeTab, setActiveTab] = useState('ca');
 
   const marche   = id ? marches.find(m => m.id === id) : null;
   const isGlobal = !marche;
@@ -88,6 +91,22 @@ export default function Reporting() {
     <Layout title={title} sub={sub}>
       <MarcheNavTabs />
 
+      <div className="tabs" style={{ marginBottom: 20 }}>
+        <div className={'tab' + (activeTab === 'ca' ? ' active' : '')} onClick={() => setActiveTab('ca')}>CA</div>
+        <div className={'tab' + (activeTab === 'maintenance' ? ' active' : '')} onClick={() => setActiveTab('maintenance')}>Maintenance et Équipement</div>
+        <div className={'tab' + (activeTab === 'suivi' ? ' active' : '')} onClick={() => setActiveTab('suivi')}>Suivi Marchés</div>
+      </div>
+
+      {activeTab === 'ca' && (
+        <ReportingDashboard marcheId={id} />
+      )}
+
+      {activeTab === 'maintenance' && (
+        <ReportingMaintenance marcheId={id} />
+      )}
+
+      {activeTab === 'suivi' && (
+      <div>
       <div className="kpi-grid">
         <KpiCard label="Total marchés"  value={total}                         color="#1A4FA8" sub={actifs + ' actif' + (actifs > 1 ? 's' : '')} />
         <KpiCard label="Offres reçues"  value={offres}                        color="#10B981" sub={'cumulées tous marchés'} />
@@ -235,6 +254,8 @@ export default function Reporting() {
           </tbody>
         </table>
       </div>
+      </div>
+      )}
     </Layout>
   );
 }
