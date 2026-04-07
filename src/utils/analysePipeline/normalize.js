@@ -116,6 +116,9 @@ const HEADER_KEYWORDS = [
   'profil', 'poste', 'designation', 'libelle', 'description',
   'puht', 'pu ht', 'prix', 'tarif', 'taux', 'remise', 'montant',
   'unite', 'quantite', 'qte', 'experience', 'niveau', 'reference',
+  // Questionnaires (QT, RSE)
+  'theme', 'section', 'question', 'reponse', 'commentaire', 'critere',
+  'documentation', 'intitule', 'item', 'axe', 'domaine', 'categorie',
 ];
 
 function looksLikeHeaderRow(row) {

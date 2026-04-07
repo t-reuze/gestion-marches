@@ -13,6 +13,8 @@ import {
   scanAnnuaire, compileQT, compileRSE, compileBPU, compileChiffrage, download,
 } from "../../utils/analyseFolder";
 import StandardisationBpuTab from "./StandardisationBpuTab";
+import StandardisationQuestionnaireTab from "./StandardisationQuestionnaireTab";
+import QualityControlTab from "./QualityControlTab";
 
 // PALETTE & HELPERS
 
@@ -1303,6 +1305,9 @@ export default function AnalyseMarche() {
     { id:"__qt__", label:"Compilation QT" },
     { id:"__bpu__", label:"Comparatif BPU" },
     { id:"__bpu_std__", label:"Standardisation BPU" },
+    { id:"__qt_std__", label:"Standardisation QT" },
+    { id:"__rse_std__", label:"Standardisation RSE" },
+    { id:"__qc__", label:"Contrôle qualité" },
     { id:"__rse__", label:"RSE" },
     { id:"__chiffrage__", label:"Chiffrage" },
   ];
@@ -1372,6 +1377,18 @@ export default function AnalyseMarche() {
 
       {activeTab === "__bpu_std__" && (
         <StandardisationBpuTab dirHandle={dirHandle} marcheId={id} />
+      )}
+
+      {activeTab === "__qt_std__" && (
+        <StandardisationQuestionnaireTab dirHandle={dirHandle} marcheId={id} subdir="QT" docType="QT" label="QT" />
+      )}
+
+      {activeTab === "__rse_std__" && (
+        <StandardisationQuestionnaireTab dirHandle={dirHandle} marcheId={id} subdir="RSE" docType="RSE" label="RSE" />
+      )}
+
+      {activeTab === "__qc__" && (
+        <QualityControlTab annuaire={annuaire} />
       )}
 
       {activeTab === "__rse__" && (
