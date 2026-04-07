@@ -508,17 +508,27 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     let raw = {};
     let contact = { prenom: '', nom: '', tel: '', mail: '' };
     const folder = folderMap[n];
+    let supFiles = [];
     if (folder) {
-      const files = await getAllFiles(folder.handle);
-      raw = detectDocs(files, lots);
+      supFiles = await getAllFiles(folder.handle);
+      raw = detectDocs(supFiles, lots);
     }
-    // Match par chemin (le nom du fournisseur est dans le dossier parent,
-    // pas forcément dans le nom du fichier "Annexe 4 - Fiche contacts.pdf")
-    const supTokens = n.split(/\s+/).filter(t => t.length > 2);
-    const supCandidates = contactFiles.filter(f => {
-      const p = normSupName(f.path);
-      return supTokens.some(t => p.includes(t));
-    });
+    // 1. Cherche d'abord dans le dossier du fournisseur lui-même (plus fiable)
+    // 2. Sinon, fallback sur match par chemin dans tout l'arbre
+    const isContactFile = (f) => {
+      if (f.name.startsWith('~')) return false;
+      if (!/\.(xlsx?|pdf)$/i.test(f.name)) return false;
+      const p = normSupName(f.path || f.name);
+      return p.includes('contact') || p.includes('annexe 4') || p.includes('interlocuteur');
+    };
+    let supCandidates = supFiles.filter(isContactFile);
+    if (!supCandidates.length) {
+      const supTokens = n.split(/\s+/).filter(t => t.length > 2);
+      supCandidates = contactFiles.filter(f => {
+        const p = normSupName(f.path);
+        return supTokens.some(t => p.includes(t));
+      });
+    }
     // Priorité xlsx (extractible) > pdf (marqueur seulement)
     const contactXlsx = supCandidates.find(f => /\.xlsx?$/i.test(f.name));
     const contactPdf = supCandidates.find(f => /\.pdf$/i.test(f.name));
