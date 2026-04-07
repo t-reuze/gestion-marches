@@ -531,8 +531,15 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
         if (contacts.length) contact = contacts[0];
       } catch {}
     } else if (contactPdf) {
-      // PDF présent mais pas extractible — on marque
-      contact = { prenom: '', nom: '', tel: '', mail: '', _pdfFound: true };
+      try {
+        const { extractContactFromPdfFile } = await import('./analysePipeline/pdfContact.js');
+        const c = await extractContactFromPdfFile(contactPdf.handle);
+        if (c && (c.mail || c.tel || c.nom || c.prenom)) contact = c;
+        else contact = { prenom: '', nom: '', tel: '', mail: '', _pdfFound: true };
+      } catch (e) {
+        console.warn('PDF contact extraction failed:', e);
+        contact = { prenom: '', nom: '', tel: '', mail: '', _pdfFound: true };
+      }
     }
 
     const bpuMissing = info.bpuMissing || {};
