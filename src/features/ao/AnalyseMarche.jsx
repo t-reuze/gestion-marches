@@ -1219,6 +1219,7 @@ export default function AnalyseMarche() {
 
   // ── Annuaire ──
   const [annuaire, setAnnuaire] = useState([]);
+  const [dynDocLabels, setDynDocLabels] = useState(null);
   const [edits, setEdits] = useState({});
 
   // ── Compilations ──
@@ -1254,8 +1255,9 @@ export default function AnalyseMarche() {
     if (!root) return;
     setScanning(true); setAnnuaire([]); setEdits({});
     try {
-      const { rows, warning } = await scanAnnuaire(root, config, setScanProgress);
+      const { rows, warning, docLabels } = await scanAnnuaire(root, config, setScanProgress);
       setAnnuaire(rows);
+      if (docLabels) setDynDocLabels(docLabels);
       if (warning) setDirWarning(warning);
     } catch (e) { console.error(e); }
     setScanning(false); setScanProgress('');
@@ -1359,7 +1361,8 @@ export default function AnalyseMarche() {
       </div>
 
       {activeTab === "__annuaire__" && (
-        <AnnuaireTab annuaire={annuaire} edits={edits} setCell={setCell} config={config} />
+        <AnnuaireTab annuaire={annuaire} edits={edits} setCell={setCell}
+          config={dynDocLabels ? { ...config, docLabels: dynDocLabels } : config} />
       )}
 
       {activeTab === "__bpu_std__" && (

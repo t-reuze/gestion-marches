@@ -263,7 +263,10 @@ export function detectDocs(files, lots = []) {
  * @returns {Promise<{ rows: object[], warning: string }>}
  */
 export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
-  const { lots = [], docLabels = [], bpuReq = {} } = config;
+  let { lots = [], docLabels = [], bpuReq = {} } = config;
+  // Lots / labels auto-détectés si absents du config (mode default)
+  const autoLots = new Set();
+  const autoMode = lots.length === 0;
   const val = b => b ? 'x' : '';
 
   const supInfo = {};
@@ -323,8 +326,14 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
               continue;
             }
             let lotNum = 0;
-            for (const lot of lots) {
-              if (new RegExp(`lot\\s*${lot.num}`, 'i').test(s)) { lotNum = lot.num; break; }
+            const autoMatch = s.match(/lot\s*(\d+)/i);
+            if (autoMode && autoMatch) {
+              lotNum = parseInt(autoMatch[1], 10);
+              autoLots.add(lotNum);
+            } else {
+              for (const lot of lots) {
+                if (new RegExp(`lot\\s*${lot.num}`, 'i').test(s)) { lotNum = lot.num; break; }
+              }
             }
             if (!lotNum) continue;
 
@@ -410,6 +419,21 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     }
   }
 
+  // Matérialise les lots auto-détectés et injecte les colonnes Lot dans docLabels
+  if (autoMode && autoLots.size) {
+    lots = [...autoLots].sort((a, b) => a - b).map(num => ({ num, label: `Lot ${num}` }));
+    docLabels = [...lots.map(l => l.label), ...docLabels];
+  }
+
+  // Index global des fichiers xlsx contacts (recherchés partout sous root)
+  onProgress('Recherche fichiers contacts…');
+  const allRootFiles = await getAllFiles(rootHandle);
+  const contactFiles = allRootFiles.filter(f => {
+    if (!/\.xlsx?$/i.test(f.name) || f.name.startsWith('~')) return false;
+    const p = normSupName(f.path);
+    return p.includes('contact') || p.includes('annexe 4') || p.includes('interlocuteur');
+  });
+
   const allNorms = Object.keys(supInfo).sort((a, b) =>
     supInfo[a].displayName.localeCompare(supInfo[b].displayName, 'fr', { sensitivity: 'base' })
   );
@@ -425,21 +449,20 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     if (folder) {
       const files = await getAllFiles(folder.handle);
       raw = detectDocs(files, lots);
-      // Extraction contacts depuis xlsx "Fiche Contacts" si présent
-      const contactFile = files.find(f => {
-        const p = f.path.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        return /\.xlsx?$/i.test(f.name)
-          && (p.includes('contact') || p.includes('annexe 4') || p.includes('interlocuteur'));
-      });
-      if (contactFile) {
-        try {
-          const file = await contactFile.handle.getFile();
-          const buf = await file.arrayBuffer();
-          const wb = XLSX.read(buf, { type: 'array' });
-          const contacts = extractContactsFromWorkbook(wb);
-          if (contacts.length) contact = contacts[0];
-        } catch {}
-      }
+    }
+    // Recherche fichier contacts par nom de fournisseur dans tout le dossier root
+    const contactFile = contactFiles.find(f => {
+      const fn = normSupName(f.name);
+      return fn.includes(n) || n.includes(fn.replace(/contact|annexe|fiche|interlocuteur/g, '').trim());
+    });
+    if (contactFile) {
+      try {
+        const file = await contactFile.handle.getFile();
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const contacts = extractContactsFromWorkbook(wb);
+        if (contacts.length) contact = contacts[0];
+      } catch {}
     }
 
     const bpuMissing = info.bpuMissing || {};
@@ -500,7 +523,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     rows.push(row);
   }
 
-  return { rows, warning };
+  return { rows, warning, docLabels };
 }
 
 // ─── Compilation QT ───────────────────────────────────────────────────────────

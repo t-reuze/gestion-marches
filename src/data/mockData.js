@@ -665,9 +665,9 @@ export const ANALYSE_CONFIGS = {
 export const DEFAULT_ANALYSE_CONFIG = {
   label: 'Analyse des offres',
   lots: [],
+  // Colonnes affichées dans l'annuaire — alignées sur la grille acheteur
   docLabels: [
-    'BPU', 'QT', 'Questionnaire RSE', 'CCAP signé',
-    'CCTP signé', 'DC1', 'DC2', 'ATTRI1', 'Fiche Contacts',
+    'BPU', 'Optim. Tarifaire', 'QT', 'BPU Chiffrage', 'Questionnaire RSE',
   ],
   bpuReq: {},
   bpuReqCols: {},
