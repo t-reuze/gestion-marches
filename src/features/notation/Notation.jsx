@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { Chart, RadarController, BarController, RadialLinearScale, LinearScale, CategoryScale, PointElement, LineElement, BarElement, Tooltip, Legend } from 'chart.js';
-Chart.register(RadarController, BarController, RadialLinearScale, LinearScale, CategoryScale, PointElement, LineElement, BarElement, Tooltip, Legend);
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend as RechartsLegend } from 'recharts';
 
 import Layout from '../../components/Layout';
 import { marches } from '../../data/mockData';
@@ -11,7 +10,7 @@ import MarcheNavTabs from '../../components/MarcheNavTabs';
 import SmartExcelImport from './SmartExcelImport';
 
 const VENDOR_COLORS = ['#B91C1C','#1A6B3A','#7C3AED','#1A4FA8','#0F7285','#9D3FAF'];
-const MEDALS = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+const MEDALS = ['1er','2e','3e','4e','5e','6e'];
 
 function noteColor(n) {
   if (n >= 4.25) return '#10B981';
@@ -68,10 +67,6 @@ export default function Notation() {
   const [tab, setTab] = useState('notation');
   const [exporting, setExporting] = useState(false);
   const origBin = useRef(null);
-  const barRef   = useRef(null);
-  const radarRef = useRef(null);
-  const barChart   = useRef(null);
-  const radarChart = useRef(null);
 
   function handleSmartImport({ wb, fileName, buf }) {
     try {
@@ -180,65 +175,6 @@ export default function Notation() {
     setExporting(false);
   }
 
-  useEffect(() => {
-    if (tab !== 'synthese' || !session) return;
-    if (barChart.current)   { barChart.current.destroy();   barChart.current = null; }
-    if (radarChart.current) { radarChart.current.destroy(); radarChart.current = null; }
-    const { vendors, questions } = session;
-    const labels = questions.map(q => String(q.num));
-    setTimeout(() => {
-      if (barRef.current) {
-        barChart.current = new Chart(barRef.current.getContext('2d'), {
-          type: 'bar',
-          data: {
-            labels,
-            datasets: vendors.map(v => ({
-              label: v.label.split('(')[0].trim(),
-              data: questions.map(q => {
-                if (q.skipped[v.name]) return null;
-                const n = q.notes[v.name];
-                return (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
-              }),
-              backgroundColor: v.color + 'BB', borderColor: v.color,
-              borderWidth: 1, borderRadius: 3, skipNull: true,
-            })),
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
-            scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } },
-          },
-        });
-      }
-      if (radarRef.current) {
-        radarChart.current = new Chart(radarRef.current.getContext('2d'), {
-          type: 'radar',
-          data: {
-            labels,
-            datasets: vendors.map(v => ({
-              label: v.label.split('(')[0].trim(),
-              data: questions.map(q => {
-                if (q.skipped[v.name]) return null;
-                const n = q.notes[v.name];
-                return (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
-              }),
-              borderColor: v.color, backgroundColor: v.color + '22',
-              borderWidth: 2, pointRadius: 3,
-            })),
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
-            scales: { r: { min: 0, max: 5, ticks: { stepSize: 1, font: { size: 9 } } } },
-          },
-        });
-      }
-    }, 50);
-    return () => {
-      if (barChart.current)   { barChart.current.destroy();   barChart.current = null; }
-      if (radarChart.current) { radarChart.current.destroy(); radarChart.current = null; }
-    };
-  }, [tab, session]);
 
   if (!marche) return (
     <Layout title="Marché introuvable">
@@ -279,7 +215,7 @@ export default function Notation() {
             className="btn btn-outline btn-sm"
             onClick={() => { if (window.confirm('Supprimer la session de notation pour ' + marche.reference + ' ?')) { clearSession(id); origBin.current = null; } }}
           >
-            &#x1F5D1; Réinitialiser
+            Réinitialiser
           </button>
         </div>
       }
@@ -301,8 +237,8 @@ export default function Notation() {
       </div>
 
       <div className="tabs">
-        <div className={'tab' + (tab === 'notation' ? ' active' : '')} onClick={() => setTab('notation')}>&#x270F;&#xFE0F; Notation</div>
-        <div className={'tab' + (tab === 'synthese' ? ' active' : '')} onClick={() => setTab('synthese')}>&#x1F4CA; Synthèse</div>
+        <div className={'tab' + (tab === 'notation' ? ' active' : '')} onClick={() => setTab('notation')}>Notation</div>
+        <div className={'tab' + (tab === 'synthese' ? ' active' : '')} onClick={() => setTab('synthese')}>Synthèse</div>
       </div>
 
       {tab === 'notation' && (
@@ -332,7 +268,7 @@ export default function Notation() {
               <div className="fq-header-num">{q.num}</div>
               <div className="fq-header-text">
                 <div className="fq-header-q">{q.question}</div>
-                {q.methode && q.methode !== '—' && <div className="fq-header-m">&#x1F4D0; Méthodologie : {q.methode}</div>}
+                {q.methode && q.methode !== '—' && <div className="fq-header-m">Méthodologie : {q.methode}</div>}
               </div>
             </div>
             <div className="fq-body">
@@ -443,12 +379,63 @@ export default function Notation() {
           </div>
           <div className="charts-grid" style={{ marginBottom: 20 }}>
             <div className="card">
-              <div className="card-header"><span className="card-title">&#x1F4CA; Notes par critère</span></div>
-              <div className="card-body" style={{ height: 280 }}><canvas ref={barRef} /></div>
+              <div className="card-header"><span className="card-title">Notes par critère</span></div>
+              <div className="card-body" style={{ height: 280 }}>
+                {(() => {
+                  const chartData = questions.map(q => {
+                    const entry = { subject: String(q.num) };
+                    vendors.forEach(v => {
+                      if (q.skipped[v.name]) { entry[v.name] = null; return; }
+                      const n = q.notes[v.name];
+                      entry[v.name] = (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
+                    });
+                    return entry;
+                  });
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                        <YAxis domain={[0, 5]} ticks={[0,1,2,3,4,5]} tick={{ fontSize: 10 }} />
+                        <RechartsTooltip />
+                        <RechartsLegend wrapperStyle={{ fontSize: 10 }} />
+                        {vendors.map(v => (
+                          <Bar key={v.name} dataKey={v.name} name={v.label.split('(')[0].trim()} fill={v.color + 'BB'} stroke={v.color} strokeWidth={1} radius={[3,3,0,0]} />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
+              </div>
             </div>
             <div className="card">
-              <div className="card-header"><span className="card-title">&#x1F578; Radar multi-critères</span></div>
-              <div className="card-body" style={{ height: 280 }}><canvas ref={radarRef} /></div>
+              <div className="card-header"><span className="card-title">Radar multi-critères</span></div>
+              <div className="card-body" style={{ height: 280 }}>
+                {(() => {
+                  const chartData = questions.map(q => {
+                    const entry = { subject: String(q.num) };
+                    vendors.forEach(v => {
+                      if (q.skipped[v.name]) { entry[v.name] = null; return; }
+                      const n = q.notes[v.name];
+                      entry[v.name] = (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
+                    });
+                    return entry;
+                  });
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={chartData}>
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
+                        <RechartsTooltip />
+                        <RechartsLegend wrapperStyle={{ fontSize: 10 }} />
+                        {vendors.map(v => (
+                          <Radar key={v.name} dataKey={v.name} name={v.label.split('(')[0].trim()} stroke={v.color} fill={v.color} fillOpacity={0.13} dot={{ r: 3 }} />
+                        ))}
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
+              </div>
             </div>
           </div>
           <div className="card">

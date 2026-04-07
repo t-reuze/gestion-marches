@@ -7,7 +7,6 @@ import MarcheInfos          from './pages/MarcheInfos';
 import Formations           from './features/formations/Formations';
 import FormationDetail      from './features/formations/FormationDetail';
 import AnalyseMarche        from './features/ao/AnalyseMarche';
-import AnalyseUnicancer     from './features/ao/AnalyseUnicancer';
 import ContactsAnnuaire     from './features/contacts/ContactsAnnuaire';
 import ClccContactForm      from './features/contacts/ClccContactForm';
 import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
@@ -15,6 +14,7 @@ import ErpKpi               from './features/erp/ErpKpi';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider }            from './context/MarcheMetaContext';
 import { FormationsMetaProvider }        from './context/FormationsMetaContext';
+import { ReportingDataProvider }         from './context/ReportingDataContext';
 import { marches }          from './data/mockData';
 
 function MarcheRedirect() {
@@ -32,7 +32,6 @@ const router = createHashRouter([
   { path: '/reporting',                     element: <Reporting /> },
   { path: '/formations',                    element: <Formations /> },
   { path: '/formations/:id',               element: <FormationDetail /> },
-  { path: '/analyse-unicancer',             element: <AnalyseUnicancer /> },
   { path: '/contacts',                      element: <ContactsAnnuaire /> },
   { path: '/contacts/:clccId/add',          element: <ClccContactForm /> },
   { path: '/marche/:id/reporting',          element: <Reporting /> },
@@ -50,9 +49,11 @@ export default function App() {
   return (
     <FormationsMetaProvider>
     <MarcheMetaProvider>
+    <ReportingDataProvider>
     <NotationProvider>
       <RouterProvider router={router} />
     </NotationProvider>
+    </ReportingDataProvider>
     </MarcheMetaProvider>
     </FormationsMetaProvider>
   );

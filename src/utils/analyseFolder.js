@@ -1,0 +1,652 @@
+/**
+ * analyseFolder.js
+ * Logique de scan et compilation de dossiers AO fournisseurs.
+ * Paramétré par une config marché (lots, docLabels, bpuReq, lotSheets…).
+ *
+ * Extrait de AnalyseUnicancer.jsx pour être réutilisable par marché.
+ */
+import XLSX from 'xlsx-js-style';
+import JSZip from 'jszip';
+
+// ─── Helpers fichiers ─────────────────────────────────────────────────────────
+
+export async function getAllFiles(dirHandle, path = '') {
+  const files = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (name.startsWith('~') || name.startsWith('.')) continue;
+    const fullPath = path ? path + '/' + name : name;
+    if (handle.kind === 'file') files.push({ name, path: fullPath, handle });
+    else files.push(...await getAllFiles(handle, fullPath));
+  }
+  return files;
+}
+
+export async function getSubdirs(dirHandle) {
+  const dirs = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'directory' && !name.startsWith('.')) dirs.push({ name, handle });
+  }
+  return dirs.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function findStdDir(dirHandle, depth = 0) {
+  if (depth > 5) return null;
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const entries = [];
+  for await (const [name, handle] of dirHandle.entries()) entries.push([name, handle]);
+
+  for (const [name, handle] of entries) {
+    if (handle.kind === 'directory' && norm(name) === 'standardises') return handle;
+  }
+
+  const hasQT = entries.some(([n, h]) => h.kind === 'file' && /_qt_standardis/i.test(n) && !n.startsWith('~'));
+  const subNorm = new Set(entries.filter(([, h]) => h.kind === 'directory').map(([n]) => norm(n)));
+  if (hasQT || subNorm.has('bpu') || subNorm.has('rse') || subNorm.has('chiffrage')) return dirHandle;
+
+  const SKIP = new Set(['standardises', 'compilation', '__pycache__', 'node_modules']);
+  for (const [name, handle] of entries) {
+    if (handle.kind !== 'directory' || name.startsWith('.') || SKIP.has(norm(name))) continue;
+    const found = await findStdDir(handle, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+export async function findSubdirByName(dirHandle, name) {
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for await (const [n, h] of dirHandle.entries()) {
+    if (h.kind === 'directory' && norm(n) === norm(name)) return h;
+  }
+  return null;
+}
+
+export async function listXlsxFiles(dirHandle, suffixRe) {
+  const files = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'file' && /\.xlsx$/i.test(name) && !name.startsWith('~')) {
+      const supName = name.replace(suffixRe, '').trim();
+      files.push({ name, handle, supName });
+    }
+  }
+  return files.sort((a, b) => a.supName.localeCompare(b.supName));
+}
+
+// ─── Helpers valeurs ──────────────────────────────────────────────────────────
+
+const NA_VALS = new Set(['na', 'n/a', 'n.a.', 'n.a', 'non applicable', 'néant', 'neant', '-']);
+export const isRealVal = v => { const s = String(v || '').trim().toLowerCase(); return s !== '' && !NA_VALS.has(s); };
+
+export const normSupName = s => s.toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/\s+ok$/i, '').replace(/\s+/g, ' ').trim();
+
+export async function readXlsxHandle(fileHandle) {
+  const file = await fileHandle.getFile();
+  const buf = await file.arrayBuffer();
+  return XLSX.read(buf, { type: 'array' });
+}
+
+const normPath = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+// ─── Détection documents ──────────────────────────────────────────────────────
+
+const DOC_RULES = {
+  'QT (Annexe 1)': {
+    ext: ['.xls', '.xlsx'],
+    any: ['annexe 1', 'annexe1', 'qt lot', 'qt_lot', 'questionnaire technique',
+          'questionnaire tech', 'cctp annexe', 'qt-lot', ' qt '],
+    exclude: ['annexe 3', 'annexe3', 'annexe 5', 'annexe5', 'bpu', 'chiffrage', 'rse',
+              'bordereau', 'standardis'],
+  },
+  'BPU (Annexe 5)': {
+    ext: ['.xls', '.xlsx'],
+    any: ['annexe 5', 'annexe5', 'bpu', 'bordereau de prix', 'bordereau prix',
+          'bordereau unitaire', 'tarifs', 'grille tarifaire', 'grille de prix'],
+    exclude: ['annexe 3', 'annexe3', 'chiffrage', 'standardis'],
+  },
+  'Optim. Tarifaire': {
+    ext: ['.xls', '.xlsx'],
+    any: ['optim', 'optimisation tarifaire', 'remise', 'tarif optim', 'grille remise'],
+    exclude: ['standardis'],
+  },
+  'BPU Chiffrage': {
+    ext: ['.xls', '.xlsx'],
+    any: ['annexe 3', 'annexe3', 'chiffrage', 'chiffre', 'estimation', 'valorisation',
+          'bordereau chiffrage', 'devis'],
+    exclude: ['annexe 5', 'annexe5', 'bpu', 'standardis'],
+  },
+  'Questionnaire RSE': {
+    ext: ['.xls', '.xlsx', '.pdf', '.doc', '.docx'],
+    any: ['rse', 'developpement durable', 'questionnaire rse', 'responsabilite sociale',
+          'responsabilite environnementale', 'dd ', 'environnement', 'annexe rse'],
+    exclude: ['standardis'],
+  },
+  'CCAP signé': {
+    ext: ['.pdf', '.p7m'],
+    any: ['ccap', 'clauses administratives particulieres', 'clauses admin',
+          'cahier des clauses admin', 'conditions administratives'],
+    exclude: ['bpu', 'bordereau', 'annexe 5', 'annexe5', 'cctp'],
+  },
+  'CCTP signé': {
+    ext: ['.pdf', '.p7m'],
+    any: ['cctp', 'clauses techniques particulieres', 'clauses tech',
+          'cahier technique', 'specifications techniques'],
+    exclude: ['annexe 1', 'annexe1', 'qt', 'bpu', 'bordereau', 'ccap'],
+  },
+  'DC1': {
+    ext: ['.pdf', '.p7m', '.doc', '.docx', '.xlsx'],
+    any: ['dc1', 'lettre de candidature', 'lettre candidature',
+          'habilitation mandataire', 'declaration candidature', 'formulaire dc1',
+          'candidature lettre', 'pouvoir mandataire'],
+    exclude: ['dc2'],
+  },
+  'DC2': {
+    ext: ['.pdf', '.p7m', '.doc', '.docx', '.xlsx'],
+    any: ['dc2', 'declaration du candidat', 'declaration candidat',
+          'renseignements du candidat', 'renseignements candidat',
+          'renseignements entreprise', 'formulaire dc2', 'capacites candidat'],
+    exclude: ['dc1'],
+  },
+  'ATTRI1': {
+    ext: ['.pdf', '.p7m'],
+    any: ['attri1', 'attri', 'attribution', 'accord-cadre', 'accord cadre',
+          'acte d engagement', 'acte engagement', 'notification de marche',
+          'marche attribue', 'lettre attribution', 'avis attribution'],
+    exclude: [],
+  },
+  'Fiche Contacts': {
+    ext: null,
+    any: ['contact', 'coordonnee', 'coordonnees', 'annexe 4', 'interlocuteur',
+          'fiche contact', 'referent', 'correspondant', 'equipe', 'responsable marche'],
+    exclude: [],
+  },
+};
+
+/** Génère les règles de détection pour les lots dynamiquement */
+function buildLotRules(lots) {
+  const rules = {};
+  for (const lot of lots) {
+    const n = lot.num;
+    const otherLots = lots.filter(l => l.num !== n);
+    const excludeKw = otherLots.flatMap(l => [`lot ${l.num}`, `lot${l.num}`]);
+    excludeKw.push('standardis');
+    rules[`Lot ${n}`] = {
+      ext: ['.xls', '.xlsx', '.pdf'],
+      any: [`lot ${n}`, `lot${n}`, `lot_${n}`, `lot-${n}`],
+      exclude: excludeKw,
+    };
+  }
+  return rules;
+}
+
+export function detectDocs(files, lots = []) {
+  const allRules = { ...DOC_RULES, ...buildLotRules(lots) };
+  const entries = files.map(f => ({
+    p: normPath(f.path),
+    ext: (f.name.match(/\.[^.]+$/) || [''])[0].toLowerCase(),
+  }));
+
+  const result = {};
+  for (const [label, { ext: exts, any: anyKw, exclude: exclKw }] of Object.entries(allRules)) {
+    result[label] = entries.some(({ p, ext }) => {
+      if (exts && !exts.includes(ext)) return false;
+      if (exclKw.some(kw => p.includes(normPath(kw)))) return false;
+      return anyKw.some(kw => p.includes(normPath(kw)));
+    });
+  }
+  return result;
+}
+
+// ─── Scan annuaire ────────────────────────────────────────────────────────────
+
+/**
+ * Scanne un dossier AO et construit l'annuaire des fournisseurs.
+ * @param {FileSystemDirectoryHandle} rootHandle
+ * @param {object} config - analyseConfig du marché
+ * @param {function} onProgress - callback (message)
+ * @returns {Promise<{ rows: object[], warning: string }>}
+ */
+export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
+  const { lots = [], docLabels = [], bpuReq = {} } = config;
+  const val = b => b ? 'x' : '';
+
+  const supInfo = {};
+  const ensure = (norm, display) => {
+    if (!supInfo[norm]) supInfo[norm] = {
+      displayName: display, lots: new Set(),
+      hasQT: false, hasBpu: false, hasOptim: false, hasRse: false, hasChiffrage: false,
+      bpuMissing: {},
+    };
+  };
+
+  let warning = '';
+
+  const stdHandle = await findStdDir(rootHandle);
+  if (stdHandle) {
+    // QT
+    onProgress('Lecture QT standardisés…');
+    const qtDir = await findSubdirByName(stdHandle, 'QT') ?? stdHandle;
+    for await (const [name, handle] of qtDir.entries()) {
+      if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+      if (!/_qt_standardis/i.test(name)) continue;
+      const display = name.replace(/_QT_standardis[eé]\.xlsx$/i, '').trim();
+      const n = normSupName(display);
+      ensure(n, display);
+      try {
+        const wb = await readXlsxHandle(handle);
+        wb.SheetNames.forEach(s => {
+          for (const lot of lots) {
+            if (new RegExp(`lot\\s*${lot.num}`, 'i').test(s)) supInfo[n].lots.add(lot.num);
+          }
+        });
+        supInfo[n].hasQT = true;
+      } catch {}
+    }
+
+    // BPU
+    onProgress('Lecture BPU standardisés…');
+    const bpuDir = await findSubdirByName(stdHandle, 'BPU');
+    if (bpuDir) {
+      for await (const [name, handle] of bpuDir.entries()) {
+        if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+        const display = name.replace(/_BPU_standardis[eé]\.xlsx$/i, '').trim();
+        const n = normSupName(display);
+        ensure(n, display);
+        supInfo[n].hasBpu = true;
+        try {
+          const wb = await readXlsxHandle(handle);
+          for (const s of wb.SheetNames) {
+            if (/optim/i.test(s)) { supInfo[n].hasOptim = true; continue; }
+            let lotNum = 0;
+            for (const lot of lots) {
+              if (new RegExp(`lot\\s*${lot.num}`, 'i').test(s)) { lotNum = lot.num; break; }
+            }
+            if (!lotNum) continue;
+
+            const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+            const dataRows = rawSheet.slice(1).filter(r => String(r[0] || '').trim());
+            if (!dataRows.length) continue;
+
+            const reqCols = bpuReq[lotNum] || [];
+            let anyFilled = false;
+            const missing = [];
+            for (const { col, name: colName } of reqCols) {
+              const filled = dataRows.some(r => isRealVal(r[col]));
+              if (filled) anyFilled = true;
+              else missing.push(colName);
+            }
+            if (anyFilled) {
+              supInfo[n].lots.add(lotNum);
+              if (missing.length) supInfo[n].bpuMissing[lotNum] = missing;
+            }
+          }
+        } catch {}
+      }
+    }
+
+    // RSE
+    onProgress('Lecture RSE standardisés…');
+    const rseDir = await findSubdirByName(stdHandle, 'RSE');
+    if (rseDir) {
+      for await (const [name, handle] of rseDir.entries()) {
+        if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+        const display = name.replace(/_RSE_standardis[eé]\.xlsx$/i, '').trim();
+        const n = normSupName(display);
+        ensure(n, display);
+        supInfo[n].hasRse = true;
+      }
+    }
+
+    // Chiffrage
+    onProgress('Lecture Chiffrage standardisés…');
+    const chifDir = await findSubdirByName(stdHandle, 'Chiffrage');
+    if (chifDir) {
+      for await (const [name, handle] of chifDir.entries()) {
+        if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+        const display = name.replace(/_Chiffrage_standardis[eé]\.xlsx$/i, '').trim();
+        const n = normSupName(display);
+        ensure(n, display);
+        supInfo[n].hasChiffrage = true;
+      }
+    }
+  } else {
+    warning = 'Dossier "Standardisés" introuvable — données Excel absentes, seuls les PDFs seront détectés.';
+  }
+
+  // Scan PDF
+  onProgress('Scan PDFs…');
+  const SKIP_DIRS = new Set([
+    'standardises', 'compilation', '__pycache__',
+    'qt', 'bpu', 'rse', 'chiffrage',
+    'ao', 'reponses', 'action a faire', 'actions a faire',
+    'consignes', 'instructions', 'template', 'modele', 'modeles',
+  ]);
+  const subdirs = await getSubdirs(rootHandle);
+  const folderMap = {};
+  for (const { name, handle } of subdirs) {
+    const n = normSupName(name);
+    if (SKIP_DIRS.has(n)) continue;
+    folderMap[n] = { name, handle };
+  }
+
+  const hasStdData = Object.keys(supInfo).length > 0;
+  if (!hasStdData) {
+    for (const [n, { name }] of Object.entries(folderMap)) {
+      ensure(n, name);
+    }
+  }
+
+  const allNorms = Object.keys(supInfo).sort((a, b) =>
+    supInfo[a].displayName.localeCompare(supInfo[b].displayName, 'fr', { sensitivity: 'base' })
+  );
+  const rows = [];
+  for (let i = 0; i < allNorms.length; i++) {
+    const n = allNorms[i];
+    const info = supInfo[n];
+    onProgress(`${i + 1}/${allNorms.length} — ${info.displayName}`);
+
+    let raw = {};
+    const folder = folderMap[n];
+    if (folder) {
+      const files = await getAllFiles(folder.handle);
+      raw = detectDocs(files, lots);
+    }
+
+    const bpuMissing = info.bpuMissing || {};
+    const bpuHasMissing = Object.keys(bpuMissing).length > 0;
+    const bpuVal = info.hasBpu
+      ? (bpuHasMissing ? 'partiel' : 'x')
+      : (raw['BPU (Annexe 5)'] ? 'x' : '');
+
+    const row = { 'Nom fournisseur': info.displayName };
+
+    // Lots dynamiques
+    for (const lot of lots) {
+      const lotLabel = docLabels.find(l => l.includes(`Lot ${lot.num}`)) || `Lot ${lot.num}`;
+      row[lotLabel] = val(info.lots.has(lot.num) || raw[`Lot ${lot.num}`]);
+    }
+
+    // Documents
+    row['BPU (Annexe 5)'] = bpuVal;
+    row['Optim. Tarifaire'] = val(info.hasOptim || raw['Optim. Tarifaire']);
+    row['QT (Annexe 1)'] = val(info.hasQT || raw['QT (Annexe 1)']);
+    row['BPU Chiffrage'] = val(info.hasChiffrage || raw['BPU Chiffrage']);
+    row['Questionnaire RSE'] = val(info.hasRse || raw['Questionnaire RSE']);
+    row['CCAP signé'] = val(raw['CCAP signé']);
+    row['CCTP signé'] = val(raw['CCTP signé']);
+    row['DC1'] = val(raw['DC1']);
+    row['DC2'] = val(raw['DC2']);
+    row['ATTRI1'] = val(raw['ATTRI1']);
+    row['Fiche Contacts'] = val(raw['Fiche Contacts']);
+    row._bpuMissing = bpuMissing;
+
+    rows.push(row);
+  }
+
+  return { rows, warning };
+}
+
+// ─── Compilation QT ───────────────────────────────────────────────────────────
+
+export async function compileQT(rootHandle, config, selectedLots) {
+  const { bpuReqCols = {} } = config;
+  const stdDir = await findStdDir(rootHandle);
+  if (!stdDir) throw new Error('Dossier "Standardisés" introuvable.');
+
+  const qtDir = await findSubdirByName(stdDir, 'QT') ?? stdDir;
+  const xlsxFiles = await listXlsxFiles(qtDir, /_QT_standardis[eé]\.xlsx$/i);
+
+  // BPU source de vérité
+  const bpuLotSups = {};
+  for (const lotNum of selectedLots) bpuLotSups[lotNum] = new Set();
+
+  const bpuDir = await findSubdirByName(stdDir, 'BPU');
+  if (bpuDir) {
+    for await (const [name, handle] of bpuDir.entries()) {
+      if (handle.kind !== 'file' || !/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
+      const supName = name.replace(/_BPU_standardis[eé]\.xlsx$/i, '').trim();
+      try {
+        const wb = await readXlsxHandle(handle);
+        for (const s of wb.SheetNames) {
+          let ln = 0;
+          for (const lotNum of selectedLots) {
+            if (new RegExp(`lot\\s*${lotNum}`, 'i').test(s)) { ln = lotNum; break; }
+          }
+          if (!ln) continue;
+          const req = bpuReqCols[ln] || [];
+          const raw = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
+          const dRows = raw.slice(1).filter(r => String(r[0] || '').trim());
+          if (req.some(ci => dRows.some(r => isRealVal(r[ci])))) bpuLotSups[ln].add(supName);
+        }
+      } catch {}
+    }
+  }
+
+  const result = {};
+  for (const lot of selectedLots) {
+    const lotSheetName = `QT LOT ${lot}`;
+    const supData = {};
+
+    for (const { handle, supName } of xlsxFiles) {
+      const wb = await readXlsxHandle(handle);
+      if (!wb.SheetNames.includes(lotSheetName)) continue;
+      const raw = XLSX.utils.sheet_to_json(wb.Sheets[lotSheetName], { header: 1, defval: '' });
+      const rows = raw.slice(1).filter(r => String(r[0] || '').trim());
+      supData[supName] = rows.map(r => ({
+        q: String(r[0] || '').trim(),
+        a: String(r[2] || '').trim(),
+      }));
+    }
+
+    for (const supName of (bpuLotSups[lot] || [])) {
+      if (!supData[supName]) supData[supName] = [];
+    }
+
+    if (!Object.keys(supData).length) continue;
+
+    const refSup = Object.keys(supData).find(s => supData[s].length > 0);
+    if (!refSup) continue;
+    const questions = supData[refSup].map(d => d.q);
+    const supNames = Object.keys(supData).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+
+    const compiled = [['Question', ...supNames]];
+    questions.forEach((q, qi) => {
+      compiled.push([q, ...supNames.map(sup => {
+        const rows = supData[sup];
+        if (!rows.length) return '';
+        return rows[qi]?.a || rows.find(r => r.q === q)?.a || '';
+      })]);
+    });
+
+    const realQIdx = questions
+      .map((_, qi) => supNames.some(sup => supData[sup][qi]?.a) ? qi : -1)
+      .filter(i => i >= 0);
+    const totalReal = realQIdx.length || questions.length;
+
+    const supStatus = {};
+    supNames.forEach(sup => {
+      if (!supData[sup].length) {
+        supStatus[sup] = { status: 'absent', filled: 0, total: totalReal };
+      } else {
+        const filled = realQIdx.filter(qi => supData[sup][qi]?.a).length;
+        const status = filled === totalReal ? 'ok' : filled > 0 ? 'partial' : 'empty';
+        supStatus[sup] = { status, filled, total: totalReal };
+      }
+    });
+
+    result[lot] = { compiled, supStatus, questions, supData };
+  }
+  return result;
+}
+
+// ─── Compilation RSE ──────────────────────────────────────────────────────────
+
+export async function compileRSE(rootHandle) {
+  const stdDir = await findStdDir(rootHandle);
+  if (!stdDir) throw new Error('Dossier "Standardisés" introuvable.');
+
+  const rseDir = await findSubdirByName(stdDir, 'RSE');
+  if (!rseDir) throw new Error('Dossier Standardisés/RSE/ introuvable.');
+
+  const xlsxFiles = await listXlsxFiles(rseDir, /_RSE_standardis[eé]\.xlsx$/i);
+  const SHEET = 'RSE DD';
+  const supData = {};
+
+  for (const { handle, supName } of xlsxFiles) {
+    try {
+      const wb = await readXlsxHandle(handle);
+      if (!wb.SheetNames.includes(SHEET)) continue;
+      const raw = XLSX.utils.sheet_to_json(wb.Sheets[SHEET], { header: 1, defval: '' });
+      const rows = raw.slice(1).filter(r => String(r[0] || '').trim() || String(r[1] || '').trim());
+      if (!rows.some(r => String(r[2] || '').trim())) continue;
+      supData[supName] = rows;
+    } catch {}
+  }
+
+  if (!Object.keys(supData).length) return {};
+
+  const refSup = Object.keys(supData).reduce((a, b) => supData[a].length >= supData[b].length ? a : b);
+  const refRows = supData[refSup];
+  const supNames = Object.keys(supData);
+
+  const compiled = [['Thème', 'Question', ...supNames]];
+  refRows.forEach((refRow, qi) => {
+    compiled.push([
+      String(refRow[0] || '').trim(),
+      String(refRow[1] || '').trim(),
+      ...supNames.map(sup => {
+        const row = supData[sup][qi];
+        return row ? String(row[2] || '').trim() : '';
+      }),
+    ]);
+  });
+
+  return { compiled, supNames };
+}
+
+// ─── Compilation BPU ──────────────────────────────────────────────────────────
+
+/** Résout la keyFn à partir d'un identifiant string */
+function resolveKeyFn(keyFnId) {
+  if (keyFnId === 'profil-niveau') return r => `${String(r[0] || '').trim()}||${String(r[1] || '').trim()}`;
+  if (keyFnId === 'profil') return r => String(r[0] || '').trim();
+  return r => String(r[0] || '').trim();
+}
+
+export async function compileBPU(rootHandle, config) {
+  const { lotSheets = [] } = config;
+  const stdDir = await findStdDir(rootHandle);
+  if (!stdDir) throw new Error('Dossier "Standardisés" introuvable.');
+
+  const bpuDir = await findSubdirByName(stdDir, 'BPU');
+  if (!bpuDir) throw new Error('Dossier Standardisés/BPU/ introuvable.');
+
+  const xlsxFiles = await listXlsxFiles(bpuDir, /_BPU_standardis[eé]\.xlsx$/i);
+  const result = {};
+
+  for (const lotDef of lotSheets) {
+    const keyFn = resolveKeyFn(lotDef.keyFn);
+    const supPrices = {};
+    const keyOrder = [];
+    const keyRowMap = {};
+
+    for (const { handle, supName } of xlsxFiles) {
+      try {
+        const wb = await readXlsxHandle(handle);
+        if (!wb.SheetNames.includes(lotDef.name)) continue;
+        const raw = XLSX.utils.sheet_to_json(wb.Sheets[lotDef.name], { header: 1, defval: '' });
+        const rows = raw.slice(1).filter(r => String(r[0] || '').trim());
+        const priceMap = new Map();
+        for (const row of rows) {
+          const key = keyFn(row);
+          if (!key) continue;
+          const price = String(row[lotDef.priceCol] || '').trim();
+          priceMap.set(key, price);
+          if (!keyRowMap[key]) { keyRowMap[key] = row; keyOrder.push(key); }
+        }
+        if ([...priceMap.values()].some(p => p !== '')) supPrices[supName] = priceMap;
+      } catch {}
+    }
+
+    if (!Object.keys(supPrices).length) continue;
+
+    const supNames = Object.keys(supPrices);
+    const compiled = [[...lotDef.headers, ...supNames]];
+    for (const key of keyOrder) {
+      const refRow = keyRowMap[key];
+      const rowCells = lotDef.headers.map((_, hi) => String(refRow[hi] || '').trim());
+      rowCells.push(...supNames.map(sup => supPrices[sup]?.get(key) || ''));
+      compiled.push(rowCells);
+    }
+
+    result[lotDef.name] = { compiled, supNames };
+  }
+
+  return result;
+}
+
+// ─── Compilation Chiffrage ────────────────────────────────────────────────────
+
+export async function compileChiffrage(rootHandle, config) {
+  const { chiffrageLotSheets = [] } = config;
+  const stdDir = await findStdDir(rootHandle);
+  if (!stdDir) throw new Error('Dossier "Standardisés" introuvable.');
+
+  const chiffrageDir = await findSubdirByName(stdDir, 'Chiffrage');
+  if (!chiffrageDir) throw new Error('Dossier Standardisés/Chiffrage/ introuvable.');
+
+  const xlsxFiles = await listXlsxFiles(chiffrageDir, /_Chiffrage_standardis[eé]\.xlsx$/i);
+  const result = {};
+
+  for (const sheetName of chiffrageLotSheets) {
+    const supPrices = {};
+    const keyOrder = [];
+    const keyRowMap = {};
+
+    for (const { handle, supName } of xlsxFiles) {
+      try {
+        const wb = await readXlsxHandle(handle);
+        if (!wb.SheetNames.includes(sheetName)) continue;
+        const raw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
+        const rows = raw.slice(1).filter(r => String(r[0] || '').trim());
+        const priceMap = new Map();
+        for (const row of rows) {
+          const profil = String(row[0] || '').trim();
+          const niveau = String(row[1] || '').trim();
+          const duree = String(row[2] || '').trim();
+          const key = `${profil}||${niveau}||${duree}`;
+          if (!profil) continue;
+          priceMap.set(key, String(row[3] || '').trim());
+          if (!keyRowMap[key]) { keyRowMap[key] = row; keyOrder.push(key); }
+        }
+        if ([...priceMap.values()].some(p => p !== '')) supPrices[supName] = priceMap;
+      } catch {}
+    }
+
+    if (!Object.keys(supPrices).length) continue;
+
+    const supNames = Object.keys(supPrices);
+    const compiled = [['Profil', 'Niveau expérience', 'Durée mission', ...supNames]];
+    for (const key of keyOrder) {
+      const refRow = keyRowMap[key];
+      compiled.push([
+        String(refRow[0] || '').trim(),
+        String(refRow[1] || '').trim(),
+        String(refRow[2] || '').trim(),
+        ...supNames.map(sup => supPrices[sup]?.get(key) || ''),
+      ]);
+    }
+
+    result[sheetName] = { compiled, supNames };
+  }
+
+  return result;
+}
+
+// ─── Exports Excel ────────────────────────────────────────────────────────────
+
+export function download(data, filename, type = 'application/octet-stream') {
+  const url = URL.createObjectURL(new Blob([data], { type }));
+  Object.assign(document.createElement('a'), { href: url, download: filename }).click();
+  URL.revokeObjectURL(url);
+}

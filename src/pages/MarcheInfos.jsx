@@ -98,7 +98,7 @@ export default function MarcheInfos() {
 
         {/* Section Responsabilités */}
         <div className="info-section">
-          <div className="info-section-title">&#x1F464; Responsabilités</div>
+          <div className="info-section-title">Responsabilités</div>
           <div className="info-grid">
             {field('Référent marché', 'referent', 'text', { placeholder: 'Nom du référent' })}
             {field('Service / pôle', 'service', 'text', { placeholder: 'Ex : Radiothérapie' })}
@@ -107,7 +107,7 @@ export default function MarcheInfos() {
 
         {/* Section Statut & Avancement */}
         <div className="info-section">
-          <div className="info-section-title">&#x1F4CA; Statut & Avancement</div>
+          <div className="info-section-title">Statut & Avancement</div>
           <div className="info-grid">
             <div className="info-field">
               <label className="info-field-label">Statut</label>
@@ -132,7 +132,7 @@ export default function MarcheInfos() {
 
         {/* Section Offres */}
         <div className="info-section">
-          <div className="info-section-title">&#x1F4E6; Lots & Offres</div>
+          <div className="info-section-title">Lots & Offres</div>
           <div className="info-grid">
             {field('Nombre de lots', 'nbLots', 'number', { min: '0', placeholder: '0' })}
             {field('Offres reçues', 'nbOffresRecues', 'number', { min: '0', placeholder: '0' })}
@@ -141,7 +141,7 @@ export default function MarcheInfos() {
 
         {/* Section Finances & Dates */}
         <div className="info-section">
-          <div className="info-section-title">&#x1F4B6; Finances & Calendrier</div>
+          <div className="info-section-title">Finances & Calendrier</div>
           <div className="info-grid">
             {field('Budget estimé', 'budgetEstime', 'text', { placeholder: 'ex : 5 000 000 €' })}
             {field('Date limite de dépôt', 'dateLimiteDepot', 'date')}
@@ -151,7 +151,7 @@ export default function MarcheInfos() {
 
         {/* Section Tags */}
         <div className="info-section">
-          <div className="info-section-title">&#x1F3F7; Tags</div>
+          <div className="info-section-title">Tags</div>
           <div className="info-field info-field--full">
             <label className="info-field-label">Mots-clés (séparés par des virgules)</label>
             <input
@@ -171,8 +171,8 @@ export default function MarcheInfos() {
         </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8 }}>
-          <button type="submit" className="btn btn-primary">&#x2713; Sauvegarder les informations</button>
-          {saved && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>&#x2713; Enregistré</span>}
+          <button type="submit" className="btn btn-primary">✓ Sauvegarder les informations</button>
+          {saved && <span style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>✓ Enregistré</span>}
         </div>
       </form>
     </Layout>

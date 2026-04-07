@@ -27,7 +27,7 @@ export function validateExcelStructure(raw) {
   const info = {};
 
   if (!raw || raw.length < 5) {
-    errors.push('Fichier trop court \u2014 au moins 5 lignes attendues (en-t\u00eates ligne 4, donn\u00e9es ligne 5+).');
+    errors.push('Fichier trop court — au moins 5 lignes attendues (en-têtes ligne 4, données ligne 5+).');
     return { valid: false, errors, warnings, info };
   }
 
@@ -41,10 +41,10 @@ export function validateExcelStructure(raw) {
   }
 
   if (vendors.length === 0) {
-    errors.push('Aucun fournisseur d\u00e9tect\u00e9 en ligne 4 (colonnes D\u2013I). V\u00e9rifiez que les en-t\u00eates sont bien pr\u00e9sents.');
+    errors.push('Aucun fournisseur détecté en ligne 4 (colonnes D–I). Vérifiez que les en-têtes sont bien présents.');
   } else {
     info.vendors = vendors;
-    if (vendors.length < 2) warnings.push('Un seul fournisseur d\u00e9tect\u00e9 \u2014 l\'analyse comparative n\u00e9cessite au moins 2 fournisseurs.');
+    if (vendors.length < 2) warnings.push('Un seul fournisseur détecté — l\'analyse comparative nécessite au moins 2 fournisseurs.');
   }
 
   let qCount = 0;
@@ -56,9 +56,9 @@ export function validateExcelStructure(raw) {
   info.questionCount = qCount;
 
   if (qCount === 0) {
-    errors.push('Aucun crit\u00e8re d\u00e9tect\u00e9 (colonne B vide \u00e0 partir de la ligne 5). V\u00e9rifiez la structure du fichier.');
+    errors.push('Aucun critère détecté (colonne B vide à partir de la ligne 5). Vérifiez la structure du fichier.');
   } else if (qCount < 3) {
-    warnings.push(qCount + ' crit\u00e8re(s) seulement \u2014 un fichier d\'\u00e9valuation en contient g\u00e9n\u00e9ralement plus de 5.');
+    warnings.push(qCount + ' critère(s) seulement — un fichier d\'évaluation en contient généralement plus de 5.');
   }
 
   let hasAnyNote = false;
@@ -93,9 +93,9 @@ export function detectRowOffset(raw) {
  * Nettoie le contenu d'une cellule texte.
  */
 export function cleanCell(value) {
-  if (value == null) return '\u2014';
+  if (value == null) return '—';
   const s = String(value).trim();
-  if (!s) return '\u2014';
+  if (!s) return '—';
   return s.replace(/\r\n|\r/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
@@ -166,6 +166,72 @@ function _colLetter(idx) {
 }
 
 /**
+ * unmerge(ws)
+ * Dé-fusionne les cellules d'un worksheet XLSX et propage les valeurs.
+ * Chaque cellule fusionnée reçoit la valeur de la cellule en haut à gauche du merge.
+ *
+ * @param {object} ws - worksheet XLSX (modifié in-place)
+ * @returns {number} nombre de cellules dé-fusionnées
+ */
+export function unmerge(ws) {
+  const merges = ws['!merges'];
+  if (!merges || !merges.length) return 0;
+
+  let count = 0;
+  for (const m of merges) {
+    const originAddr = XLSX.utils.encode_cell({ r: m.s.r, c: m.s.c });
+    const originCell = ws[originAddr];
+    const originValue = originCell ? originCell.v : undefined;
+    const originType = originCell ? originCell.t : 's';
+
+    for (let r = m.s.r; r <= m.e.r; r++) {
+      for (let c = m.s.c; c <= m.e.c; c++) {
+        if (r === m.s.r && c === m.s.c) continue;
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (originValue !== undefined) {
+          ws[addr] = { v: originValue, t: originType };
+          count++;
+        }
+      }
+    }
+  }
+
+  delete ws['!merges'];
+  return count;
+}
+
+/**
+ * preview(ws, maxRows)
+ * Génère un aperçu structuré d'un worksheet pour validation utilisateur.
+ * Combine détection de structure + premières lignes de données.
+ *
+ * @param {object} ws - worksheet XLSX
+ * @param {number} maxRows - nombre max de lignes de données à retourner (défaut 20)
+ * @returns {{ structure: object, headers: string[], sampleRows: Array[], totalRows: number }}
+ */
+export function preview(ws, maxRows = 20) {
+  const structure = detectStructure(ws);
+  const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  const headers = (raw[structure.headerRow] || [])
+    .slice(0, 30)
+    .map(c => String(c || '').trim());
+
+  const dataStart = structure.headerRow + 1;
+  const sampleRows = raw
+    .slice(dataStart, dataStart + maxRows)
+    .filter(row => row.some(c => String(c || '').trim()))
+    .map(row => row.slice(0, headers.length).map(c => String(c ?? '').trim()));
+
+  return {
+    structure,
+    headers,
+    sampleRows,
+    totalRows: raw.length - dataStart,
+  };
+}
+
+/**
  * normalize(raw, profile)
  * Nettoie un tableau brut selon un profil de template.
  * - Applique headerRow pour identifier les colonnes
@@ -202,7 +268,7 @@ export function normalize(raw, profile = {}) {
     if (!row.some(c => String(c || '').trim())) { skipped++; continue; }
 
     const obj = {};
-    headers.forEach((h, i) => { if (h) obj[h] = String(row[i] ?? '').trim() || '\u2014'; });
+    headers.forEach((h, i) => { if (h) obj[h] = String(row[i] ?? '').trim() || '—'; });
     rows.push(obj);
   }
 

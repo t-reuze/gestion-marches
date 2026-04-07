@@ -25,7 +25,7 @@ const TABS = [
   {
     label: 'Reporting',
     href: '/reporting',
-    match: (p) => p === '/reporting' || p === '/analyse-unicancer',
+    match: (p) => p === '/reporting',
   },
   {
     label: 'Contacts',
