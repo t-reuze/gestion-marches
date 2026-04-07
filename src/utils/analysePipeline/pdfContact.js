@@ -23,36 +23,74 @@ function norm(s) {
     .trim();
 }
 
-async function pdfToText(arrayBuffer) {
+async function pdfExtract(arrayBuffer) {
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  const parts = [];
+  const lines = [];
+  const formValues = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    parts.push(content.items.map(it => it.str).join(' '));
+    // Regroupe par ligne (Y proche)
+    const items = content.items
+      .filter(it => it.str && it.str.trim())
+      .map(it => ({ str: it.str, x: it.transform[4], y: Math.round(it.transform[5]) }));
+    const byY = {};
+    for (const it of items) {
+      const k = it.y;
+      (byY[k] ||= []).push(it);
+    }
+    for (const y of Object.keys(byY).sort((a, b) => b - a)) {
+      const line = byY[y].sort((a, b) => a.x - b.x).map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
+      if (line) lines.push(line);
+    }
+    // Champs de formulaire AcroForm
+    try {
+      const annots = await page.getAnnotations();
+      for (const a of annots) {
+        if (a.fieldName && a.fieldValue) {
+          formValues.push({ name: String(a.fieldName), value: String(a.fieldValue) });
+        }
+      }
+    } catch {}
   }
-  return parts.join('\n');
+  return { text: lines.join('\n'), lines, formValues };
 }
 
-export function extractContactFromText(text) {
+export function extractContactFromText(text, lines = null, formValues = []) {
   const result = { prenom: '', nom: '', tel: '', mail: '' };
 
+  // 1. Champs de formulaire AcroForm
+  for (const { name, value } of formValues) {
+    const ln = norm(name);
+    const v = String(value).trim();
+    if (!v) continue;
+    if (!result.prenom && PRENOM_LABELS.some(l => ln.includes(l))) result.prenom = v;
+    else if (!result.nom && NOM_LABELS.some(l => ln.includes(l))) result.nom = v;
+    else if (!result.tel && /tel|phone|mobile|portable/.test(ln)) result.tel = v;
+    else if (!result.mail && /mail|courriel/.test(ln)) result.mail = v;
+  }
+
   const mails = text.match(EMAIL_RE) || [];
-  if (mails.length) result.mail = mails[0];
+  if (!result.mail && mails.length) result.mail = mails[0];
 
   const tels = text.match(PHONE_RE) || [];
-  if (tels.length) result.tel = tels[0].replace(/\s+/g, ' ').trim();
+  if (!result.tel && tels.length) result.tel = tels[0].replace(/\s+/g, ' ').trim();
 
-  // Paires clé-valeur ligne par ligne ou via "Label: value"
-  const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
-  for (const line of lines) {
-    const m = line.match(/^([^:]{2,30}):\s*(.+)$/);
-    if (!m) continue;
-    const label = norm(m[1]);
-    const value = m[2].trim();
+  // Paires "Label: value" inline ou label / valeur sur ligne suivante
+  const ls = lines || text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+  for (let i = 0; i < ls.length; i++) {
+    const line = ls[i];
+    let label = '', value = '';
+    const m = line.match(/^([^:]{2,30}):\s*(.*)$/);
+    if (m) { label = norm(m[1]); value = m[2].trim(); }
+    else { label = norm(line); }
+    if (!value && i + 1 < ls.length) value = ls[i + 1].trim();
+    if (!value) continue;
+    // Évite que la valeur soit elle-même un label
+    if (/^(nom|prenom|prénom|tel|telephone|mail|email)\b/i.test(value)) continue;
     if (!result.prenom && PRENOM_LABELS.some(l => label === l || label.startsWith(l))) {
       result.prenom = value;
-    } else if (!result.nom && NOM_LABELS.some(l => label === l || label.startsWith(l))) {
+    } else if (!result.nom && NOM_LABELS.some(l => label === l || label.startsWith(l) || label.endsWith(' nom'))) {
       result.nom = value;
     }
   }
@@ -73,6 +111,6 @@ export function extractContactFromText(text) {
 export async function extractContactFromPdfFile(fileHandle) {
   const file = await fileHandle.getFile();
   const buf = await file.arrayBuffer();
-  const text = await pdfToText(buf);
-  return extractContactFromText(text);
+  const { text, lines, formValues } = await pdfExtract(buf);
+  return extractContactFromText(text, lines, formValues);
 }
