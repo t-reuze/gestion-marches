@@ -158,6 +158,80 @@ export async function processBpuFolder(rootHandle, marcheId, onProgress = () => 
 }
 
 // Re-exports pour faciliter l'import
+// ─── Pipeline questionnaires (QT, RSE) ────────────────────────────────────────
+
+import { mapQuestionnaireHeaders, applyQuestionnaireMapping } from './mappers/questionnaireMapper.js';
+
+/**
+ * Traite un fichier questionnaire (QT ou RSE).
+ * @param {string} docType - 'QT' | 'RSE'
+ * @returns {Promise<{fournisseur, sourceFile, sections, meta}>}
+ */
+export async function processQuestionnaireFile(fileHandle, filename, docType, marcheId) {
+  const wb = await readWorkbook(fileHandle);
+  const fournisseur = fournisseurFromFilename(filename);
+  const sections = {};
+  let totalConf = 0, sheetCount = 0;
+
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const { headers, dataRows, headerRowIdx } = normalizeSheet(ws);
+    if (headerRowIdx < 0 || !headers.length) continue;
+
+    const { mapping, confidence } = mapQuestionnaireHeaders(headers);
+    if (confidence === 0) continue;
+
+    const { items, stats } = applyQuestionnaireMapping(dataRows, mapping);
+    if (!items.length) continue;
+
+    // Détecte un éventuel numéro de lot dans le nom de feuille
+    const lotMatch = sheetName.match(/lot\s*(\d+)/i);
+    const sectionKey = lotMatch ? `lot${lotMatch[1]}` : sheetName;
+
+    sections[sectionKey] = {
+      sheetSource: sheetName,
+      lotNum: lotMatch ? parseInt(lotMatch[1], 10) : null,
+      items,
+      stats,
+      mappingConfidence: confidence,
+    };
+    totalConf += confidence;
+    sheetCount++;
+  }
+
+  return {
+    fournisseur,
+    sourceFile: filename,
+    docType,
+    sections,
+    meta: {
+      overallConfidence: sheetCount > 0 ? totalConf / sheetCount : 0,
+      totalSections: sheetCount,
+    },
+  };
+}
+
+export async function processQuestionnaireFolder(rootHandle, subdirName, docType, marcheId, onProgress = () => {}) {
+  const files = await listXlsxInSubdir(rootHandle, subdirName);
+  if (!files.length) throw new Error(`Aucun .xlsx dans le sous-dossier ${subdirName}/`);
+  const results = [];
+  for (let i = 0; i < files.length; i++) {
+    const { name, handle } = files[i];
+    onProgress(`${i + 1}/${files.length} — ${name}`);
+    try {
+      results.push(await processQuestionnaireFile(handle, name, docType, marcheId));
+    } catch (e) {
+      results.push({
+        fournisseur: fournisseurFromFilename(name),
+        sourceFile: name, docType, sections: {},
+        meta: { overallConfidence: 0, error: String(e) },
+      });
+    }
+  }
+  return results;
+}
+
+export { mapQuestionnaireHeaders, applyQuestionnaireMapping } from './mappers/questionnaireMapper.js';
 export { mapBpuHeaders, applyBpuMapping } from './mappers/bpuMapper.js';
 export { normalizeSheet } from './normalize.js';
 export { detectDocType, readWorkbook } from './ingest.js';
