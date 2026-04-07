@@ -587,6 +587,68 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
   return { rows, warning, docLabels };
 }
 
+// ─── Bundle par type de document ──────────────────────────────────────────────
+
+/**
+ * Réorganise un dossier de réponses fournisseur en un zip structuré
+ * par type de document : un dossier par catégorie (BPU/QT/RSE/Chiffrage/
+ * Candidature/Autres) contenant tous les fichiers de tous les fournisseurs,
+ * préfixés par le nom du fournisseur.
+ *
+ * @param {FileSystemDirectoryHandle} rootHandle
+ * @param {function} onProgress
+ * @returns {Promise<Blob>} archive zip
+ */
+export async function bundleResponsesByDocType(rootHandle, onProgress = () => {}) {
+  const zip = new JSZip();
+  const SKIP = new Set(['standardises', 'compilation', '__pycache__',
+    'consignes', 'instructions', 'template', 'modele', 'modeles']);
+
+  const classify = (name) => {
+    const l = name.toLowerCase();
+    if (/standardis/i.test(l)) return null; // exclure fichiers déjà standardisés
+    if (/bpu|annexe.?5|bordereau/i.test(l) && !/chiffrage|mission.type/i.test(l)) return 'BPU';
+    if (/chiffrage|annexe.?3|mission.type|simulation/i.test(l)) return 'Chiffrage';
+    if (/\bqt\b|questionnaire.tech|technique|annexe.?1/i.test(l)) return 'QT';
+    if (/rse|durable|environn|developpement.durable/i.test(l)) return 'RSE';
+    if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
+    if (/contact|annexe.?4|interlocuteur/i.test(l)) return 'Contacts';
+    return 'Autres';
+  };
+
+  const subdirs = await getSubdirs(rootHandle);
+  const supplierDirs = subdirs.filter(s => !SKIP.has(normSupName(s.name)));
+  if (!supplierDirs.length) {
+    throw new Error('Aucun sous-dossier fournisseur trouvé.');
+  }
+
+  let totalFiles = 0;
+  for (let i = 0; i < supplierDirs.length; i++) {
+    const { name: dirName, handle } = supplierDirs[i];
+    const display = dirName.replace(/\s+(ok|OK|valid[eé])\s*$/i, '').trim();
+    const safeSup = display.replace(/[\\/:*?"<>|]/g, '_');
+    onProgress(`${i + 1}/${supplierDirs.length} — ${display}`);
+    const files = await getAllFiles(handle);
+    for (const f of files) {
+      if (f.name.startsWith('~') || f.name.startsWith('.')) continue;
+      const cat = classify(f.name);
+      if (!cat) continue;
+      try {
+        const file = await f.handle.getFile();
+        const buf = await file.arrayBuffer();
+        const ext = (f.name.match(/\.[^.]+$/) || [''])[0];
+        const baseName = f.name.replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|]/g, '_');
+        zip.file(`${cat}/${safeSup} - ${baseName}${ext}`, buf);
+        totalFiles++;
+      } catch {}
+    }
+  }
+
+  if (!totalFiles) throw new Error('Aucun fichier classé trouvé dans les sous-dossiers.');
+  onProgress(`Génération du zip (${totalFiles} fichiers)…`);
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+}
+
 // ─── Compilation QT ───────────────────────────────────────────────────────────
 
 export async function compileQT(rootHandle, config, selectedLots) {

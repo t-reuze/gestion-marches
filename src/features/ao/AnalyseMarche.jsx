@@ -11,6 +11,7 @@ import MarcheNavTabs from "../../components/MarcheNavTabs";
 import { marches, getAnalyseConfig } from "../../data/mockData";
 import {
   scanAnnuaire, compileQT, compileRSE, compileBPU, compileChiffrage, download,
+  bundleResponsesByDocType,
 } from "../../utils/analyseFolder";
 import StandardisationBpuTab from "./StandardisationBpuTab";
 import StandardisationQuestionnaireTab from "./StandardisationQuestionnaireTab";
@@ -202,7 +203,7 @@ function parseAnalyseExcel(wb) {
 
 // FOLDER PICKER ZONE
 
-function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nbFournisseurs }) {
+function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nbFournisseurs, onBundle, bundling, bundleProgress }) {
   const supportsApi = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 
   return (
@@ -221,6 +222,10 @@ function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nb
               </div>
               <button className="btn btn-primary" onClick={() => onScan('scan')} disabled={scanning}>
                 {scanning ? scanProgress : 'Analyser'}
+              </button>
+              <button className="btn btn-outline" onClick={onBundle} disabled={bundling || scanning}
+                title="Réorganise les réponses fournisseurs en dossiers par type de document et télécharge un .zip">
+                {bundling ? (bundleProgress || 'Création du zip…') : '📦 Ranger & télécharger zip'}
               </button>
             </>
           )}
@@ -1220,6 +1225,8 @@ export default function AnalyseMarche() {
   // ── Annuaire ──
   const [annuaire, setAnnuaire] = useState([]);
   const [dynDocLabels, setDynDocLabels] = useState(null);
+  const [bundling, setBundling] = useState(false);
+  const [bundleProgress, setBundleProgress] = useState('');
   const [edits, setEdits] = useState({});
 
   // ── Compilations ──
@@ -1261,6 +1268,21 @@ export default function AnalyseMarche() {
       if (warning) setDirWarning(warning);
     } catch (e) { console.error(e); }
     setScanning(false); setScanProgress('');
+  }
+
+  async function handleBundle() {
+    if (!dirHandle) return;
+    setBundling(true); setBundleProgress('');
+    try {
+      const blob = await bundleResponsesByDocType(dirHandle, setBundleProgress);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${dirPath || 'reponses'}_par_type.zip`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) { setDirWarning(e.message || String(e)); }
+    setBundling(false); setBundleProgress('');
   }
 
   async function handleCompileQT(selectedLots) {
@@ -1350,6 +1372,9 @@ export default function AnalyseMarche() {
         dirPath={dirPath}
         warning={dirWarning}
         nbFournisseurs={annuaire.length}
+        onBundle={handleBundle}
+        bundling={bundling}
+        bundleProgress={bundleProgress}
       />
 
       <div className="tabs" style={{ marginBottom:16 }}>
