@@ -349,11 +349,18 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
               if (filled === 0) missing.push(colName);
             }
             // Une ligne est "remplie" si au moins une colonne requise est renseignée.
-            // Fallback (mode auto sans bpuReq) : toute cellule non-libellé renseignée.
+            // Fallback (mode auto sans bpuReq) : au moins une cellule numérique
+            // (prix, taux, %) — évite de compter les colonnes texte type Profil.
+            const isNum = v => {
+              if (v == null || v === '') return false;
+              if (typeof v === 'number') return Number.isFinite(v);
+              const s = String(v).replace(/\s/g, '').replace(',', '.').replace(/[€%]/g, '');
+              return !Number.isNaN(parseFloat(s)) && Number.isFinite(parseFloat(s));
+            };
             for (const r of dataRows) {
               const isFilled = reqCols.length
                 ? reqCols.some(({ col }) => isRealVal(r[col]))
-                : r.slice(1).some(isRealVal);
+                : r.slice(1).some(isNum);
               if (isFilled) filledLines++;
             }
 
