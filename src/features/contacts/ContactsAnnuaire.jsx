@@ -304,9 +304,6 @@ export default function ContactsAnnuaire() {
             </button>
           </div>
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 14, fontStyle: 'italic' }}>
-          Source : Listing Diffusion CLCC — MAJ 31 mars 2026
-        </div>
 
         {/* Contacts list */}
         {clccContacts.length === 0 ? (
@@ -522,15 +519,7 @@ export default function ContactsAnnuaire() {
   return (
     <Layout title="Contacts" sub="— Annuaire">
       <SectionTabs section={section} setSection={setSection} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-            Annuaire CLCC — {enrichedClccs.reduce((s, c) => s + c.totalContacts, 0)} contacts sur {enrichedClccs.length} centres
-          </div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 2 }}>
-            Source : Listing Diffusion CLCC — MAJ 31 mars 2026
-          </div>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button className="btn btn-outline btn-sm" onClick={exportAllExcel}>
           Exporter tout (.xlsx)
         </button>
