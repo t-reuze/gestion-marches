@@ -298,7 +298,20 @@ export default function ContactsAnnuaire() {
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {clccContacts.length} contact{clccContacts.length > 1 ? 's' : ''}
           </span>
-          <div style={{ marginLeft: 'auto' }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+            {(() => {
+              const emails = clccContacts.map(ct => ct.email).filter(Boolean);
+              if (emails.length === 0) return null;
+              return (
+                <a
+                  href={'mailto:' + emails.join(',')}
+                  className="btn btn-primary btn-sm"
+                  style={{ textDecoration: 'none', color: '#fff' }}
+                >
+                  Envoyer un mail ({emails.length})
+                </a>
+              );
+            })()}
             <button className="btn btn-outline btn-sm" onClick={() => exportClccExcel(clcc, clccContacts)}>
               Exporter Excel
             </button>
@@ -519,10 +532,37 @@ export default function ContactsAnnuaire() {
   return (
     <Layout title="Contacts" sub="— Annuaire">
       <SectionTabs section={section} setSection={setSection} />
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button className="btn btn-outline btn-sm" onClick={exportAllExcel}>
-          Exporter tout (.xlsx)
-        </button>
+      {/* Toolbar : mailing par fonction + export */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+        <select
+          className="info-field-input"
+          id="mail-fonction-select"
+          defaultValue=""
+          style={{ width: 'auto', minWidth: 280, height: 36, fontSize: 13 }}
+          onChange={e => {
+            const fn = e.target.value;
+            if (!fn) return;
+            const emails = enrichedClccs
+              .flatMap(c => c.contacts)
+              .filter(ct => ct.fonction === fn && ct.email)
+              .map(ct => ct.email);
+            if (emails.length === 0) { alert('Aucun email trouvé pour cette fonction.'); return; }
+            window.location.href = 'mailto:' + emails.join(',');
+            e.target.value = '';
+          }}
+        >
+          <option value="">Envoyer un mail par fonction...</option>
+          {FONCTIONS_IMPORT.map(fn => {
+            const emails = enrichedClccs.flatMap(c => c.contacts).filter(ct => ct.fonction === fn && ct.email);
+            if (emails.length === 0) return null;
+            return <option key={fn} value={fn}>{fn} ({emails.length} emails)</option>;
+          })}
+        </select>
+        <div style={{ marginLeft: 'auto' }}>
+          <button className="btn btn-outline btn-sm" onClick={exportAllExcel}>
+            Exporter tout (.xlsx)
+          </button>
+        </div>
       </div>
 
       <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
