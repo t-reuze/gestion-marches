@@ -173,7 +173,7 @@ export default function MarcheInterlocuteurs() {
                       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{il.nom}</div>
                       <div style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 4 }}>{il.role}</div>
                       {il.service && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{il.service}</div>}
-                      {il.email && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{il.email}</div>}
+                      {il.email && <div style={{ fontSize: 11 }}><a href={'mailto:' + il.email} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{il.email}</a></div>}
                       {il.telephone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{il.telephone}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

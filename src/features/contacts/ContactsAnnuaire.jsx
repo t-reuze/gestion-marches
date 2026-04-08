@@ -240,7 +240,7 @@ export default function ContactsAnnuaire() {
                       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{ct.nom}</div>
                       <div style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 4 }}>{ct.fonction}</div>
                       {ct.service && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F3E2; {ct.service}</div>}
-                      {ct.email && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x2709;&#xFE0F; {ct.email}</div>}
+                      {ct.email && <div style={{ fontSize: 11 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.email} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.email}</a></div>}
                       {ct.telephone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.telephone}</div>}
                       {ct.marchesLies && ct.marchesLies.length > 0 && (
                         <div style={{ marginTop: 6 }}>
@@ -306,7 +306,7 @@ export default function ContactsAnnuaire() {
                     {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '—'}
                   </div>
                   {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#8B5CF6', marginTop: 2 }}>{ct.fonction}</div>}
-                  {ct.mail && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>&#x2709;&#xFE0F; {ct.mail}</div>}
+                  {ct.mail && <div style={{ fontSize: 11, marginTop: 4 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.mail} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.mail}</a></div>}
                   {ct.tel && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.tel}</div>}
                   <div style={{ fontSize: 10, color: 'var(--blue)', marginTop: 6, cursor: 'pointer' }}
                     onClick={() => navigate('/marche/' + ct.marcheId)}>
