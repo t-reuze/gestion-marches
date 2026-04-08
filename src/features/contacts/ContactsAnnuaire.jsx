@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import Layout from '../../components/Layout';
 import { clccs, marches } from '../../data/mockData';
 import { clccContacts as CLCC_CONTACTS_DATA, FONCTIONS_IMPORT } from '../../data/clccContacts';
@@ -43,18 +44,23 @@ function SectionTabs({ section, setSection }) {
 
 export default function ContactsAnnuaire() {
   const navigate = useNavigate();
-  const { getAllMeta } = useMarcheMeta();
+  const { getAllMeta, getMeta, setMeta } = useMarcheMeta();
   const [section, setSection] = useState('unicancer'); // 'unicancer' | 'fournisseurs'
   const [search, setSearch] = useState('');
   const [selectedClcc, setSelectedClcc] = useState(null);
   const [filtreFonction, setFiltreFonction] = useState('tous');
   const [selectedFournisseur, setSelectedFournisseur] = useState(null);
+  const [searchClcc, setSearchClcc] = useState('');
+  const [editingContact, setEditingContact] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   // Outlook sync state
   const [msAccount, setMsAccount] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
   const outlookReady = isConfigured();
+
+
 
   // Collect all contacts saved via MarcheInterlocuteurs (per-marché)
   // + static responsables from mockData
@@ -109,7 +115,14 @@ export default function ContactsAnnuaire() {
       const meta = allMeta['clcc-' + c.id] || {};
       const manualContacts = (meta.contacts || []).map(ct => ({ ...ct, source: 'manual' }));
 
-      const allContacts = [...staticContacts, ...manualContacts];
+      // Apply overrides and hidden from localStorage
+      const overrides = meta.overrides || {};
+      const hidden = new Set(meta.hiddenImports || []);
+      const mergedStatic = staticContacts
+        .filter(ct => !hidden.has(ct.id))
+        .map(ct => overrides[ct.id] ? { ...ct, ...overrides[ct.id] } : ct);
+
+      const allContacts = [...mergedStatic, ...manualContacts];
 
       return {
         ...c,
@@ -134,9 +147,18 @@ export default function ContactsAnnuaire() {
   // Selected CLCC detail view
   const clcc = selectedClcc ? enrichedClccs.find(c => c.id === selectedClcc) : null;
 
-  // Filter contacts by fonction
+  // Filter contacts by fonction + search within CLCC
   const clccContacts = clcc
-    ? clcc.contacts.filter(ct => filtreFonction === 'tous' || ct.fonction === filtreFonction)
+    ? clcc.contacts.filter(ct => {
+        const matchFn = filtreFonction === 'tous' || ct.fonction === filtreFonction;
+        if (!matchFn) return false;
+        if (!searchClcc) return true;
+        const q = searchClcc.toLowerCase();
+        return (ct.nom || '').toLowerCase().includes(q) ||
+               (ct.email || '').toLowerCase().includes(q) ||
+               (ct.fonction || '').toLowerCase().includes(q) ||
+               (ct.service || '').toLowerCase().includes(q);
+      })
     : [];
 
   // Count contacts per fonction for the selected CLCC
@@ -146,6 +168,71 @@ export default function ContactsAnnuaire() {
         return acc;
       }, {})
     : {};
+
+  // ── Helpers: edit, delete, export ───────────────────────
+
+  function saveEdit(clccId, originalCt) {
+    const metaKey = 'clcc-' + clccId;
+    const meta = getMeta(metaKey);
+    // If it's an imported contact, save override in manual list
+    if (originalCt.source === 'import') {
+      const overrides = meta.overrides || {};
+      overrides[originalCt.id] = { ...editForm };
+      setMeta(metaKey, { overrides });
+    } else {
+      const contacts = (meta.contacts || []).map(c =>
+        c.id === originalCt.id ? { ...c, ...editForm } : c
+      );
+      setMeta(metaKey, { contacts });
+    }
+  }
+
+  function deleteContact(clccId, ct) {
+    const metaKey = 'clcc-' + clccId;
+    const meta = getMeta(metaKey);
+    if (ct.source === 'import') {
+      const hidden = meta.hiddenImports || [];
+      setMeta(metaKey, { hiddenImports: [...hidden, ct.id] });
+    } else {
+      const contacts = (meta.contacts || []).filter(c => c.id !== ct.id);
+      setMeta(metaKey, { contacts });
+    }
+  }
+
+  function exportClccExcel(clccData, contacts) {
+    const rows = contacts.map(ct => ({
+      'Nom': ct.nom,
+      'Fonction': ct.fonction,
+      'Email': ct.email || '',
+      'Téléphone': ct.telephone || '',
+      'Service': ct.service || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, clccData.nom.slice(0, 31));
+    XLSX.writeFile(wb, 'contacts_' + clccData.id + '.xlsx');
+  }
+
+  function exportAllExcel() {
+    const rows = [];
+    enrichedClccs.forEach(c => {
+      c.contacts.forEach(ct => {
+        rows.push({
+          'Centre': c.nom,
+          'Ville': c.ville,
+          'Nom': ct.nom,
+          'Fonction': ct.fonction,
+          'Email': ct.email || '',
+          'Téléphone': ct.telephone || '',
+          'Service': ct.service || '',
+        });
+      });
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Contacts CLCC');
+    XLSX.writeFile(wb, 'annuaire_clcc_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  }
 
   // ── CLCC detail view ──────────────────────────────────
   if (clcc) {
@@ -185,8 +272,8 @@ export default function ContactsAnnuaire() {
           </div>
         </div>
 
-        {/* Fonction filter */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 18 }}>
+        {/* Filters + search + export */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' }}>
           <select
             className="info-field-input"
             value={filtreFonction}
@@ -200,9 +287,25 @@ export default function ContactsAnnuaire() {
               return <option key={fn} value={fn}>{fn} ({count})</option>;
             })}
           </select>
+          <input
+            type="text"
+            className="filter-input"
+            placeholder="Rechercher un contact..."
+            value={searchClcc}
+            onChange={e => setSearchClcc(e.target.value)}
+            style={{ width: 200 }}
+          />
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {clccContacts.length} contact{clccContacts.length > 1 ? 's' : ''} affiché{clccContacts.length > 1 ? 's' : ''}
+            {clccContacts.length} contact{clccContacts.length > 1 ? 's' : ''}
           </span>
+          <div style={{ marginLeft: 'auto' }}>
+            <button className="btn btn-outline btn-sm" onClick={() => exportClccExcel(clcc, clccContacts)}>
+              Exporter Excel
+            </button>
+          </div>
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 14, fontStyle: 'italic' }}>
+          Source : Listing Diffusion CLCC — MAJ 31 mars 2026
         </div>
 
         {/* Contacts list */}
@@ -236,7 +339,8 @@ export default function ContactsAnnuaire() {
                       <div style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 4 }}>{ct.fonction}</div>
                       {ct.service && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F3E2; {ct.service}</div>}
                       {ct.email && <div style={{ fontSize: 11 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.email} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.email}</a></div>}
-                      {ct.telephone && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.telephone}</div>}
+                      {ct.telephone && <div style={{ fontSize: 11 }}>&#x1F4DE; <a href={'tel:' + ct.telephone} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.telephone}</a></div>}
+                      {ct.commentaire && <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 2 }}>{ct.commentaire}</div>}
                       {ct.marchesLies && ct.marchesLies.length > 0 && (
                         <div style={{ marginTop: 6 }}>
                           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -248,10 +352,7 @@ export default function ContactsAnnuaire() {
                               <div
                                 key={mid}
                                 onClick={e => { e.stopPropagation(); navigate('/marche/' + mid); }}
-                                style={{
-                                  fontSize: 10, cursor: 'pointer', padding: '2px 6px', borderRadius: 4,
-                                  background: 'var(--bg)', marginBottom: 2,
-                                }}
+                                style={{ fontSize: 10, cursor: 'pointer', padding: '2px 6px', borderRadius: 4, background: 'var(--bg)', marginBottom: 2 }}
                               >
                                 <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--blue)', fontWeight: 700 }}>{m.reference || '—'}</span>{' '}
                                 <span style={{ color: 'var(--text-muted)' }}>{m.nom}</span>
@@ -261,7 +362,45 @@ export default function ContactsAnnuaire() {
                         </div>
                       )}
                     </div>
+                    {/* Edit / Delete */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 10, padding: '2px 6px', height: 22 }}
+                        title="Modifier"
+                        onClick={() => {
+                          setEditingContact(ct.id);
+                          setEditForm({ nom: ct.nom, fonction: ct.fonction, email: ct.email || '', telephone: ct.telephone || '', service: ct.service || '' });
+                        }}
+                      >&#x270F;&#xFE0F;</button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 10, padding: '2px 6px', height: 22, color: '#EF4444' }}
+                        title="Supprimer"
+                        onClick={() => {
+                          if (!window.confirm('Supprimer ' + ct.nom + ' ?')) return;
+                          deleteContact(clcc.id, ct);
+                        }}
+                      >&#x2715;</button>
+                    </div>
                   </div>
+                  {/* Inline edit form */}
+                  {editingContact === ct.id && (
+                    <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-subtle)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Nom" value={editForm.nom} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} />
+                        <select className="info-field-input" style={{ height: 32, fontSize: 12 }} value={editForm.fonction} onChange={e => setEditForm(f => ({ ...f, fonction: e.target.value }))}>
+                          {FONCTIONS_IMPORT.map(fn => <option key={fn} value={fn}>{fn}</option>)}
+                        </select>
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Téléphone" value={editForm.telephone} onChange={e => setEditForm(f => ({ ...f, telephone: e.target.value }))} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => { saveEdit(clcc.id, ct); setEditingContact(null); }}>Sauvegarder</button>
+                        <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }} onClick={() => setEditingContact(null)}>Annuler</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -383,8 +522,18 @@ export default function ContactsAnnuaire() {
   return (
     <Layout title="Contacts" sub="— Annuaire">
       <SectionTabs section={section} setSection={setSection} />
-      <div className="info-box blue" style={{ marginBottom: 20 }}>
-        <strong>Annuaire CLCC</strong> — Sélectionnez un centre pour voir et gérer ses interlocuteurs par fonction.
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+            Annuaire CLCC — {enrichedClccs.reduce((s, c) => s + c.totalContacts, 0)} contacts sur {enrichedClccs.length} centres
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 2 }}>
+            Source : Listing Diffusion CLCC — MAJ 31 mars 2026
+          </div>
+        </div>
+        <button className="btn btn-outline btn-sm" onClick={exportAllExcel}>
+          Exporter tout (.xlsx)
+        </button>
       </div>
 
       <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
