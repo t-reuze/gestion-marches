@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { clccs, marches } from '../../data/mockData';
-import { clccContacts, FONCTIONS_IMPORT } from '../../data/clccContacts';
+import { clccContacts as CLCC_CONTACTS_DATA, FONCTIONS_IMPORT } from '../../data/clccContacts';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { isConfigured, loginMicrosoft, getAccount, logoutMicrosoft, initMsal } from '../../utils/msalConfig';
 import { syncAllToOutlook, syncClccToOutlook, exportContactsVCF } from '../../utils/outlookSync';
@@ -91,7 +91,7 @@ export default function ContactsAnnuaire() {
   const enrichedClccs = useMemo(() => {
     return clccs.map(c => {
       // 1. Contacts importés depuis le fichier Excel (statiques)
-      const imported = clccContacts[c.id] || {};
+      const imported = CLCC_CONTACTS_DATA[c.id] || {};
       const staticContacts = Object.entries(imported).flatMap(([fonction, list]) =>
         list.map(ct => ({
           id: 'import-' + c.id + '-' + fonction + '-' + (ct.nom || '') + (ct.prenom || ''),
