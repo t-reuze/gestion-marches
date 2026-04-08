@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { CHART_COLORS } from '../../data/reportingConstants';
+import { ChartExportButton } from './ChartExportMenu';
 
 function formatEuroTooltip(n) {
   return Math.round(n).toLocaleString('fr-FR') + ' €';
@@ -10,6 +11,7 @@ function formatEuroTooltip(n) {
 
 export default function MaintenanceRenewals({ rows }) {
   const [showTable, setShowTable] = useState(false);
+  const chartBodyRef = useRef(null);
 
   const currentYear = new Date().getFullYear();
 
@@ -64,8 +66,19 @@ export default function MaintenanceRenewals({ rows }) {
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="card-header">
             <span className="card-title">Renouvellements prévus par année</span>
+            <ChartExportButton
+              title="Renouvellements prévus par année"
+              chartType="bar"
+              labelCol="Année"
+              valueCol="Nb équipements"
+              chartRef={chartBodyRef}
+              data={chartData.map(row => {
+                const total = marches.reduce((s, m) => s + (row[m] || 0), 0);
+                return { name: row.annee, value: total };
+              })}
+            />
           </div>
-          <div className="card-body" style={{ height: 320 }}>
+          <div className="card-body" ref={chartBodyRef} style={{ height: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" />
