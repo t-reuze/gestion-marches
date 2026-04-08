@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { clccs, FONCTIONS, marches } from '../../data/mockData';
+import { clccs, marches } from '../../data/mockData';
+import { FONCTIONS_IMPORT as FONCTIONS } from '../../data/clccContacts';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 
 export default function ClccContactForm() {

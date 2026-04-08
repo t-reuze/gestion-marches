@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { clccs, FONCTIONS, marches } from '../../data/mockData';
+import { clccs, marches } from '../../data/mockData';
+import { clccContacts, FONCTIONS_IMPORT } from '../../data/clccContacts';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { isConfigured, loginMicrosoft, getAccount, logoutMicrosoft, initMsal } from '../../utils/msalConfig';
 import { syncAllToOutlook, syncClccToOutlook, exportContactsVCF } from '../../utils/outlookSync';
@@ -13,7 +14,7 @@ function initials(nom) {
 }
 
 function fonctionColor(fn) {
-  const i = FONCTIONS.indexOf(fn);
+  const i = FONCTIONS_IMPORT.indexOf(fn);
   return COLORS[i >= 0 ? i % COLORS.length : COLORS.length - 1];
 }
 
@@ -86,19 +87,34 @@ export default function ContactsAnnuaire() {
       .sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }));
   }, [allMeta]);
 
-  // Build full contacts list enriched with CLCC info
+  // Build full contacts list: imported (Excel) + manual (localStorage)
   const enrichedClccs = useMemo(() => {
     return clccs.map(c => {
-      // Contacts saisis manuellement sur ce CLCC (stockés dans meta du CLCC)
-      const meta = allMeta['clcc-' + c.id] || {};
-      const manualContacts = meta.contacts || [];
+      // 1. Contacts importés depuis le fichier Excel (statiques)
+      const imported = clccContacts[c.id] || {};
+      const staticContacts = Object.entries(imported).flatMap(([fonction, list]) =>
+        list.map(ct => ({
+          id: 'import-' + c.id + '-' + fonction + '-' + (ct.nom || '') + (ct.prenom || ''),
+          nom: [ct.prenom, ct.nom].filter(Boolean).join(' ') || ct.nom,
+          fonction,
+          service: '',
+          email: ct.email || '',
+          telephone: ct.telephone || '',
+          source: 'import',
+          ...(ct.commentaire ? { commentaire: ct.commentaire } : {}),
+        }))
+      );
 
-      // Also collect contacts from marchés where this CLCC is referenced
-      // (via interlocuteurs per marché that mention this CLCC)
+      // 2. Contacts ajoutés manuellement (localStorage)
+      const meta = allMeta['clcc-' + c.id] || {};
+      const manualContacts = (meta.contacts || []).map(ct => ({ ...ct, source: 'manual' }));
+
+      const allContacts = [...staticContacts, ...manualContacts];
+
       return {
         ...c,
-        contacts: manualContacts,
-        totalContacts: manualContacts.length,
+        contacts: allContacts,
+        totalContacts: allContacts.length,
       };
     });
   }, [allMeta]);
@@ -125,7 +141,7 @@ export default function ContactsAnnuaire() {
 
   // Count contacts per fonction for the selected CLCC
   const fonctionCounts = clcc
-    ? FONCTIONS.reduce((acc, fn) => {
+    ? FONCTIONS_IMPORT.reduce((acc, fn) => {
         acc[fn] = clcc.contacts.filter(ct => ct.fonction === fn).length;
         return acc;
       }, {})
@@ -178,7 +194,7 @@ export default function ContactsAnnuaire() {
           >
             Tous ({clcc.contacts.length})
           </div>
-          {FONCTIONS.map(fn => {
+          {FONCTIONS_IMPORT.map(fn => {
             const count = fonctionCounts[fn] || 0;
             if (count === 0) return null;
             return (
