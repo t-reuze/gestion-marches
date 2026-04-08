@@ -185,29 +185,24 @@ export default function ContactsAnnuaire() {
           </div>
         </div>
 
-        {/* Fonction filter pills */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
-          <div
-            className={'tab' + (filtreFonction === 'tous' ? ' active' : '')}
-            onClick={() => setFiltreFonction('tous')}
-            style={{ cursor: 'pointer' }}
+        {/* Fonction filter */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 18 }}>
+          <select
+            className="info-field-input"
+            value={filtreFonction}
+            onChange={e => setFiltreFonction(e.target.value)}
+            style={{ width: 'auto', minWidth: 280, height: 36, fontSize: 13 }}
           >
-            Tous ({clcc.contacts.length})
-          </div>
-          {FONCTIONS_IMPORT.map(fn => {
-            const count = fonctionCounts[fn] || 0;
-            if (count === 0) return null;
-            return (
-              <div
-                key={fn}
-                className={'tab' + (filtreFonction === fn ? ' active' : '')}
-                onClick={() => setFiltreFonction(fn)}
-                style={{ cursor: 'pointer' }}
-              >
-                {fn} ({count})
-              </div>
-            );
-          })}
+            <option value="tous">Toutes les fonctions ({clcc.contacts.length})</option>
+            {FONCTIONS_IMPORT.map(fn => {
+              const count = fonctionCounts[fn] || 0;
+              if (count === 0) return null;
+              return <option key={fn} value={fn}>{fn} ({count})</option>;
+            })}
+          </select>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {clccContacts.length} contact{clccContacts.length > 1 ? 's' : ''} affiché{clccContacts.length > 1 ? 's' : ''}
+          </span>
         </div>
 
         {/* Contacts list */}
