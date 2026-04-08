@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import { CHART_COLORS } from '../../data/reportingConstants';
+import { ChartExportButton } from './ChartExportMenu';
 
 function formatEuroShort(n) {
   if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -15,7 +16,6 @@ function formatEuroTooltip(n) {
 }
 
 export default function MaintenanceCharts({ rows }) {
-  // Coût annuel maintenance par marché (groupé)
   const byMarche = useMemo(() => {
     const map = {};
     rows.forEach(r => {
@@ -23,38 +23,36 @@ export default function MaintenanceCharts({ rows }) {
       const m = r.marcheGroupe || 'Autre';
       map[m] = (map[m] || 0) + r.coutMaintenanceAnnuel;
     });
-    return Object.entries(map)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [rows]);
 
-  // Contrats par fournisseur
   const byFournisseur = useMemo(() => {
     const map = {};
     rows.forEach(r => {
       if (String(r.contratMaintenance).toLowerCase() !== 'oui') return;
       const f = r.fournisseur || 'Autre';
-      const key = f.toUpperCase();
-      map[key] = (map[key] || 0) + 1;
+      map[f.toUpperCase()] = (map[f.toUpperCase()] || 0) + 1;
     });
-    let entries = Object.entries(map)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+    let entries = Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
     if (entries.length > 12) {
       const top = entries.slice(0, 11);
-      const rest = entries.slice(11).reduce((s, e) => s + e.value, 0);
-      top.push({ name: 'Autres', value: rest });
+      top.push({ name: 'Autres', value: entries.slice(11).reduce((s, e) => s + e.value, 0) });
       entries = top;
     }
     return entries;
   }, [rows]);
 
+  const refMarche = useRef(null);
+  const refFournisseur = useRef(null);
+
   return (
     <div className="reporting-chart-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-      {/* Coût maintenance par marché */}
       <div className="card">
-        <div className="card-header"><span className="card-title">Coût annuel maintenance par Marché</span></div>
-        <div className="card-body" style={{ height: Math.max(320, byMarche.length * 36 + 40) }}>
+        <div className="card-header">
+          <span className="card-title">Coût annuel maintenance par Marché</span>
+          <ChartExportButton title="Coût annuel maintenance par Marché" data={byMarche} chartType="bar" labelCol="Marché" valueCol="Coût annuel (EUR)" chartRef={refMarche} />
+        </div>
+        <div className="card-body" ref={refMarche} style={{ height: Math.max(320, byMarche.length * 36 + 40) }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart layout="vertical" data={byMarche} margin={{ top: 4, right: 40, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -62,19 +60,19 @@ export default function MaintenanceCharts({ rows }) {
               <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 10 }} interval={0} />
               <Tooltip formatter={v => [formatEuroTooltip(v), 'Coût annuel']} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {byMarche.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
+                {byMarche.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Contrats par fournisseur */}
       <div className="card">
-        <div className="card-header"><span className="card-title">Contrats maintenance par Fournisseur</span></div>
-        <div className="card-body" style={{ height: Math.max(320, byFournisseur.length * 32 + 40) }}>
+        <div className="card-header">
+          <span className="card-title">Contrats maintenance par Fournisseur</span>
+          <ChartExportButton title="Contrats maintenance par Fournisseur" data={byFournisseur} chartType="bar" labelCol="Fournisseur" valueCol="Contrats actifs" chartRef={refFournisseur} />
+        </div>
+        <div className="card-body" ref={refFournisseur} style={{ height: Math.max(320, byFournisseur.length * 32 + 40) }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart layout="vertical" data={byFournisseur} margin={{ top: 4, right: 40, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -82,9 +80,7 @@ export default function MaintenanceCharts({ rows }) {
               <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} interval={0} />
               <Tooltip formatter={v => [v, 'Contrats actifs']} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {byFournisseur.map((_, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
+                {byFournisseur.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
