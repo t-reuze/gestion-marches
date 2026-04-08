@@ -8,7 +8,12 @@
  *   3. Click sur fournisseur → drawer avec aperçu raw + selects de mapping
  *   4. Bouton "Valider" → saveMapping() → recompile ce fournisseur
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const __bpuCache = new Map();
+import { useNavigate } from 'react-router-dom';
+import { useNotation } from '../../context/NotationContext';
+import { processQuestionnaireFolder } from '../../utils/analysePipeline/index.js';
 import {
   processBpuFolder,
   processBpuFile,
@@ -54,19 +59,114 @@ function fillRatio(std) {
   return { filled, total };
 }
 
+const VENDOR_COLORS = ['#B91C1C','#1A6B3A','#7C3AED','#1A4FA8','#0F7285','#9D3FAF','#C2410C','#0E7490'];
+
+function buildNotationSessionFromQt(qtResults) {
+  const valid = qtResults.filter(r =>
+    Object.values(r.sections || {}).some(s => (s.stats?.answered || 0) > 0)
+  );
+  if (!valid.length) return null;
+  const vendors = valid.map((r, i) => ({
+    idx: i, colResp: 3 + i, colNote: 3 + valid.length + i,
+    name: r.fournisseur, label: r.fournisseur,
+    color: VENDOR_COLORS[i % VENDOR_COLORS.length],
+    initials: r.fournisseur.split(/[\s(]/)[0].substring(0, 2).toUpperCase(),
+  }));
+  const qKey = s => String(s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  // Regroupe par lot
+  const byLot = new Map();
+  for (const r of valid) {
+    for (const sec of Object.values(r.sections || {})) {
+      if ((sec.stats?.answered || 0) === 0) continue;
+      const lotNum = sec.lotNum ?? 0;
+      if (!byLot.has(lotNum)) byLot.set(lotNum, new Map());
+      const qMap = byLot.get(lotNum);
+      for (const item of sec.items || []) {
+        const qOrig = (item.question || '').trim();
+        if (!qOrig) continue;
+        const k = qKey(qOrig);
+        if (!k) continue;
+        if (!qMap.has(k)) qMap.set(k, { question: qOrig, theme: item.theme || '', answers: {}, vendors: new Set() });
+        const e = qMap.get(k);
+        e.answers[r.fournisseur] = (item.reponse || '').trim() || '—';
+        e.vendors.add(r.fournisseur);
+      }
+    }
+  }
+  const questions = [];
+  let num = 1;
+  for (const lotNum of Array.from(byLot.keys()).sort((a, b) => a - b)) {
+    for (const entry of byLot.get(lotNum).values()) {
+      const answers = {}, notes = {}, comments = {}, skipped = {};
+      for (const v of vendors) {
+        answers[v.name] = entry.answers[v.name] || '—';
+        notes[v.name] = null; comments[v.name] = '';
+        if (!entry.vendors.has(v.name)) skipped[v.name] = true;
+      }
+      questions.push({
+        num: num++, lotNum, lotLabel: `Lot ${lotNum}`,
+        question: entry.question, methode: entry.theme,
+        lotVendors: Array.from(entry.vendors),
+        answers, notes, comments, skipped, xlsxRowIdx: num + 3,
+      });
+    }
+  }
+  return { fileName: 'QT compilé (pipeline)', sheetName: 'QT', vendors, questions };
+}
+
 export default function StandardisationBpuTab({ dirHandle, marcheId }) {
-  const [results, setResults] = useState([]);
+  const navigate = useNavigate();
+  const { setSession } = useNotation();
+  const __c0 = __bpuCache.get(marcheId) || {};
+  const [results, setResults] = useState(__c0.results || []);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
   const [openIdx, setOpenIdx] = useState(null);
+  const [qtResults, setQtResults] = useState(__c0.qtResults || []);
+  useEffect(() => { __bpuCache.set(marcheId, { results, qtResults }); }, [marcheId, results, qtResults]);
+  const [chainStatus, setChainStatus] = useState('');
 
   async function run() {
     if (!dirHandle) return;
-    setRunning(true); setError(''); setResults([]);
+    setRunning(true); setError(''); setResults([]); setQtResults([]); setChainStatus('');
     try {
       const out = await processBpuFolder(dirHandle, marcheId, setProgress);
       setResults(out);
+    } catch (e) {
+      setError(String(e.message || e));
+    }
+    setRunning(false); setProgress('');
+  }
+
+  async function runFullChain() {
+    if (!dirHandle) return;
+    setRunning(true); setError(''); setResults([]); setQtResults([]); setChainStatus('');
+    try {
+      setChainStatus('Étape 1/3 — Pipeline BPU…');
+      const bpu = await processBpuFolder(dirHandle, marcheId, setProgress);
+      setResults(bpu);
+      setChainStatus('Étape 2/3 — Pipeline QT…');
+      const qt = await processQuestionnaireFolder(dirHandle, 'QT', 'QT', marcheId, setProgress);
+      setQtResults(qt);
+      setChainStatus('Étape 3/3 — Import dans la notation…');
+      const session = buildNotationSessionFromQt(qt);
+      if (session) {
+        setSession(marcheId, session);
+        try {
+          const notes = {};
+          session.questions.forEach(q => { notes[q.xlsxRowIdx] = q.notes; });
+          localStorage.setItem('gm-notation-' + marcheId, JSON.stringify({
+            fileName: session.fileName, notes, skipped: {},
+          }));
+        } catch(_) {}
+        setChainStatus(`✓ Pipeline complet — ${session.questions.length} questions × ${session.vendors.length} fournisseurs prêts pour notation`);
+        setTimeout(() => navigate('/marche/' + marcheId + '/notation'), 1200);
+      } else {
+        setChainStatus('⚠ Pipeline terminé mais aucune réponse QT exploitable.');
+      }
     } catch (e) {
       setError(String(e.message || e));
     }
@@ -103,7 +203,12 @@ export default function StandardisationBpuTab({ dirHandle, marcheId }) {
           <button className="btn btn-primary" onClick={run} disabled={running || !dirHandle}>
             {running ? 'Pipeline en cours…' : 'Lancer le pipeline BPU'}
           </button>
+          <button className="btn btn-success" onClick={runFullChain} disabled={running || !dirHandle}
+            title="BPU → QT → import automatique dans l'onglet Notation">
+            {running ? '…' : '⚡ Pipeline complet → Notation'}
+          </button>
           {progress && <span style={{ color: '#6b7280', fontSize: 13 }}>{progress}</span>}
+          {chainStatus && <span style={{ color: '#1A4FA8', fontSize: 13, fontWeight: 600 }}>{chainStatus}</span>}
           {!dirHandle && <span style={{ color: '#9ca3af', fontSize: 13 }}>Sélectionne un dossier d'abord</span>}
         </div>
         {error && (

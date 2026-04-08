@@ -126,13 +126,19 @@ function looksLikeHeaderRow(row) {
   if (nonEmpty.length < 2) return 0;
   const strings = nonEmpty.filter(c => !isNumeric(c));
   if (strings.length < 2) return 0;
+  // Pénalise les lignes "titre fusionné" : si toutes les cellules non-vides
+  // ont la même valeur (résultat d'un unmerge sur un titre), ce n'est pas un header.
+  const uniq = new Set(strings.map(c => normStr(c)));
+  if (uniq.size < 2) return 0;
+  // Bonus diversité : ratio uniques/total
+  const diversityBonus = uniq.size / strings.length;
   // Score = nb de cellules string + bonus si mots-clés header trouvés
   let kwBonus = 0;
   for (const c of strings) {
     const norm = normStr(c);
     if (HEADER_KEYWORDS.some(k => norm.includes(k))) kwBonus += 0.5;
   }
-  return strings.length + kwBonus;
+  return strings.length + kwBonus + diversityBonus;
 }
 
 export function detectHeaderRow(matrix, lookAhead = 15) {

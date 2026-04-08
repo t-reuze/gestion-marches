@@ -90,8 +90,12 @@ export function detectDocType(wb) {
  * Retire suffixes type "_BPU_standardisé.xlsx", "_QT.xlsx", etc.
  */
 export function fournisseurFromFilename(filename) {
-  return filename
-    .replace(/\.xlsx?$/i, '')
+  let s = filename.replace(/\.xlsx?$/i, '');
+  // Format issu du rangement virtuel : "Fournisseur - <nom du fichier>"
+  // → on ne garde que la partie avant le premier " - "
+  const dash = s.indexOf(' - ');
+  if (dash > 0) s = s.substring(0, dash);
+  return s
     .replace(/[_\-\s]*(bpu|qt|rse|chiffrage)[_\-\s]*(standardis[eé])?$/i, '')
     .replace(/[_\-]+$/g, '')
     .replace(/[_]+/g, ' ')

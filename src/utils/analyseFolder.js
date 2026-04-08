@@ -8,7 +8,8 @@
 import XLSX from 'xlsx-js-style';
 import JSZip from 'jszip';
 import { extractContactsFromWorkbook } from './analysePipeline/contactExtractor.js';
-import { extractContactFromPdfFile } from './analysePipeline/pdfContact.js';
+import { extractContactFromPdfFile, extractAllContactsFromPdfFile } from './analysePipeline/pdfContact.js';
+import { extractContactFromDocxFile, extractAllContactsFromDocxFile } from './analysePipeline/docxContact.js';
 
 // ─── Helpers fichiers ─────────────────────────────────────────────────────────
 
@@ -492,7 +493,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
   const allRootFiles = await getAllFiles(rootHandle);
   const contactFiles = allRootFiles.filter(f => {
     if (f.name.startsWith('~')) return false;
-    if (!/\.(xlsx?|pdf)$/i.test(f.name)) return false;
+    if (!/\.(xlsx?|pdf|docx?)$/i.test(f.name)) return false;
     const p = normSupName(f.path);
     return p.includes('contact') || p.includes('annexe 4') || p.includes('interlocuteur');
   });
@@ -514,42 +515,78 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       supFiles = await getAllFiles(folder.handle);
       raw = detectDocs(supFiles, lots);
     }
-    // 1. Cherche d'abord dans le dossier du fournisseur lui-même (plus fiable)
-    // 2. Sinon, fallback sur match par chemin dans tout l'arbre
-    const isContactFile = (f) => {
-      if (f.name.startsWith('~')) return false;
-      if (!/\.(xlsx?|pdf)$/i.test(f.name)) return false;
-      const p = normSupName(f.path || f.name);
-      return p.includes('contact') || p.includes('annexe 4') || p.includes('interlocuteur');
+    // Étape "rangement virtuel" : classifie tous les fichiers du fournisseur
+    // par catégorie (comme l'export zip), puis lit TOUS les fichiers Contacts
+    // et fusionne les résultats. Fallback : recherche globale par tokens.
+    const classifyFile = (name) => {
+      const l = name.toLowerCase();
+      if (/standardis/i.test(l)) return null;
+      if (/contact|annexe.?4|interlocuteur|coordonn|referent|correspondant/i.test(l)) return 'Contacts';
+      if (/bpu|annexe.?5|bordereau/i.test(l) && !/chiffrage|mission.type/i.test(l)) return 'BPU';
+      if (/chiffrage|annexe.?3|mission.type|simulation/i.test(l)) return 'Chiffrage';
+      if (/\bqt\b|questionnaire.tech|technique|annexe.?1/i.test(l)) return 'QT';
+      if (/rse|durable|environn/i.test(l)) return 'RSE';
+      if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
+      return 'Autres';
     };
-    let supCandidates = supFiles.filter(isContactFile);
-    if (!supCandidates.length) {
+    let contactCandidates = supFiles.filter(f => {
+      if (f.name.startsWith('~')) return false;
+      if (!/\.(xlsx?|pdf|docx?)$/i.test(f.name)) return false;
+      return classifyFile(f.name) === 'Contacts';
+    });
+    if (!contactCandidates.length) {
       const supTokens = n.split(/\s+/).filter(t => t.length > 2);
-      supCandidates = contactFiles.filter(f => {
+      contactCandidates = contactFiles.filter(f => {
         const p = normSupName(f.path);
         return supTokens.some(t => p.includes(t));
       });
     }
-    // Priorité xlsx (extractible) > pdf (marqueur seulement)
-    const contactXlsx = supCandidates.find(f => /\.xlsx?$/i.test(f.name));
-    const contactPdf = supCandidates.find(f => /\.pdf$/i.test(f.name));
-    if (contactXlsx) {
+
+    // Collecte TOUS les contacts (pas juste le premier)
+    const allContacts = [];
+    const seen = new Set();
+    const pushContact = (c) => {
+      if (!c) return;
+      if (!c.mail && !c.tel && !c.nom && !c.prenom) return;
+      const key = (c.mail || '') + '|' + (c.nom || '').toLowerCase() + '|' + (c.prenom || '').toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      allContacts.push(c);
+    };
+    let pdfSeen = false;
+    const xlsxs = contactCandidates.filter(f => /\.xlsx?$/i.test(f.name));
+    const pdfs = contactCandidates.filter(f => /\.pdf$/i.test(f.name));
+    const docxs = contactCandidates.filter(f => /\.docx?$/i.test(f.name));
+    for (const f of xlsxs) {
       try {
-        const file = await contactXlsx.handle.getFile();
+        const file = await f.handle.getFile();
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: 'array' });
-        const contacts = extractContactsFromWorkbook(wb);
-        if (contacts.length) contact = contacts[0];
+        const cs = extractContactsFromWorkbook(wb);
+        for (const c of cs) pushContact(c);
       } catch {}
-    } else if (contactPdf) {
+    }
+    for (const f of pdfs) {
+      pdfSeen = true;
       try {
-        const c = await extractContactFromPdfFile(contactPdf.handle);
-        if (c && (c.mail || c.tel || c.nom || c.prenom)) contact = c;
-        else contact = { prenom: '', nom: '', tel: '', mail: '', _pdfFound: true };
+        const cs = await extractAllContactsFromPdfFile(f.handle);
+        for (const c of cs) pushContact(c);
       } catch (e) {
         console.warn('PDF contact extraction failed:', e);
-        contact = { prenom: '', nom: '', tel: '', mail: '', _pdfFound: true };
       }
+    }
+    for (const f of docxs) {
+      pdfSeen = true;
+      try {
+        const cs = await extractAllContactsFromDocxFile(f.handle);
+        for (const c of cs) pushContact(c);
+      } catch (e) {
+        console.warn('DOCX contact extraction failed:', e);
+      }
+    }
+    if (allContacts.length) contact = allContacts[0];
+    if (pdfSeen && !allContacts.length) {
+      contact._pdfFound = true;
     }
 
     const bpuMissing = info.bpuMissing || {};
@@ -605,6 +642,8 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     row['NOM'] = contact.nom || '';
     row['TEL'] = contact.tel || '';
     row['MAIL'] = contact.mail || '';
+    row['FONCTION'] = contact.fonction || '';
+    row._contacts = allContacts;
     row._contactPdfOnly = contact._pdfFound === true;
     row._bpuMissing = bpuMissing;
 

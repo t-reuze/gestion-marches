@@ -5,11 +5,15 @@
  */
 import { normStr, isEmpty } from '../normalize.js';
 
-const QUESTION_ALIASES = ['question', 'intitule', 'libelle', 'item', 'critere'];
-const REPONSE_ALIASES = ['reponse', 'reponse candidat', 'reponse fournisseur', 'commentaire', 'answer'];
-const DETAIL_ALIASES = ['detail', 'precision', 'description', 'sous critere', 'sous-critere'];
-const THEME_ALIASES = ['theme', 'section', 'categorie', 'axe', 'domaine'];
-const DOC_ALIASES = ['documentation', 'piece jointe', 'annexe', 'document', 'reference'];
+const QUESTION_ALIASES = ['question', 'intitule', 'libelle', 'libellé', 'item', 'critere', 'critère',
+  'exigence', 'exigences', 'specification', 'spécification', 'demande', 'besoin', 'attendu', 'attendus',
+  'objet', 'description', 'prestation', 'fonctionnalite', 'fonctionnalité'];
+const REPONSE_ALIASES = ['reponse', 'réponse', 'reponse candidat', 'reponse fournisseur', 'reponse soumissionnaire',
+  'commentaire', 'commentaires', 'observation', 'observations', 'answer', 'oui/non', 'conforme',
+  'conformite', 'conformité', 'niveau de conformite', 'precisions', 'precision', 'precisions du candidat'];
+const DETAIL_ALIASES = ['detail', 'détail', 'precision', 'précision', 'description', 'sous critere', 'sous-critere', 'argumentaire'];
+const THEME_ALIASES = ['theme', 'thème', 'section', 'categorie', 'catégorie', 'axe', 'domaine', 'rubrique', 'chapitre'];
+const DOC_ALIASES = ['documentation', 'piece jointe', 'pièce jointe', 'annexe', 'document', 'reference', 'référence'];
 
 function findCol(headers, aliases) {
   for (let i = 0; i < headers.length; i++) {
@@ -36,6 +40,18 @@ export function mapQuestionnaireHeaders(headers) {
   if (t >= 0) mapping.theme = t;
   if (doc >= 0) mapping.documentation = doc;
 
+  // Fallback heuristique : si on a une colonne question mais pas de réponse,
+  // prend la première colonne string non utilisée à droite de la question.
+  if (q >= 0 && !(r >= 0)) {
+    for (let i = q + 1; i < headers.length; i++) {
+      if (i === d || i === t || i === doc) continue;
+      const h = headers[i] || '';
+      if (h && !/^(n°|num|ref|page)/.test(h)) {
+        mapping.reponse = i;
+        return { mapping, confidence: 0.6 };
+      }
+    }
+  }
   // Confiance : a-t-on au moins question ET reponse ?
   const confidence = (q >= 0 && r >= 0) ? 1.0 : (q >= 0 || r >= 0) ? 0.5 : 0;
   return { mapping, confidence };

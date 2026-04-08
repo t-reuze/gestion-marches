@@ -64,6 +64,7 @@ export default function Notation() {
   const session = getSession(id);
 
   const [activeQ, setActiveQ] = useState(0);
+  const [selectedLot, setSelectedLot] = useState(null);
   const [tab, setTab] = useState('notation');
   const [exporting, setExporting] = useState(false);
   const origBin = useRef(null);
@@ -194,7 +195,15 @@ export default function Notation() {
   }
 
   const { vendors, questions } = session;
-  const qi = Math.max(0, Math.min(activeQ, questions.length - 1));
+  // Lots disponibles dans la session (depuis q.lotNum)
+  const availableLots = Array.from(new Set(questions.map(q => q.lotNum).filter(n => n != null))).sort((a, b) => a - b);
+  // Indices des questions visibles (filtre par lot sélectionné)
+  const visibleIdx = selectedLot == null
+    ? questions.map((_, i) => i)
+    : questions.map((q, i) => q.lotNum === selectedLot ? i : -1).filter(i => i >= 0);
+  const safeVisible = visibleIdx.length ? visibleIdx : questions.map((_, i) => i);
+  const localPos = Math.max(0, Math.min(activeQ, safeVisible.length - 1));
+  const qi = safeVisible[localPos];
   const q = questions[qi];
   const totalNoted = questions.filter(qq =>
     vendors.every(v => qq.skipped[v.name] || (qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])))
@@ -243,30 +252,53 @@ export default function Notation() {
 
       {tab === 'notation' && (
         <div className="fade-in">
+          {availableLots.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Filtrer par lot :</span>
+              <button
+                className={'btn btn-sm ' + (selectedLot == null ? 'btn-primary' : 'btn-outline')}
+                onClick={() => { setSelectedLot(null); setActiveQ(0); }}
+              >Tous</button>
+              {availableLots.map(lot => (
+                <button
+                  key={lot}
+                  className={'btn btn-sm ' + (selectedLot === lot ? 'btn-primary' : 'btn-outline')}
+                  onClick={() => { setSelectedLot(lot); setActiveQ(0); }}
+                >Lot {lot}</button>
+              ))}
+            </div>
+          )}
           <div className="fq-nav-controls">
-            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>&#x2190; Précédent</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(p => Math.max(0, p-1))} disabled={localPos === 0}>&#x2190; Précédent</button>
             <div className="fq-progress">
-              <div style={{ marginBottom: 6 }}>Question {qi+1} / {questions.length}</div>
+              <div style={{ marginBottom: 6 }}>Question {localPos+1} / {safeVisible.length}</div>
               <div className="fq-progress-dots">
-                {questions.map((qq, i) => {
-                  const done = vendors.every(v => qq.skipped[v.name] || (qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])));
+                {safeVisible.map((origIdx, i) => {
+                  const qq = questions[origIdx];
+                  const lotV = qq.lotVendors ? vendors.filter(v => qq.lotVendors.includes(v.name)) : vendors;
+                  const done = lotV.every(v => qq.skipped[v.name] || (qq.notes[v.name] !== null && !isNaN(qq.notes[v.name])));
                   return (
                     <div
-                      key={i} className="fq-dot" onClick={() => setActiveQ(i)}
-                      style={{ background: i === qi ? 'var(--blue)' : done ? 'var(--green)' : 'var(--border)', color: (i === qi || done) ? '#fff' : 'var(--text-muted)' }}
+                      key={origIdx} className="fq-dot" onClick={() => setActiveQ(i)}
+                      style={{ background: i === localPos ? 'var(--blue)' : done ? 'var(--green)' : 'var(--border)', color: (i === localPos || done) ? '#fff' : 'var(--text-muted)' }}
                       title={'Question ' + (i+1)}
                     >{i+1}</div>
                   );
                 })}
               </div>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant &#x2192;</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(p => Math.min(safeVisible.length-1, p+1))} disabled={localPos === safeVisible.length-1}>Suivant &#x2192;</button>
           </div>
 
           <div className="fq-card">
             <div className="fq-header">
               <div className="fq-header-num">{q.num}</div>
               <div className="fq-header-text">
+                {q.lotLabel && (
+                  <div style={{ display: 'inline-block', background: 'var(--blue)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, marginBottom: 4 }}>
+                    {q.lotLabel}
+                  </div>
+                )}
                 <div className="fq-header-q">{q.question}</div>
                 {q.methode && q.methode !== '—' && <div className="fq-header-m">Méthodologie : {q.methode}</div>}
               </div>
@@ -283,7 +315,7 @@ export default function Notation() {
                     </tr>
                   </thead>
                   <tbody>
-                    {vendors.map((v) => {
+                    {(q.lotVendors ? vendors.filter(v => q.lotVendors.includes(v.name)) : vendors).map((v) => {
                       const ans = q.answers[v.name] || '—';
                       const note = q.notes[v.name];
                       const hasNote = note !== null && note !== undefined && !isNaN(note);
@@ -335,7 +367,7 @@ export default function Notation() {
           </div>
 
           <div className="fq-nav-controls" style={{ marginTop: 12 }}>
-            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(q => Math.max(0, q-1))} disabled={qi === 0}>&#x2190; Précédent</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setActiveQ(p => Math.max(0, p-1))} disabled={localPos === 0}>&#x2190; Précédent</button>
             <div style={{ fontSize: 11 }}>
               {vendors.map(v => {
                 const a = avg(v);
@@ -346,7 +378,7 @@ export default function Notation() {
                 );
               })}
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(q => Math.min(questions.length-1, q+1))} disabled={qi === questions.length-1}>Suivant &#x2192;</button>
+            <button className="btn btn-primary btn-sm" onClick={() => setActiveQ(p => Math.min(safeVisible.length-1, p+1))} disabled={localPos === safeVisible.length-1}>Suivant &#x2192;</button>
           </div>
         </div>
       )}

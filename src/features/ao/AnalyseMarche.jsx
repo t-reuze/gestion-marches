@@ -1,4 +1,15 @@
-import React, { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
+
+// Cache mémoire (module-level) pour conserver dossier + résultats d'analyse
+// entre les navigations de pages, sans cleaner à chaque démontage du composant.
+const __sessionCache = new Map();
+function getSession(id) {
+  if (!__sessionCache.has(id)) __sessionCache.set(id, {});
+  return __sessionCache.get(id);
+}
+function patchSession(id, fields) {
+  __sessionCache.set(id, { ...getSession(id), ...fields });
+}
 import { useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
@@ -13,6 +24,7 @@ import {
   scanAnnuaire, compileQT, compileRSE, compileBPU, compileChiffrage, download,
   bundleResponsesByDocType,
 } from "../../utils/analyseFolder";
+import { useMarcheMeta } from "../../context/MarcheMetaContext";
 import StandardisationBpuTab from "./StandardisationBpuTab";
 import StandardisationQuestionnaireTab from "./StandardisationQuestionnaireTab";
 import QualityControlTab from "./QualityControlTab";
@@ -1091,6 +1103,7 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
                 ))}
                 <th style={thStyle({ center: true, contact: true })}>Prénom</th>
                 <th style={thStyle({ center: true, contact: true })}>Nom</th>
+                <th style={thStyle({ center: true, contact: true })}>Fonction</th>
                 <th style={thStyle({ center: true, contact: true })}>Téléphone</th>
                 <th style={thStyle({ center: true, contact: true })}>Email</th>
               </tr>
@@ -1130,31 +1143,49 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
                       </td>
                     );
                   })}
-                  {['PRENOM', 'NOM', 'TEL', 'MAIL'].map(field => {
-                    const v = row[field] || '';
-                    const empty = !v;
-                    const pdfOnly = empty && row._contactPdfOnly;
-                    return (
-                      <td key={field} style={{ padding: '6px 4px' }}>
-                        <input
-                          value={v}
-                          onChange={e => setCell(row._idx, field, e.target.value)}
-                          title={pdfOnly ? 'Fiche Contacts en PDF — saisis manuellement' : undefined}
-                          placeholder={pdfOnly ? '📄 à saisir' : '—'}
-                          style={{
-                            width: field === 'MAIL' ? 200 : field === 'TEL' ? 130 : 100,
-                            padding: '6px 10px', fontSize: 12, borderRadius: 6,
-                            border: `1px solid ${empty ? (pdfOnly ? '#fde68a' : '#f3f4f6') : '#e5e7eb'}`,
-                            background: empty ? (pdfOnly ? '#fffbeb' : '#fafafa') : '#fff',
-                            color: empty ? (pdfOnly ? '#92400e' : '#9ca3af') : '#111827',
-                            outline: 'none', transition: 'all 0.15s',
-                          }}
-                          onFocus={e => { e.target.style.borderColor = '#6366f1'; e.target.style.background = '#fff'; }}
-                          onBlur={e => { e.target.style.borderColor = empty ? (pdfOnly ? '#fde68a' : '#f3f4f6') : '#e5e7eb'; e.target.style.background = empty ? (pdfOnly ? '#fffbeb' : '#fafafa') : '#fff'; }}
-                        />
+                  {(() => {
+                    const list = (row._contacts && row._contacts.length)
+                      ? row._contacts
+                      : [{ prenom: row.PRENOM, nom: row.NOM, fonction: row.FONCTION, tel: row.TEL, mail: row.MAIL }];
+                    const fields = [
+                      { key: 'prenom', col: 'PRENOM', w: 100 },
+                      { key: 'nom', col: 'NOM', w: 100 },
+                      { key: 'fonction', col: 'FONCTION', w: 160 },
+                      { key: 'tel', col: 'TEL', w: 130 },
+                      { key: 'mail', col: 'MAIL', w: 200 },
+                    ];
+                    return fields.map(f => (
+                      <td key={f.col} style={{ padding: '6px 4px', verticalAlign: 'top' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {list.map((c, ci) => {
+                            const v = c[f.key] || '';
+                            const empty = !v;
+                            const pdfOnly = empty && row._contactPdfOnly && ci === 0;
+                            return (
+                              <input
+                                key={ci}
+                                value={v}
+                                onChange={e => {
+                                  if (ci === 0) setCell(row._idx, f.col, e.target.value);
+                                }}
+                                readOnly={ci > 0}
+                                title={pdfOnly ? 'Fiche Contacts en PDF — saisis manuellement' : undefined}
+                                placeholder={pdfOnly ? '📄 à saisir' : '—'}
+                                style={{
+                                  width: f.w,
+                                  padding: '6px 10px', fontSize: 12, borderRadius: 6,
+                                  border: `1px solid ${empty ? (pdfOnly ? '#fde68a' : '#f3f4f6') : '#e5e7eb'}`,
+                                  background: empty ? (pdfOnly ? '#fffbeb' : '#fafafa') : '#fff',
+                                  color: empty ? (pdfOnly ? '#92400e' : '#9ca3af') : '#111827',
+                                  outline: 'none', transition: 'all 0.15s',
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
                       </td>
-                    );
-                  })}
+                    ));
+                  })()}
                 </tr>
               ))}
             </tbody>
@@ -1350,25 +1381,32 @@ export default function AnalyseMarche() {
   const marche = marches.find(m => m.id === id);
   const config = getAnalyseConfig(id);
 
-  // ── Dossier state ──
-  const [dirHandle, setDirHandle] = useState(null);
-  const [dirPath, setDirPath] = useState('');
+  // ── Dossier state (restauré depuis le cache de session si on revient sur la page) ──
+  const __s0 = getSession(id);
+  const [dirHandle, setDirHandle] = useState(__s0.dirHandle || null);
+  const [dirPath, setDirPath] = useState(__s0.dirPath || '');
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState('');
   const [dirWarning, setDirWarning] = useState('');
 
   // ── Annuaire ──
-  const [annuaire, setAnnuaire] = useState([]);
-  const [dynDocLabels, setDynDocLabels] = useState(null);
+  const { setMeta } = useMarcheMeta();
+  const [annuaire, setAnnuaire] = useState(__s0.annuaire || []);
+  const [dynDocLabels, setDynDocLabels] = useState(__s0.dynDocLabels || null);
   const [bundling, setBundling] = useState(false);
   const [bundleProgress, setBundleProgress] = useState('');
-  const [edits, setEdits] = useState({});
+  const [edits, setEdits] = useState(__s0.edits || {});
 
   // ── Compilations ──
-  const [qtData, setQtData] = useState({});
-  const [rseData, setRseData] = useState({});
-  const [bpuData, setBpuData] = useState({});
-  const [chiffrageData, setChiffrageData] = useState({});
+  const [qtData, setQtData] = useState(__s0.qtData || {});
+  const [rseData, setRseData] = useState(__s0.rseData || {});
+  const [bpuData, setBpuData] = useState(__s0.bpuData || {});
+  const [chiffrageData, setChiffrageData] = useState(__s0.chiffrageData || {});
+
+  // Persiste dans le cache session à chaque changement
+  useEffect(() => {
+    patchSession(id, { dirHandle, dirPath, annuaire, dynDocLabels, edits, qtData, rseData, bpuData, chiffrageData });
+  }, [id, dirHandle, dirPath, annuaire, dynDocLabels, edits, qtData, rseData, bpuData, chiffrageData]);
   const [compilingQt, setCompilingQt] = useState(false);
   const [compilingRse, setCompilingRse] = useState(false);
   const [compilingBpu, setCompilingBpu] = useState(false);
@@ -1399,6 +1437,18 @@ export default function AnalyseMarche() {
     try {
       const { rows, warning, docLabels } = await scanAnnuaire(root, config, setScanProgress);
       setAnnuaire(rows);
+      // Persiste pour la page Contacts (annuaire fournisseurs aggregé)
+      try {
+        const fournisseurs = rows.map(r => ({
+          nom: r['Nom fournisseur'],
+          contacts: (r._contacts && r._contacts.length)
+            ? r._contacts
+            : ((r.PRENOM || r.NOM || r.TEL || r.MAIL)
+              ? [{ prenom: r.PRENOM, nom: r.NOM, fonction: r.FONCTION, tel: r.TEL, mail: r.MAIL }]
+              : []),
+        }));
+        setMeta(id, { fournisseurs, fournisseursScanDate: new Date().toISOString() });
+      } catch (e) { console.warn('persist fournisseurs failed', e); }
       if (docLabels) setDynDocLabels(docLabels);
       if (warning) setDirWarning(warning);
     } catch (e) { console.error(e); }

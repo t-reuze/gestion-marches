@@ -17,12 +17,37 @@ function fonctionColor(fn) {
   return COLORS[i >= 0 ? i % COLORS.length : COLORS.length - 1];
 }
 
+function SectionTabs({ section, setSection }) {
+  const tabs = [
+    { id: 'unicancer', label: 'Contacts Unicancer' },
+    { id: 'fournisseurs', label: 'Contacts Fournisseurs' },
+  ];
+  return (
+    <div style={{ display: 'flex', gap: 6, marginBottom: 18, borderBottom: '1px solid #e5e7eb' }}>
+      {tabs.map(t => (
+        <div key={t.id}
+          onClick={() => setSection(t.id)}
+          style={{
+            padding: '10px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+            borderBottom: section === t.id ? '2px solid #1A4FA8' : '2px solid transparent',
+            color: section === t.id ? '#1A4FA8' : '#6b7280',
+            marginBottom: -1,
+          }}>
+          {t.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ContactsAnnuaire() {
   const navigate = useNavigate();
   const { getAllMeta } = useMarcheMeta();
+  const [section, setSection] = useState('unicancer'); // 'unicancer' | 'fournisseurs'
   const [search, setSearch] = useState('');
   const [selectedClcc, setSelectedClcc] = useState(null);
   const [filtreFonction, setFiltreFonction] = useState('tous');
+  const [selectedFournisseur, setSelectedFournisseur] = useState(null);
 
   // Outlook sync state
   const [msAccount, setMsAccount] = useState(null);
@@ -33,6 +58,33 @@ export default function ContactsAnnuaire() {
   // Collect all contacts saved via MarcheInterlocuteurs (per-marché)
   // + static responsables from mockData
   const allMeta = getAllMeta ? getAllMeta() : {};
+
+  // ── Agrégation fournisseurs depuis les annuaires de marchés ──
+  const fournisseursAgg = useMemo(() => {
+    const byName = new Map();
+    for (const m of marches) {
+      const meta = allMeta[m.id] || {};
+      const list = meta.fournisseurs || [];
+      for (const f of list) {
+        const key = (f.nom || '').trim();
+        if (!key) continue;
+        if (!byName.has(key)) {
+          byName.set(key, { nom: key, marches: [], contacts: [], _seen: new Set() });
+        }
+        const entry = byName.get(key);
+        entry.marches.push({ id: m.id, nom: m.nom, reference: m.reference });
+        for (const c of f.contacts || []) {
+          const ck = (c.mail || '') + '|' + (c.nom || '').toLowerCase() + '|' + (c.prenom || '').toLowerCase();
+          if (entry._seen.has(ck)) continue;
+          entry._seen.add(ck);
+          entry.contacts.push({ ...c, marcheId: m.id, marcheNom: m.nom });
+        }
+      }
+    }
+    return Array.from(byName.values())
+      .map(({ _seen, ...rest }) => rest)
+      .sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }));
+  }, [allMeta]);
 
   // Build full contacts list enriched with CLCC info
   const enrichedClccs = useMemo(() => {
@@ -208,9 +260,118 @@ export default function ContactsAnnuaire() {
     );
   }
 
+  // ── Vue détail fournisseur ───────────────────────────
+  if (selectedFournisseur) {
+    const f = fournisseursAgg.find(x => x.nom === selectedFournisseur);
+    if (!f) { setSelectedFournisseur(null); return null; }
+    return (
+      <Layout title={f.nom} sub={`— ${f.contacts.length} contact${f.contacts.length > 1 ? 's' : ''}`}>
+        <button className="btn btn-outline btn-sm" style={{ marginBottom: 16 }}
+          onClick={() => setSelectedFournisseur(null)}>
+          &larr; Retour aux fournisseurs
+        </button>
+        <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #8B5CF6' }}>
+          <div className="card-body">
+            <div style={{ fontWeight: 700, fontSize: 16 }}>{f.nom}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              Présent sur {f.marches.length} marché{f.marches.length > 1 ? 's' : ''} :
+              {' '}{f.marches.map(m => m.reference || m.nom).join(', ')}
+            </div>
+          </div>
+        </div>
+        {f.contacts.length === 0 ? (
+          <div className="empty-state"><div className="empty-title">Aucun contact</div></div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+            {f.contacts.map((ct, i) => (
+              <div key={i} className="card" style={{ borderTop: '3px solid #8B5CF6' }}>
+                <div className="card-body">
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>
+                    {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '—'}
+                  </div>
+                  {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#8B5CF6', marginTop: 2 }}>{ct.fonction}</div>}
+                  {ct.mail && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>&#x2709;&#xFE0F; {ct.mail}</div>}
+                  {ct.tel && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.tel}</div>}
+                  <div style={{ fontSize: 10, color: 'var(--blue)', marginTop: 6, cursor: 'pointer' }}
+                    onClick={() => navigate('/marche/' + ct.marcheId)}>
+                    &#x1F4C2; {ct.marcheNom}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Layout>
+    );
+  }
+
+  // ── Vue liste fournisseurs ───────────────────────────
+  if (section === 'fournisseurs') {
+    const q = search.toLowerCase();
+    const filteredFour = fournisseursAgg.filter(f =>
+      !q || f.nom.toLowerCase().includes(q) ||
+      f.contacts.some(c => (c.nom || '').toLowerCase().includes(q) || (c.mail || '').toLowerCase().includes(q))
+    );
+    return (
+      <Layout title="Contacts" sub="— Annuaire">
+        <SectionTabs section={section} setSection={setSection} />
+        <div className="info-box" style={{ marginBottom: 18 }}>
+          <strong>Contacts fournisseurs</strong> — Aggrégés depuis les annuaires des marchés analysés.
+          Lance un scan dans <em>Analyse des offres</em> d'un marché pour alimenter cette liste.
+        </div>
+        <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input type="text" className="filter-input" placeholder="Rechercher un fournisseur, contact..."
+            value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, maxWidth: 360 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {filteredFour.length} fournisseur{filteredFour.length > 1 ? 's' : ''}
+          </span>
+        </div>
+        {filteredFour.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">&#x1F4E6;</div>
+            <div className="empty-title">Aucun fournisseur</div>
+            <div className="empty-sub">Lance un scan d'annuaire dans la page Analyse d'un marché.</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+            {filteredFour.map(f => (
+              <div key={f.nom} className="card"
+                style={{ cursor: 'pointer', borderLeft: '4px solid #8B5CF6' }}
+                onClick={() => setSelectedFournisseur(f.nom)}>
+                <div className="card-body" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: '50%', background: '#8B5CF6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0,
+                  }}>{initials(f.nom)}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{f.nom}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {f.marches.length} marché{f.marches.length > 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700,
+                      color: f.contacts.length > 0 ? '#8B5CF6' : 'var(--text-muted)' }}>
+                      {f.contacts.length}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                      contact{f.contacts.length > 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Layout>
+    );
+  }
+
   // ── CLCC list view (main) ─────────────────────────────
   return (
-    <Layout title="Contacts" sub="— Annuaire par CLCC">
+    <Layout title="Contacts" sub="— Annuaire">
+      <SectionTabs section={section} setSection={setSection} />
       {/* ── Toolbar : Export VCF + Sync Outlook ── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
         <button
