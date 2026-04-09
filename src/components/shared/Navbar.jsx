@@ -1,15 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 
 /* ── Logo ───────────────────────────────────────────────────── */
-const LogoMark = () => (
-  <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
-    <path
-      d="M4 3 L4 21 Q4 23 6 23 L18 23 Q20 23 20 21 L20 14"
-      stroke="#E8501A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-    />
-    <line x1="4" y1="3" x2="12" y2="3" stroke="#E8501A" strokeWidth="2.5" strokeLinecap="round"/>
-  </svg>
-);
 
 const TABS = [
   {
@@ -40,11 +31,8 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-logo">
-        <LogoMark />
-        <div className="navbar-logo-text">
-          <span className="navbar-brand">unicancer</span>
-          <span className="navbar-tagline">Gestion des marchés</span>
-        </div>
+        <img src="/unicancer-logo.svg" alt="Unicancer" className="navbar-logo-img" />
+        <span className="navbar-tagline">Gestion des marchés</span>
       </div>
 
       <div className="navbar-tabs">

@@ -307,8 +307,7 @@ input, select, textarea { font-family: inherit; }
   display: flex; align-items: center; gap: 10px; padding: 0 20px; height: 100%;
   border-right: 1px solid var(--sb-border); flex-shrink: 0; min-width: 244px;
 }
-.navbar-logo-text { display: flex; flex-direction: column; gap: 1px; }
-.navbar-brand { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.01em; }
+.navbar-logo-img { height: 22px; width: auto; filter: brightness(0) invert(1); }
 .navbar-tagline { font-size: 9.5px; color: rgba(255,255,255,.26); letter-spacing: .02em; }
 .navbar-tabs { display: flex; align-items: center; gap: 2px; padding: 0 16px; height: 100%; flex: 1; }
 .navbar-tab {
