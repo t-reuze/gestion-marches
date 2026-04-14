@@ -3,6 +3,7 @@ import { NavLink, useParams, useLocation } from 'react-router-dom';
 import { SECTEURS, getMarchesBySecteur } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
+import AddMarcheModal from '../AddMarcheModal';
 
 /* ── Icons ──────────────────────────────────────────────────── */
 const IconPen = () => (
@@ -44,6 +45,7 @@ export default function Sidebar() {
   const { getMeta }     = useMarcheMeta();
 
   const [search,    setSearch]    = useState('');
+  const [showAdd,   setShowAdd]   = useState(false);
   const [collapsed, setCollapsed] = useState(() =>
     Object.fromEntries(Object.keys(SECTEURS).map(k => [k, true]))
   );
@@ -67,6 +69,18 @@ export default function Sidebar() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+
+          {/* Bouton ajouter */}
+          <div style={{ padding: '0 12px 8px' }}>
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ width: '100%', fontSize: 12 }}
+              onClick={() => setShowAdd(true)}
+            >
+              + Ajouter un marché
+            </button>
+          </div>
+          {showAdd && <AddMarcheModal onClose={() => setShowAdd(false)} />}
 
           {/* Secteurs + marchés */}
           <nav className="sidebar-nav">
