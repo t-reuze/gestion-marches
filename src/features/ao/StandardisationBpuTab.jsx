@@ -11,7 +11,6 @@
 import React, { useState, useEffect } from 'react';
 
 const __bpuCache = new Map();
-import { useNavigate } from 'react-router-dom';
 import { useNotation } from '../../context/NotationContext';
 import { processQuestionnaireFolder } from '../../utils/analysePipeline/index.js';
 import {
@@ -117,7 +116,6 @@ function buildNotationSessionFromQt(qtResults) {
 }
 
 export default function StandardisationBpuTab({ dirHandle, marcheId }) {
-  const navigate = useNavigate();
   const { setSession } = useNotation();
   const __c0 = __bpuCache.get(marcheId) || {};
   const [results, setResults] = useState(__c0.results || []);
@@ -168,8 +166,7 @@ export default function StandardisationBpuTab({ dirHandle, marcheId }) {
               fileName: session.fileName, notes, skipped: {},
             }));
           } catch(_) {}
-          setChainStatus(`✓ Pipeline complet — ${session.questions.length} questions × ${session.vendors.length} fournisseurs prêts pour notation`);
-          setTimeout(() => navigate('/marche/' + marcheId + '/notation'), 1200);
+          setChainStatus(`✓ Pipeline complet — ${session.questions.length} questions × ${session.vendors.length} fournisseurs synchronisés dans Notation`);
         } else {
           setChainStatus('⚠ Pipeline terminé mais aucune réponse QT exploitable.');
         }

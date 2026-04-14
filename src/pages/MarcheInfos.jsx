@@ -89,7 +89,7 @@ export default function MarcheInfos() {
         {/* En-tête réf */}
         <div className="info-header-bar">
           <div>
-            <div style={{ fontFamily: 'DM Mono,monospace', fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{marche.reference}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{marche.reference}</div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{marche.nom}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{marche.description}</div>
           </div>
@@ -124,7 +124,7 @@ export default function MarcheInfos() {
                   style={{ flex: 1, accentColor: 'var(--blue)' }}
                   onChange={e => setForm(f => ({ ...f, progression: e.target.value }))}
                 />
-                <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 700, fontSize: 13, width: 38 }}>{form.progression || 0}%</span>
+                <span style={{ fontWeight: 700, fontSize: 13, width: 38 }}>{form.progression || 0}%</span>
               </div>
             </div>
           </div>

@@ -161,7 +161,7 @@ export default function Reporting() {
               return (
                 <>
                   <tr key={m.id} style={{ cursor: 'pointer' }} onClick={() => !isEditing && navigate('/marche/' + m.id + '/notation')}>
-                    <td><span style={{ fontWeight: 700, color: 'var(--blue)', fontFamily: 'DM Mono,monospace', fontSize: 11 }}>{m.reference}</span></td>
+                    <td><span style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 11 }}>{m.reference}</span></td>
                     <td><div style={{ fontWeight: 600, fontSize: 12 }}>{m.nom}</div></td>
                     <td style={{ fontSize: 11 }}>{m.referent || m.responsable || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
                     <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.service || '—'}</td>
@@ -175,7 +175,7 @@ export default function Reporting() {
                           <div className="progress" style={{ flex: 1 }}>
                             <div className="progress-fill" style={{ width: m.progression + '%', background: STATUT_CONFIG[m.statut]?.color || '#3B82F6' }} />
                           </div>
-                          <span style={{ fontSize: 10, fontFamily: 'DM Mono,monospace', color: 'var(--text-muted)', width: 32 }}>{m.progression}%</span>
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 32 }}>{m.progression}%</span>
                         </div>
                       ) : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
                     </td>

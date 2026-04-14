@@ -319,7 +319,7 @@ export default function FormationDetail() {
                       <tr key={d.id}>
                         <td style={{ fontWeight: 600, fontSize: 12 }}>{d.nom}</td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.type || '—'}</td>
-                        <td style={{ fontSize: 11, fontFamily: 'DM Mono,monospace' }}>{d.taille > 1024*1024 ? (d.taille/1024/1024).toFixed(1)+' Mo' : Math.round(d.taille/1024)+' Ko'}</td>
+                        <td style={{ fontSize: 11, fontWeight: 500 }}>{d.taille > 1024*1024 ? (d.taille/1024/1024).toFixed(1)+' Mo' : Math.round(d.taille/1024)+' Ko'}</td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{d.date}</td>
                         <td>
                           {d.data
@@ -461,66 +461,66 @@ export default function FormationDetail() {
                   <tbody>
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '8px 16px', fontSize: 12, color: '#3B82F6', fontWeight: 600 }}>Coûts pédagogiques</td>
-                      <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutPeda)}</td>
+                      <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutPeda)}</td>
                     </tr>
                     {calc.pedaBase > 0 && (
                       <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
                         <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Formation &amp; matériel</td>
-                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(calc.pedaBase)}</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, textAlign: 'right', color: 'var(--text-muted)' }}>{euro(calc.pedaBase)}</td>
                       </tr>
                     )}
                     {calc.pedaInscrit > 0 && (
                       <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
                         <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Inscription &amp; certification</td>
-                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(calc.pedaInscrit)}</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, textAlign: 'right', color: 'var(--text-muted)' }}>{euro(calc.pedaInscrit)}</td>
                       </tr>
                     )}
                     {calc.coutFormateur > 0 && (
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '8px 16px', fontSize: 12, color: '#10B981', fontWeight: 600 }}>Intervenants externes</td>
-                        <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutFormateur)}</td>
+                        <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutFormateur)}</td>
                       </tr>
                     )}
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '8px 16px', fontSize: 12, color: '#F59E0B', fontWeight: 600 }}>Déplacements participants</td>
-                      <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutDeplac)}</td>
+                      <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutDeplac)}</td>
                     </tr>
                     {Number(modele.transport) > 0 && Number(modele.nbParticipants) > 0 && (
                       <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
                         <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Transport</td>
-                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.transport) * (Number(modele.nbParticipants) || 0))}</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.transport) * (Number(modele.nbParticipants) || 0))}</td>
                       </tr>
                     )}
                     {Number(modele.hebergement) > 0 && Number(modele.nbNuits) > 0 && Number(modele.nbParticipants) > 0 && (
                       <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
                         <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Hébergement ({modele.nbNuits} nuit{Number(modele.nbNuits) > 1 ? 's' : ''})</td>
-                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.hebergement) * (Number(modele.nbNuits) || 0) * (Number(modele.nbParticipants) || 0))}</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.hebergement) * (Number(modele.nbNuits) || 0) * (Number(modele.nbParticipants) || 0))}</td>
                       </tr>
                     )}
                     {Number(modele.restauration) > 0 && Number(modele.nbJours) > 0 && Number(modele.nbParticipants) > 0 && (
                       <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
                         <td style={{ padding: '3px 16px 3px 28px', fontSize: 11, color: 'var(--text-muted)' }}>↳ Restauration</td>
-                        <td style={{ padding: '3px 16px', fontSize: 11, fontFamily: 'DM Mono,monospace', textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.restauration) * (Number(modele.nbJours) || 0) * (Number(modele.nbParticipants) || 0))}</td>
+                        <td style={{ padding: '3px 16px', fontSize: 11, textAlign: 'right', color: 'var(--text-muted)' }}>{euro(Number(modele.restauration) * (Number(modele.nbJours) || 0) * (Number(modele.nbParticipants) || 0))}</td>
                       </tr>
                     )}
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '8px 16px', fontSize: 12, color: '#8B5CF6', fontWeight: 600 }}>&#x23F1; Temps agents</td>
-                      <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutTemps)}</td>
+                      <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutTemps)}</td>
                     </tr>
                     {(calc.coutAdmin > 0 || calc.coutAutres > 0) && (
                       <tr style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '8px 16px', fontSize: 12, color: '#64748B', fontWeight: 600 }}>Admin &amp; autres</td>
-                        <td style={{ padding: '8px 16px', fontSize: 13, fontFamily: 'DM Mono,monospace', textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutAdmin + calc.coutAutres)}</td>
+                        <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: 700 }}>{euro(calc.coutAdmin + calc.coutAutres)}</td>
                       </tr>
                     )}
                     <tr style={{ background: 'var(--blue)', color: '#fff' }}>
                       <td style={{ padding: '14px 16px', fontWeight: 800, fontSize: 14 }}>TOTAL</td>
-                      <td style={{ padding: '14px 16px', fontFamily: 'DM Mono,monospace', fontSize: 16, fontWeight: 800, textAlign: 'right' }}>{euro(calc.total)}</td>
+                      <td style={{ padding: '14px 16px', fontSize: 16, fontWeight: 800, textAlign: 'right' }}>{euro(calc.total)}</td>
                     </tr>
                     {Number(modele.nbParticipants) > 0 && (
                       <tr style={{ background: '#EFF6FF' }}>
                         <td style={{ padding: '10px 16px', fontSize: 12, color: 'var(--blue)' }}>Coût par participant</td>
-                        <td style={{ padding: '10px 16px', fontFamily: 'DM Mono,monospace', fontSize: 14, fontWeight: 700, textAlign: 'right', color: 'var(--blue)' }}>{euro(calc.parParticipant)}</td>
+                        <td style={{ padding: '10px 16px', fontSize: 14, fontWeight: 700, textAlign: 'right', color: 'var(--blue)' }}>{euro(calc.parParticipant)}</td>
                       </tr>
                     )}
                   </tbody>
@@ -543,7 +543,7 @@ export default function FormationDetail() {
                     <div key={r.label} style={{ marginBottom: 10 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
                         <span dangerouslySetInnerHTML={{ __html: r.label }} />
-                        <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 600 }}>{Math.round(r.value / calc.total * 100)} %</span>
+                        <span style={{ fontWeight: 600 }}>{Math.round(r.value / calc.total * 100)} %</span>
                       </div>
                       <div className="progress">
                         <div className="progress-fill" style={{ width: (r.value / calc.total * 100) + '%', background: r.color }} />

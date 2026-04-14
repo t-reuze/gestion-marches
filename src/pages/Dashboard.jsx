@@ -97,7 +97,7 @@ export default function Dashboard() {
       <div className="hero-banner">
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div className="hero-eyebrow">Unicancer · Achats</div>
-          <div className="hero-title">Gestion des marchés publics</div>
+          <div className="hero-title">Gestion des projets</div>
           <div className="hero-subtitle">
             Suivez, analysez et pilotez l'ensemble de vos appels d'offres en temps réel.
           </div>

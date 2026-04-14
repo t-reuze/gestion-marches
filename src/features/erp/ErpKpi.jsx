@@ -108,7 +108,7 @@ export default function ErpKpi() {
               ].map(b => (
                 <div key={b.label} style={{ textAlign: 'center', padding: '12px 8px', background: 'var(--bg-alt)', borderRadius: 8, border: '1.5px solid var(--border)' }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 600 }}>{b.label}</div>
-                  <div style={{ fontFamily: 'DM Mono,monospace', fontWeight: 800, fontSize: 15, color: b.color }}>{b.value ? formatBudget(b.value) : '—'}</div>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: b.color }}>{b.value ? formatBudget(b.value) : '—'}</div>
                   {b.p != null && b.value > 0 && <div style={{ fontSize: 10, color: b.color, marginTop: 3 }}>{b.p} % du budget</div>}
                 </div>
               ))}
@@ -120,7 +120,7 @@ export default function ErpKpi() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
                     <span style={{ color: '#8B5CF6', fontWeight: 600 }}>Engagé / Estimé</span>
-                    <span style={{ fontFamily: 'DM Mono,monospace', color: '#8B5CF6', fontWeight: 700 }}>{pctEngage} %</span>
+                    <span style={{ color: '#8B5CF6', fontWeight: 700 }}>{pctEngage} %</span>
                   </div>
                   <div className="progress"><div className="progress-fill" style={{ width: pctEngage + '%', background: '#8B5CF6' }} /></div>
                 </div>
@@ -129,7 +129,7 @@ export default function ErpKpi() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
                     <span style={{ color: '#10B981', fontWeight: 600 }}>Dépensé / Estimé</span>
-                    <span style={{ fontFamily: 'DM Mono,monospace', color: '#10B981', fontWeight: 700 }}>{pctDepense} %</span>
+                    <span style={{ color: '#10B981', fontWeight: 700 }}>{pctDepense} %</span>
                   </div>
                   <div className="progress"><div className="progress-fill" style={{ width: pctDepense + '%', background: '#10B981' }} /></div>
                 </div>
@@ -156,7 +156,7 @@ export default function ErpKpi() {
                       {isPast ? <span style={{ color: '#fff', fontSize: 13, fontWeight: 800 }}>✓</span> : <div style={{ width: 8, height: 8, borderRadius: '50%', background: d.color }} />}
                     </div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: d.color, textAlign: 'center' }}>{d.label}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono,monospace', textAlign: 'center' }}>{formatDate(d.date)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>{formatDate(d.date)}</div>
                   </div>
                 );
               })}

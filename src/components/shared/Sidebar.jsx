@@ -44,7 +44,9 @@ export default function Sidebar() {
   const { getMeta }     = useMarcheMeta();
 
   const [search,    setSearch]    = useState('');
-  const [collapsed, setCollapsed] = useState({});
+  const [collapsed, setCollapsed] = useState(() =>
+    Object.fromEntries(Object.keys(SECTEURS).map(k => [k, true]))
+  );
 
   // Sidebar is only relevant on the Marchés section
   const isMarches = pathname === '/' || pathname.startsWith('/marche');

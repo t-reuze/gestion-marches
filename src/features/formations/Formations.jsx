@@ -19,12 +19,41 @@ function isUrgent(dateStr) {
   return d <= sixMonths;
 }
 
-function BadgeOui() {
-  return <span style={{ display: 'inline-block', background: '#D1FAE5', color: '#065F46', borderRadius: 12, padding: '2px 10px', fontSize: 11, fontWeight: 600 }}>Oui</span>;
-}
-
 const STATUTS_F_COLORS = { planifie: '#64748B', inscriptions: '#10B981', en_cours: '#F59E0B', termine: '#8B5CF6', annule: '#EF4444' };
 const STATUTS_F_LABELS = { planifie: 'Planifié', inscriptions: 'Inscriptions ouvertes', en_cours: 'En cours', termine: 'Terminé', annule: 'Annulé' };
+
+function BadgeRenew({ yes }) {
+  if (yes) return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      background: 'linear-gradient(135deg, #D1FAE5, #A7F3D0)', color: '#065F46',
+      borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 600,
+      boxShadow: '0 1px 3px rgba(6,95,70,.12)',
+    }}>
+      <span style={{ fontSize: 13 }}>✓</span> Oui
+    </span>
+  );
+  return (
+    <span style={{
+      display: 'inline-block', background: 'var(--surface-subtle)',
+      color: 'var(--text-3)', borderRadius: 20, padding: '4px 14px', fontSize: 11,
+    }}>—</span>
+  );
+}
+
+function StatusBadge({ statut }) {
+  if (!statut) return null;
+  const color = STATUTS_F_COLORS[statut] || '#64748B';
+  return (
+    <span style={{
+      display: 'inline-block', padding: '4px 12px', borderRadius: 20,
+      fontSize: 11, fontWeight: 600, background: color + '15',
+      color, border: `1px solid ${color}30`,
+    }}>
+      {STATUTS_F_LABELS[statut] || statut}
+    </span>
+  );
+}
 
 function TableFormations({ rows, metas, navigate }) {
   return (
@@ -37,30 +66,39 @@ function TableFormations({ rows, metas, navigate }) {
             <th className="td-center">Renouvellement 2026&#x2013;2027</th>
             <th>Responsable pédagogique CLCC / Extérieur</th>
             <th>Contact</th>
-            <th>Statut</th><th>Commentaires</th>
+            <th>Statut</th>
+            <th>Commentaires</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(f => (
-            <tr key={f.id} style={{ cursor: "pointer" }} onClick={() => navigate("/formations/" + f.id)}>
-              <td style={{ fontWeight: 600, fontSize: 13 }}>{f.nom}</td>
-              <td style={{
-                fontFamily: 'DM Mono,monospace', fontSize: 12, whiteSpace: 'nowrap',
-                color: isUrgent(f.dateEcheance) ? '#EF4444' : 'inherit',
-              }}>
-                {formatDateFormation(f.dateEcheance)}
-              </td>
-              <td className="td-center">
-                {f.renouvellement
-                  ? <BadgeOui />
-                  : <span style={{ display: 'inline-block', background: '#F1F5F9', color: '#64748B', borderRadius: 12, padding: '2px 10px', fontSize: 11 }}>—</span>
-                }
-              </td>
-              <td style={{ fontSize: 12 }}>{f.responsablePedagogique || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-              <td style={{ fontSize: 12, fontWeight: 500 }}>{f.contact || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-              <td>{(() => { const m = metas[f.id] || {}; const s = m.statut; return s ? <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 12, fontSize: 11, fontWeight: 600, background: (STATUTS_F_COLORS[s] || '#64748B') + '22', color: STATUTS_F_COLORS[s] || '#64748B' }}>{STATUTS_F_LABELS[s] || s}</span> : null; })()}</td><td style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>{f.commentaires || '—'}</td>
-            </tr>
-          ))}
+          {rows.map(f => {
+            const m = metas[f.id] || {};
+            const urgent = isUrgent(f.dateEcheance);
+            return (
+              <tr key={f.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/formations/' + f.id)}>
+                <td style={{ fontWeight: 600, fontSize: 13 }}>{f.nom}</td>
+                <td style={{
+                  fontSize: 12.5, fontWeight: 500, whiteSpace: 'nowrap',
+                  color: urgent ? '#EF4444' : 'var(--text-2)',
+                }}>
+                  {formatDateFormation(f.dateEcheance)}
+                </td>
+                <td className="td-center">
+                  <BadgeRenew yes={f.renouvellement} />
+                </td>
+                <td style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
+                  {f.responsablePedagogique || <span style={{ color: 'var(--text-3)' }}>—</span>}
+                </td>
+                <td style={{ fontSize: 12.5, fontWeight: 500 }}>
+                  {f.contact || <span style={{ color: 'var(--text-3)' }}>—</span>}
+                </td>
+                <td><StatusBadge statut={m.statut} /></td>
+                <td style={{ fontSize: 11.5, color: 'var(--text-3)', fontStyle: 'italic', maxWidth: 220 }}>
+                  {f.commentaires || '—'}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

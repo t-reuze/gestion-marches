@@ -88,7 +88,7 @@ export default function Reponses() {
           {v.sub && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{v.sub}</div>}
         </div>
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-          <div style={{ fontFamily: 'DM Mono,monospace', fontWeight: 800, fontSize: 20, color: avg(v) !== null ? noteColor(avg(v)) : 'var(--text-muted)' }}>
+          <div style={{ fontWeight: 800, fontSize: 20, color: avg(v) !== null ? noteColor(avg(v)) : 'var(--text-muted)' }}>
             {avg(v) !== null ? avg(v).toFixed(3) : '—'}
           </div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{notedCount} / {questions.length} critères notés</div>

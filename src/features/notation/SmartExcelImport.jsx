@@ -380,10 +380,6 @@ export default function SmartExcelImport({ onImport, marcheReference }) {
           )}
         </div>
       )}
-
-      <div className="info-box blue" style={{ marginTop: 16 }}>
-        <strong>Format attendu :</strong> feuille 1 — ligne 4 = en-têtes fournisseurs (col. D–I = réponses, col. J–O = notes), lignes 5+ = critères.
-      </div>
     </div>
   );
 }

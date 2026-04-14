@@ -237,7 +237,7 @@ export default function Notation() {
             <div key={v.name} className="notation-vendor-chip">
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: v.color, flexShrink: 0 }}></div>
               <span style={{ fontWeight: 700, color: v.color }}>{v.label.split('(')[0].trim()}</span>
-              <span style={{ fontFamily: 'DM Mono,monospace', fontWeight: 700, color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>
+              <span style={{ fontWeight: 700, color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>
                 {a !== null ? a.toFixed(2) : '—'}
               </span>
             </div>
@@ -373,7 +373,7 @@ export default function Notation() {
                 const a = avg(v);
                 return (
                   <span key={v.name} style={{ margin: '0 6px', color: v.color, fontWeight: 700 }}>
-                    {v.initials}: <span style={{ fontFamily: 'DM Mono,monospace', color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>{a !== null ? a.toFixed(2) : '—'}</span>
+                    {v.initials}: <span style={{ color: a !== null ? noteColor(a) : 'var(--text-muted)' }}>{a !== null ? a.toFixed(2) : '—'}</span>
                   </span>
                 );
               })}
@@ -388,7 +388,7 @@ export default function Notation() {
           {ranking[0]?.avgScore !== null && ranking[0]?.avgScore !== undefined && (
             <div className="info-box green" style={{ marginBottom: 16 }}>
               <strong>Meilleure offre provisoire — {ranking[0].label.split('(')[0].trim()}</strong>
-              <span style={{ marginLeft: 8, fontFamily: 'DM Mono,monospace', fontWeight: 700 }}>
+              <span style={{ marginLeft: 8, fontWeight: 700 }}>
                 {ranking[0].avgScore?.toFixed(3)} / 5
               </span>
             </div>
@@ -399,7 +399,7 @@ export default function Notation() {
                 <div className="card-header" style={{ background: `linear-gradient(135deg,${v.color} 0%,${v.color}bb 100%)` }}>
                   <span style={{ fontSize: 20 }}>{MEDALS[r] || (r+1)}</span>
                   <div style={{ fontWeight: 700, fontSize: 13, color: '#fff' }}>{v.label.split('(')[0].trim()}</div>
-                  <div style={{ marginLeft: 'auto', fontFamily: 'DM Mono,monospace', fontWeight: 800, fontSize: 18, color: '#fff' }}>
+                  <div style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 18, color: '#fff' }}>
                     {v.avgScore !== null && v.avgScore !== undefined ? v.avgScore.toFixed(3) : '—'}
                   </div>
                 </div>

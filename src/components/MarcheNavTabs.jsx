@@ -21,8 +21,8 @@ export default function MarcheNavTabs() {
     : 'notation';
 
   const tabList = [
-    { key: 'analyse',        label: 'Notation / Analyse',    path: '/marche/' + id + '/analyse',        show: id === 'bio-mol' || marche.hasAnalyse },
-    { key: 'notation',       label: 'Notation',              path: '/marche/' + id + '/notation',       show: !marche.hasAnalyse },
+    { key: 'analyse',        label: 'Analyse',               path: '/marche/' + id + '/analyse',        show: true },
+    { key: 'notation',       label: 'Notation',              path: '/marche/' + id + '/notation',       show: true },
     { key: 'reponses',       label: 'Réponses fournisseurs', path: '/marche/' + id + '/reponses',       show: !!getSession(id) },
     { key: 'infos',          label: 'Informations',          path: '/marche/' + id + '/infos',          show: true },
     { key: 'reporting',      label: 'Reporting',             path: '/marche/' + id + '/reporting',      show: marche.hasReporting },

@@ -364,7 +364,7 @@ export default function ContactsAnnuaire() {
                                 onClick={e => { e.stopPropagation(); navigate('/marche/' + mid); }}
                                 style={{ fontSize: 10, cursor: 'pointer', padding: '2px 6px', borderRadius: 4, background: 'var(--bg)', marginBottom: 2 }}
                               >
-                                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--blue)', fontWeight: 700 }}>{m.reference || '—'}</span>{' '}
+                                <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{m.reference || '—'}</span>{' '}
                                 <span style={{ color: 'var(--text-muted)' }}>{m.nom}</span>
                               </div>
                             ) : null;
@@ -511,7 +511,7 @@ export default function ContactsAnnuaire() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700,
+                    <div style={{ fontSize: 20, fontWeight: 700,
                       color: f.contacts.length > 0 ? '#8B5CF6' : 'var(--text-muted)' }}>
                       {f.contacts.length}
                     </div>
@@ -612,7 +612,7 @@ export default function ContactsAnnuaire() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700, color: c.totalContacts > 0 ? color : 'var(--text-muted)' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: c.totalContacts > 0 ? color : 'var(--text-muted)' }}>
                       {c.totalContacts}
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>

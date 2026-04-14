@@ -130,7 +130,7 @@
   border: 1px solid var(--border);
   padding: 2px 9px;
   border-radius: var(--r-full);
-  font-family: var(--font-mono);
+  font-weight: 600;
 }
 
 /* ── Glass card ──────────────────────────────────────────────── */

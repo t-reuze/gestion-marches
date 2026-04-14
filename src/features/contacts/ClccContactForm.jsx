@@ -159,7 +159,7 @@ export default function ClccContactForm() {
                   onChange={() => toggleMarche(m.id)}
                   style={{ accentColor: 'var(--blue)' }}
                 />
-                <span style={{ fontWeight: 600, color: 'var(--blue)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                <span style={{ fontWeight: 600, color: 'var(--blue)', fontSize: 10 }}>
                   {m.reference || '—'}
                 </span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

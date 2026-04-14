@@ -81,7 +81,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:"#1e293b", border:"1px solid #334155", borderRadius:8, padding:"10px 14px" }}>
-      <p style={{ color:"#94a3b8", fontSize:11, marginBottom:4, fontFamily:"monospace" }}>{label}</p>
+      <p style={{ color:"#94a3b8", fontSize:11, marginBottom:4, fontWeight: 500 }}>{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color:"#f1f5f9", fontSize:13, fontWeight:600 }}>
           {p.value?.toFixed ? p.value.toFixed(3) : p.value}{" "}
@@ -987,7 +987,7 @@ function TCOTab({ data }) {
               <tr key={i} style={{ background: i%2===0?"#fff":"var(--surface-subtle)" }}>
                 <td style={{ fontWeight:600, fontSize:12 }}>{row.indicateur}</td>
                 {equipements.map(eq => (
-                  <td key={eq} className="td-center" style={{ fontFamily:"monospace", fontSize:12 }}>
+                  <td key={eq} className="td-center" style={{ fontWeight: 500, fontSize:12 }}>
                     {formatVal(row.values[eq])}
                   </td>
                 ))}
