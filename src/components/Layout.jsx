@@ -31,7 +31,6 @@ export default function Layout({ children, title, sub, actions }) {
           <header className="topbar">
             <div className="topbar-left">
               <h1 className="topbar-title">{title || 'Gestion des projets'}</h1>
-              {sub && <span className="topbar-sub">{sub}</span>}
             </div>
             <div className="topbar-right">
               {actions}
