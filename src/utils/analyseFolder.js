@@ -412,8 +412,9 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     if (/standardis/i.test(lower)) return; // déjà traité
     const isBpu = /bpu|annexe.?5|bordereau|prix|tarif/i.test(lower) && !/chiffrage|mission.type/i.test(lower);
     const isChiffrage = /chiffrage|annexe.?3|mission.type|simulation/i.test(lower);
-    const isQt = /(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(lower);
     const isRse = /rse|durable|environn|developpement.durable/i.test(lower);
+    const isQt = /(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(lower)
+      || (/questionnaire/i.test(lower) && !isRse);
     if (!isBpu && !isChiffrage && !isQt && !isRse) return;
     return (async () => {
       try {
@@ -585,8 +586,9 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       if (/contact|annexe.?4|interlocuteur|coordonn|referent|correspondant/i.test(l)) return 'Contacts';
       if (/bpu|annexe.?5|bordereau/i.test(l) && !/chiffrage|mission.type/i.test(l)) return 'BPU';
       if (/chiffrage|annexe.?3|mission.type|simulation/i.test(l)) return 'Chiffrage';
-      if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
       if (/rse|durable|environn/i.test(l)) return 'RSE';
+      if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
+      if (/questionnaire/i.test(l)) return 'QT';
       if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
       return 'Autres';
     };
@@ -736,8 +738,9 @@ export async function bundleResponsesByDocType(rootHandle, onProgress = () => {}
     if (/standardis/i.test(l)) return null; // exclure fichiers déjà standardisés
     if (/bpu|annexe.?5|bordereau/i.test(l) && !/chiffrage|mission.type/i.test(l)) return 'BPU';
     if (/chiffrage|annexe.?3|mission.type|simulation/i.test(l)) return 'Chiffrage';
-    if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
     if (/rse|durable|environn|developpement.durable/i.test(l)) return 'RSE';
+    if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
+    if (/questionnaire/i.test(l)) return 'QT';
     if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
     if (/contact|annexe.?4|interlocuteur/i.test(l)) return 'Contacts';
     return 'Autres';

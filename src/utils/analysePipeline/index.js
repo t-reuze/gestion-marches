@@ -26,6 +26,8 @@ function classifyFileName(name) {
   if (/contact|annexe.?4|interlocuteur|coordonn|referent|correspondant/i.test(l)) return 'Contacts';
   if (/rse|developpement.?durable|d[eé]veloppement.?durable|durable|environn/i.test(l)) return 'RSE';
   if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
+  // Fallback : un fichier "questionnaire" sans mot-clé RSE/durable → probablement un QT
+  if (/questionnaire/i.test(l) && !/rse|durable|environn/i.test(l)) return 'QT';
   if (/chiffrage|annexe.?3|mission.?type|simulation/i.test(l)) return 'Chiffrage';
   if (/bpu|annexe.?5|bordereau/i.test(l)) return 'BPU';
   if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
@@ -67,8 +69,9 @@ async function listXlsxInSubdir(rootHandle, subdirName) {
     if (depth > 6) return;
     for await (const [name, handle] of dir.entries()) {
       if (handle.kind === 'directory') {
-        if (name.startsWith('.') || SKIP_DIRS.has(norm(name))) continue;
-        // Les dossiers "Lot N" ne sont pas des fournisseurs, on les traverse sans capturer le nom
+        if (name.startsWith('.') || SKIP_DIRS.has(norm(name))) {
+          continue;
+        }
         const nextSup = supplierName || (depth >= 0 && !isLotDir(name) ? name : null);
         await walk(handle, depth + 1, nextSup);
       } else if (handle.kind === 'file') {

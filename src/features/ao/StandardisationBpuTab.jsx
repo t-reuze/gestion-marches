@@ -148,24 +148,33 @@ export default function StandardisationBpuTab({ dirHandle, marcheId }) {
       setChainStatus('Étape 1/3 — Pipeline BPU…');
       const bpu = await processBpuFolder(dirHandle, marcheId, setProgress);
       setResults(bpu);
-      setChainStatus('Étape 2/3 — Pipeline QT…');
-      const qt = await processQuestionnaireFolder(dirHandle, 'QT', 'QT', marcheId, setProgress);
-      setQtResults(qt);
-      setChainStatus('Étape 3/3 — Import dans la notation…');
-      const session = buildNotationSessionFromQt(qt);
-      if (session) {
-        setSession(marcheId, session);
-        try {
-          const notes = {};
-          session.questions.forEach(q => { notes[q.xlsxRowIdx] = q.notes; });
-          localStorage.setItem('gm-notation-' + marcheId, JSON.stringify({
-            fileName: session.fileName, notes, skipped: {},
-          }));
-        } catch(_) {}
-        setChainStatus(`✓ Pipeline complet — ${session.questions.length} questions × ${session.vendors.length} fournisseurs prêts pour notation`);
-        setTimeout(() => navigate('/marche/' + marcheId + '/notation'), 1200);
+      let qt = [];
+      try {
+        setChainStatus('Étape 2/3 — Pipeline QT…');
+        qt = await processQuestionnaireFolder(dirHandle, 'QT', 'QT', marcheId, setProgress);
+        setQtResults(qt);
+      } catch (_qtErr) {
+        setQtResults([]);
+      }
+      if (qt.length > 0) {
+        setChainStatus('Étape 3/3 — Import dans la notation…');
+        const session = buildNotationSessionFromQt(qt);
+        if (session) {
+          setSession(marcheId, session);
+          try {
+            const notes = {};
+            session.questions.forEach(q => { notes[q.xlsxRowIdx] = q.notes; });
+            localStorage.setItem('gm-notation-' + marcheId, JSON.stringify({
+              fileName: session.fileName, notes, skipped: {},
+            }));
+          } catch(_) {}
+          setChainStatus(`✓ Pipeline complet — ${session.questions.length} questions × ${session.vendors.length} fournisseurs prêts pour notation`);
+          setTimeout(() => navigate('/marche/' + marcheId + '/notation'), 1200);
+        } else {
+          setChainStatus('⚠ Pipeline terminé mais aucune réponse QT exploitable.');
+        }
       } else {
-        setChainStatus('⚠ Pipeline terminé mais aucune réponse QT exploitable.');
+        setChainStatus('✓ Pipeline BPU terminé — aucun QT détecté dans ce dossier.');
       }
     } catch (e) {
       setError(String(e.message || e));
