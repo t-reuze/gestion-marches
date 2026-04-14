@@ -13,15 +13,14 @@ import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
 import ErpKpi               from './features/erp/ErpKpi';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider }            from './context/MarcheMetaContext';
-import { NewMarchesProvider }            from './context/NewMarchesContext';
+import { NewMarchesProvider, useFindMarche } from './context/NewMarchesContext';
 import { FormationsMetaProvider }        from './context/FormationsMetaContext';
 import { ReportingDataProvider }         from './context/ReportingDataContext';
-import { marches }          from './data/mockData';
 
 function MarcheRedirect() {
   const { id } = useParams();
   const { getSession } = useNotation();
-  const m = marches.find(x => x.id === id);
+  const m = useFindMarche(id);
   if (!m) return <Navigate to="/" replace />;
   if (getSession(id))  return <Navigate to={'/marche/' + id + '/notation'}  replace />;
   if (m.hasReporting)  return <Navigate to={'/marche/' + id + '/reporting'} replace />;

@@ -1,7 +1,23 @@
 import { createContext, useContext, useState } from 'react';
+import { marches as baseMarches } from '../data/mockData';
 
 const Ctx = createContext(null);
 export const useNewMarches = () => useContext(Ctx);
+
+export function useAllMarches() {
+  const { newMarches } = useNewMarches();
+  return [...baseMarches, ...newMarches];
+}
+
+export function useFindMarche(id) {
+  const all = useAllMarches();
+  return all.find(m => m.id === id) || null;
+}
+
+export function useMarchesBySecteur(secteurId) {
+  const all = useAllMarches();
+  return all.filter(m => m.secteur === secteurId);
+}
 
 const STORAGE_KEY = 'gm-new-marches';
 

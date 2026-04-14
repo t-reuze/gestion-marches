@@ -19,7 +19,8 @@ import {
 
 import Layout from "../../components/Layout";
 import MarcheNavTabs from "../../components/MarcheNavTabs";
-import { marches, getAnalyseConfig } from "../../data/mockData";
+import { getAnalyseConfig } from "../../data/mockData";
+import { useFindMarche } from "../../context/NewMarchesContext";
 import {
   scanAnnuaire, compileQT, compileRSE, compileBPU, compileChiffrage, download,
   bundleResponsesByDocType,
@@ -1378,7 +1379,7 @@ function ComparatifTab({ data, title, emptyMsg }) {
 
 export default function AnalyseMarche() {
   const { id } = useParams();
-  const marche = marches.find(m => m.id === id);
+  const marche = useFindMarche(id);
   const config = getAnalyseConfig(id);
 
   // ── Dossier state (restauré depuis le cache de session si on revient sur la page) ──

@@ -8,7 +8,8 @@ import KpiCard from '../../components/KpiCard';
 import StatusBadge from '../../components/StatusBadge';
 import ReportingDashboard from '../../components/reporting/ReportingDashboard';
 import ReportingMaintenance from '../../components/reporting/ReportingMaintenance';
-import { marches, STATUT_CONFIG, formatDate } from '../../data/mockData';
+import { STATUT_CONFIG, formatDate } from '../../data/mockData';
+import { useAllMarches } from '../../context/NewMarchesContext';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 
 function parseBudget(s) { return parseInt(String(s).replace(/[\s€]/g, '')) || 0; }
@@ -29,6 +30,7 @@ export default function Reporting() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [activeTab, setActiveTab] = useState('ca');
+  const marches = useAllMarches();
 
   const marche   = id ? marches.find(m => m.id === id) : null;
   const isGlobal = !marche;

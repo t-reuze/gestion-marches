@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import MarcheNavTabs from '../components/MarcheNavTabs';
 import EmptyState from '../components/EmptyState';
-import { marches } from '../data/mockData';
 import { useNotation } from '../context/NotationContext';
+import { useFindMarche } from '../context/NewMarchesContext';
 
 function noteColor(n) {
   if (n >= 4.25) return '#10B981';
@@ -15,7 +15,7 @@ function noteColor(n) {
 export default function Reponses() {
   const { id } = useParams();
   const { getSession } = useNotation();
-  const marche = marches.find(m => m.id === id);
+  const marche = useFindMarche(id);
   const session = getSession(id);
   const [activeV, setActiveV] = useState(0);
 

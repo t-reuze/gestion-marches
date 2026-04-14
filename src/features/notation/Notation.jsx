@@ -4,8 +4,8 @@ import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend as RechartsLegend } from 'recharts';
 
 import Layout from '../../components/Layout';
-import { marches } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
+import { useFindMarche } from '../../context/NewMarchesContext';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
 import SmartExcelImport from './SmartExcelImport';
 
@@ -60,7 +60,7 @@ export default function Notation() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getSession, setSession, clearSession } = useNotation();
-  const marche = marches.find(m => m.id === id);
+  const marche = useFindMarche(id);
   const session = getSession(id);
 
   const [activeQ, setActiveQ] = useState(0);

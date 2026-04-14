@@ -1,13 +1,13 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useNotation } from '../context/NotationContext';
-import { marches } from '../data/mockData';
+import { useFindMarche } from '../context/NewMarchesContext';
 
 export default function MarcheNavTabs() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { getSession } = useNotation();
-  const marche = marches.find(m => m.id === id);
+  const marche = useFindMarche(id);
   if (!marche) return null;
 
   const path = location.pathname;

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { NavLink, useParams, useLocation } from 'react-router-dom';
-import { SECTEURS, getMarchesBySecteur } from '../../data/mockData';
+import { SECTEURS } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
+import { useAllMarches } from '../../context/NewMarchesContext';
 
 /* ── Icons ──────────────────────────────────────────────────── */
 const IconPen = () => (
@@ -42,6 +43,7 @@ export default function Sidebar() {
   const { pathname } = useLocation();
   const { getSession }  = useNotation();
   const { getMeta }     = useMarcheMeta();
+  const allMarches      = useAllMarches();
 
   const [search,    setSearch]    = useState('');
   const [collapsed, setCollapsed] = useState({});
@@ -69,7 +71,7 @@ export default function Sidebar() {
           {/* Secteurs + marchés */}
           <nav className="sidebar-nav">
             {Object.entries(SECTEURS).map(([key, secteur]) => {
-              const marches = getMarchesBySecteur(key).filter((m) =>
+              const marches = allMarches.filter(m => m.secteur === key).filter((m) =>
                 !search || m.nom.toLowerCase().includes(search.toLowerCase())
               );
 

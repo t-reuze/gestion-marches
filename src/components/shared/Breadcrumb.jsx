@@ -1,5 +1,6 @@
 import { Link, useParams, useLocation } from 'react-router-dom';
-import { marches, SECTEURS } from '../../data/mockData';
+import { SECTEURS } from '../../data/mockData';
+import { useFindMarche } from '../../context/NewMarchesContext';
 
 const TAB_LABELS = {
   notation:       'Notation',
@@ -14,6 +15,7 @@ const TAB_LABELS = {
 export default function Breadcrumb() {
   const { id } = useParams();
   const { pathname } = useLocation();
+  const marche = useFindMarche(id);
 
   const items = [];
 
@@ -24,7 +26,6 @@ export default function Breadcrumb() {
   items.push({ label: 'Marchés', to: '/' });
 
   if (id) {
-    const marche = marches.find((m) => m.id === id);
     if (marche) {
       // Secteur
       const secteur = SECTEURS[marche.secteur];

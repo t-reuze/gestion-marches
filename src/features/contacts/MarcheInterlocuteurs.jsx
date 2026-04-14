@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
-import { marches } from '../../data/mockData';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
+import { useFindMarche } from '../../context/NewMarchesContext';
 
 const ROLE_COLORS = {
   'Référent marché': '#1A4FA8',
@@ -54,7 +54,7 @@ function ContactForm({ form, setForm }) {
 export default function MarcheInterlocuteurs() {
   const { id } = useParams();
   const { getMeta, setMeta } = useMarcheMeta();
-  const marche = marches.find(m => m.id === id);
+  const marche = useFindMarche(id);
 
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);

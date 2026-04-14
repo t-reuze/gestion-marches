@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import MarcheNavTabs from '../components/MarcheNavTabs';
 import StatusBadge from '../components/StatusBadge';
-import { marches } from '../data/mockData';
 import { useMarcheMeta } from '../context/MarcheMetaContext';
+import { useFindMarche } from '../context/NewMarchesContext';
 
 const STATUTS = ['ouvert', 'analyse', 'attribution', 'reporting', 'cloture'];
 const STATUT_LABELS = { ouvert: 'Ouvert', analyse: 'En analyse', attribution: 'Attribution', reporting: 'Reporting', cloture: 'Clôturé' };
@@ -12,7 +12,7 @@ const STATUT_LABELS = { ouvert: 'Ouvert', analyse: 'En analyse', attribution: 'A
 export default function MarcheInfos() {
   const { id } = useParams();
   const { getMeta, setMeta } = useMarcheMeta();
-  const marche = marches.find(m => m.id === id);
+  const marche = useFindMarche(id);
 
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({

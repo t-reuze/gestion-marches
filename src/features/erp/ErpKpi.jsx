@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
 import KpiCard from '../../components/KpiCard';
-import { marches, STATUT_CONFIG, formatDate } from '../../data/mockData';
+import { STATUT_CONFIG, formatDate } from '../../data/mockData';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
+import { useFindMarche } from '../../context/NewMarchesContext';
 
 function parseBudget(s) {
   return parseInt(String(s || '').replace(/[\s €KkMm,.]/g, '')) || 0;
@@ -25,7 +26,7 @@ function pct(a, b) {
 export default function ErpKpi() {
   const { id } = useParams();
   const { getMeta, setMeta } = useMarcheMeta();
-  const marche = marches.find(m => m.id === id);
+  const marche = useFindMarche(id);
   const meta = getMeta(id || '');
 
   const [editing, setEditing] = useState(false);
