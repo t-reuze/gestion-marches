@@ -46,5 +46,9 @@ export function NewMarchesProvider({ children }) {
     persist(items.filter(m => m.id !== id));
   }
 
-  return <Ctx.Provider value={{ newMarches: items, addMarche, removeMarche }}>{children}</Ctx.Provider>;
+  function updateMarche(id, patch) {
+    persist(items.map(m => m.id === id ? { ...m, ...patch } : m));
+  }
+
+  return <Ctx.Provider value={{ newMarches: items, addMarche, removeMarche, updateMarche }}>{children}</Ctx.Provider>;
 }

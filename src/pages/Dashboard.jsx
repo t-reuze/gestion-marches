@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [filtreSecteur, setFiltreSecteur] = useState('tous');
   const [showAdd, setShowAdd] = useState(false);
+  const [editMarche, setEditMarche] = useState(null);
   const navigate = useNavigate();
   const { getMeta } = useMarcheMeta();
   const { newMarches } = useNewMarches();
@@ -215,6 +216,7 @@ export default function Dashboard() {
       </div>
 
       {showAdd && <AddMarcheModal onClose={() => setShowAdd(false)} />}
+      {editMarche && <AddMarcheModal marche={editMarche} onClose={() => setEditMarche(null)} />}
 
       {/* ── Cards ────────────────────────────────────────────── */}
       {marchesFiltres.length === 0 ? (
@@ -273,6 +275,11 @@ export default function Dashboard() {
                   {m.hasReporting && (
                     <button className="btn btn-outline btn-sm" onClick={() => navigate('/marche/' + m.id + '/reporting')}>
                       Reporting
+                    </button>
+                  )}
+                  {m.__userAdded && (
+                    <button className="btn btn-outline btn-sm" onClick={() => setEditMarche(newMarches.find(x => x.id === m.id))}>
+                      Modifier
                     </button>
                   )}
                 </div>

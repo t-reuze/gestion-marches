@@ -2,21 +2,22 @@ import { useState } from 'react';
 import { SECTEURS, STATUT_CONFIG } from '../data/mockData';
 import { useNewMarches } from '../context/NewMarchesContext';
 
-export default function AddMarcheModal({ onClose }) {
-  const { addMarche } = useNewMarches();
+export default function AddMarcheModal({ onClose, marche: existing = null }) {
+  const { addMarche, updateMarche, removeMarche } = useNewMarches();
   const secteurKeys = Object.keys(SECTEURS);
+  const isEdit = Boolean(existing);
 
   const [form, setForm] = useState({
-    nom: '',
-    reference: '',
-    secteur: secteurKeys[0],
-    statut: 'ouvert',
-    description: '',
-    responsable: '',
-    service: '',
-    budgetEstime: '',
-    dateOuverture: '',
-    dateLimiteDepot: '',
+    nom: existing?.nom || '',
+    reference: existing?.reference || '',
+    secteur: existing?.secteur || secteurKeys[0],
+    statut: existing?.statut || 'ouvert',
+    description: existing?.description || '',
+    responsable: existing?.responsable || '',
+    service: existing?.service || '',
+    budgetEstime: existing?.budgetEstime || '',
+    dateOuverture: existing?.dateOuverture || '',
+    dateLimiteDepot: existing?.dateLimiteDepot || '',
   });
   const [error, setError] = useState('');
 
@@ -28,8 +29,17 @@ export default function AddMarcheModal({ onClose }) {
     e.preventDefault();
     if (!form.nom.trim()) { setError('Le nom est requis.'); return; }
     if (!form.secteur) { setError('Sélectionne un secteur.'); return; }
-    addMarche(form);
+    if (isEdit) updateMarche(existing.id, form);
+    else addMarche(form);
     onClose();
+  }
+
+  function handleDelete() {
+    if (!isEdit) return;
+    if (window.confirm('Supprimer ce marché ?')) {
+      removeMarche(existing.id);
+      onClose();
+    }
   }
 
   return (
@@ -48,7 +58,7 @@ export default function AddMarcheModal({ onClose }) {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>Ajouter un marché</h2>
+          <h2 style={{ margin: 0, fontSize: 18 }}>{isEdit ? 'Modifier le marché' : 'Ajouter un marché'}</h2>
           <button className="btn btn-outline btn-sm" onClick={onClose}>Fermer</button>
         </div>
 
@@ -117,9 +127,18 @@ export default function AddMarcheModal({ onClose }) {
 
           {error && <div style={{ color: '#DC2626', fontSize: 13 }}>{error}</div>}
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-            <button type="button" className="btn btn-outline" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary">Créer le marché</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 8 }}>
+            <div>
+              {isEdit && (
+                <button type="button" className="btn btn-outline" onClick={handleDelete} style={{ color: '#DC2626', borderColor: '#DC2626' }}>
+                  Supprimer
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn-outline" onClick={onClose}>Annuler</button>
+              <button type="submit" className="btn btn-primary">{isEdit ? 'Enregistrer' : 'Créer le marché'}</button>
+            </div>
           </div>
         </form>
       </div>
