@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { NavLink, useParams, useLocation } from 'react-router-dom';
-import { SECTEURS, getMarchesBySecteur } from '../../data/mockData';
+import { SECTEURS, getMarchesBySecteur, formations } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
+import { useFormationsMeta } from '../../context/FormationsMetaContext';
 import AddMarcheModal from '../AddMarcheModal';
 
 /* ── Icons ──────────────────────────────────────────────────── */
@@ -38,25 +39,40 @@ const STATUT_DOT = {
   reporting:   '#64748B',
 };
 
+const STATUT_DOT_F = {
+  planifie:     '#64748B',
+  inscriptions: '#10B981',
+  en_cours:     '#F59E0B',
+  termine:      '#8B5CF6',
+  annule:       '#EF4444',
+};
+
+const FORMATION_GROUPS = [
+  { key: 'renouveler', label: 'À renouveler',    filter: f => f.renouvellement },
+  { key: 'autres',     label: 'Autres formations', filter: f => !f.renouvellement },
+];
+
 export default function Sidebar() {
   const { id: activeId } = useParams();
   const { pathname } = useLocation();
   const { getSession }  = useNotation();
   const { getMeta }     = useMarcheMeta();
+  const { getMeta: getFormMeta } = useFormationsMeta();
 
   const [search,    setSearch]    = useState('');
   const [showAdd,   setShowAdd]   = useState(false);
-  const [collapsed, setCollapsed] = useState(() =>
-    Object.fromEntries(Object.keys(SECTEURS).map(k => [k, true]))
-  );
+  const [collapsed, setCollapsed] = useState(() => ({
+    ...Object.fromEntries(Object.keys(SECTEURS).map(k => [k, true])),
+    ...Object.fromEntries(FORMATION_GROUPS.map(g => [g.key, true])),
+  }));
 
-  // Sidebar is only relevant on the Marchés section
-  const isMarches = pathname === '/' || pathname.startsWith('/marche');
+  const isMarches    = pathname === '/' || pathname.startsWith('/marche');
+  const isFormations = pathname.startsWith('/formations');
 
   const toggle = (key) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
 
   return (
-    <aside className={'sidebar' + (!isMarches ? ' sidebar--empty' : '')}>
+    <aside className={'sidebar' + (!isMarches && !isFormations ? ' sidebar--empty' : '')}>
       {isMarches && (
         <>
           {/* Search */}
@@ -145,6 +161,83 @@ export default function Sidebar() {
 
                   {isOpen && marches.length === 0 && !search && (
                     <div className="sidebar-secteur-empty">Aucun marché</div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </>
+      )}
+
+      {isFormations && (
+        <>
+          {/* Search */}
+          <div className="sidebar-search">
+            <span className="sidebar-search-icon"><IconSearch /></span>
+            <input
+              className="sidebar-search-input"
+              placeholder="Rechercher…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Formations groups */}
+          <nav className="sidebar-nav">
+            {FORMATION_GROUPS.map(group => {
+              const items = formations
+                .filter(group.filter)
+                .filter(f => !search || f.nom.toLowerCase().includes(search.toLowerCase()));
+
+              if (search && !items.length) return null;
+
+              const isOpen = !collapsed[group.key];
+
+              return (
+                <div key={group.key} className="sidebar-secteur">
+                  <button
+                    className="sidebar-secteur-label"
+                    onClick={() => toggle(group.key)}
+                  >
+                    <span className="sidebar-secteur-title">
+                      {group.label}
+                      {items.length > 0 && (
+                        <span className="sidebar-secteur-count">{items.length}</span>
+                      )}
+                    </span>
+                    <span className="sidebar-secteur-chevron">
+                      <IconChevron open={isOpen} />
+                    </span>
+                  </button>
+
+                  {isOpen && items.length > 0 && (
+                    <div className="sidebar-secteur-items">
+                      {items.map(f => {
+                        const meta = getFormMeta(f.id);
+                        const statut = meta.statut;
+                        const isActive = activeId === f.id;
+
+                        return (
+                          <NavLink
+                            key={f.id}
+                            to={'/formations/' + f.id}
+                            className={() =>
+                              'nav-item nav-marche-item' + (isActive ? ' active' : '')
+                            }
+                          >
+                            <span
+                              className="nm-dot"
+                              style={{ background: STATUT_DOT_F[statut] || (f.renouvellement ? '#10B981' : '#94A3B8') }}
+                            />
+                            <span className="nm-nom">{f.nom}</span>
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {isOpen && items.length === 0 && !search && (
+                    <div className="sidebar-secteur-empty">Aucune formation</div>
                   )}
                 </div>
               );
