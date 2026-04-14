@@ -14,7 +14,10 @@ export default function Layout({ children, title, sub, actions }) {
               <h1 className="topbar-title">{title || 'Gestion des projets'}</h1>
               {sub && <span className="topbar-sub">{sub}</span>}
             </div>
-            <div className="topbar-right">{actions}</div>
+            <div className="topbar-right">
+              {actions}
+              <img src="/unicancer-pictos.png" alt="Unicancer" style={{ height: 36 }} />
+            </div>
           </header>
           <Breadcrumb />
           <main className="content fade-in">
