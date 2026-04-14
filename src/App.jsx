@@ -13,6 +13,7 @@ import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
 import ErpKpi               from './features/erp/ErpKpi';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider }            from './context/MarcheMetaContext';
+import { NewMarchesProvider }            from './context/NewMarchesContext';
 import { FormationsMetaProvider }        from './context/FormationsMetaContext';
 import { ReportingDataProvider }         from './context/ReportingDataContext';
 import { marches }          from './data/mockData';
@@ -49,11 +50,13 @@ export default function App() {
   return (
     <FormationsMetaProvider>
     <MarcheMetaProvider>
+    <NewMarchesProvider>
     <ReportingDataProvider>
     <NotationProvider>
       <RouterProvider router={router} />
     </NotationProvider>
     </ReportingDataProvider>
+    </NewMarchesProvider>
     </MarcheMetaProvider>
     </FormationsMetaProvider>
   );
