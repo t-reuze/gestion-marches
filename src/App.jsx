@@ -16,6 +16,7 @@ import { MarcheMetaProvider }            from './context/MarcheMetaContext';
 import { NewMarchesProvider }            from './context/NewMarchesContext';
 import { FormationsMetaProvider }        from './context/FormationsMetaContext';
 import { ReportingDataProvider }         from './context/ReportingDataContext';
+import { NewFormationsProvider }         from './context/NewFormationsContext';
 import { marches }          from './data/mockData';
 
 function MarcheRedirect() {
@@ -51,11 +52,13 @@ export default function App() {
     <FormationsMetaProvider>
     <MarcheMetaProvider>
     <NewMarchesProvider>
+    <NewFormationsProvider>
     <ReportingDataProvider>
     <NotationProvider>
       <RouterProvider router={router} />
     </NotationProvider>
     </ReportingDataProvider>
+    </NewFormationsProvider>
     </NewMarchesProvider>
     </MarcheMetaProvider>
     </FormationsMetaProvider>

@@ -187,6 +187,16 @@ code, kbd, pre { font-family: inherit; }
   box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 .sidebar-toggle:hover { color: #fff; background: var(--orange); border-color: var(--orange); }
+.sidebar-wrapper--orange .sidebar { background: linear-gradient(160deg, #C2410C 0%, #E8501A 100%); }
+.sidebar-wrapper--orange .sidebar-toggle { background: #C2410C; border-color: rgba(255,255,255,.15); }
+.sidebar-wrapper--orange .sidebar-toggle:hover { background: #2563EB; border-color: #2563EB; }
+.sidebar-wrapper--orange .nav-item.active { border-left-color: #2563EB; box-shadow: inset 0 0 0 1px rgba(37,99,235,.15); }
+.sidebar-wrapper--orange .sidebar-search-input:focus { border-color: rgba(37,99,235,.4); }
+.sidebar-wrapper--orange .nm-session { background: rgba(37,99,235,.2); }
+.sidebar-wrapper--orange .sidebar-footer-text { color: rgba(255,255,255,.3); }
+
+/* ── Formations orange theme (navbar) ──────────────────────── */
+.theme-formations .navbar { background: linear-gradient(160deg, #C2410C 0%, #E8501A 100%); border-bottom-color: rgba(255,255,255,.12); }
 
 /* Logo (legacy — conservé pour compatibilité) */
 .sidebar-logo {

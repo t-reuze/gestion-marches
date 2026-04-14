@@ -4,6 +4,7 @@ import Layout from '../../components/Layout';
 import KpiCard from '../../components/KpiCard';
 import { formations } from '../../data/mockData';
 import { useFormationsMeta } from '../../context/FormationsMetaContext';
+import { useNewFormations } from '../../context/NewFormationsContext';
 
 /* ── Helpers ───────────────────────────────────────────────── */
 function formatDateFormation(d) {
@@ -21,6 +22,10 @@ function isUrgent(dateStr) {
   const sixMonths = new Date(now.getFullYear(), now.getMonth() + 6, now.getDate());
   return d <= sixMonths;
 }
+
+/* ── Theme colors ─────────────────────────────────────────── */
+const BLUE = '#2563EB';
+const BLUE_DARK = '#1D4ED8';
 
 /* ── Status config ─────────────────────────────────────────── */
 const STATUTS_F = {
@@ -100,15 +105,19 @@ const FILTRES = [
   { value: 'annule',       label: 'Annulé' },
 ];
 
+/* ── Inline style overrides (orange theme) ─────────────────── */
+const tabActiveStyle = { background: 'var(--surface)', color: BLUE, fontWeight: 600, boxShadow: 'var(--e-1)' };
+
 /* ── Main component ────────────────────────────────────────── */
 export default function Formations() {
   const navigate = useNavigate();
   const { getMeta } = useFormationsMeta();
+  const { newFormations } = useNewFormations();
   const [search, setSearch] = useState('');
   const [filtre, setFiltre] = useState('tous');
 
   /* Merge meta into formations */
-  const allFormations = formations.map(f => {
+  const allFormations = [...formations, ...newFormations].map(f => {
     const meta = getMeta(f.id);
     return { ...f, ...meta };
   });
@@ -139,8 +148,8 @@ export default function Formations() {
   return (
     <Layout title="Formations">
 
-      {/* ── Hero Banner ──────────────────────────────────────── */}
-      <div className="hero-banner">
+      {/* ── Hero Banner (orange) ─────────────────────────────── */}
+      <div className="hero-banner" style={{ background: 'linear-gradient(160deg, #C2410C 0%, #E8501A 100%)' }}>
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div className="hero-eyebrow">Unicancer · Formation</div>
           <div className="hero-title">Formations</div>
@@ -157,7 +166,7 @@ export default function Formations() {
               {enCours} en cours
             </span>
             <span className="hero-stat">
-              <span className="hero-stat-dot" style={{ background: '#EF4444' }} />
+              <span className="hero-stat-dot" style={{ background: '#93C5FD' }} />
               {urgentes} urgente{urgentes > 1 ? 's' : ''}
             </span>
           </div>
@@ -169,7 +178,7 @@ export default function Formations() {
         <KpiCard
           label="Total formations"
           value={total}
-          color="#001E45"
+          color={BLUE}
           icon={<IconGrad />}
           sub={aRenouveler + ' à renouveler'}
         />
@@ -211,6 +220,7 @@ export default function Formations() {
               key={f.value}
               className={'tab' + (filtre === f.value ? ' active' : '')}
               onClick={() => setFiltre(f.value)}
+              style={filtre === f.value ? tabActiveStyle : undefined}
             >
               {f.label}
             </div>
@@ -247,7 +257,7 @@ export default function Formations() {
               >
                 <div className="marche-card-header">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                    <span className="marche-ref" style={urgent ? { color: '#EF4444' } : {}}>
+                    <span className="marche-ref" style={{ color: urgent ? '#EF4444' : BLUE }}>
                       {formatDateFormation(f.dateEcheance)}
                     </span>
                     <StatusBadge statut={meta.statut} />
@@ -279,7 +289,7 @@ export default function Formations() {
 
                 <div className="marche-card-footer">
                   <button
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-blue btn-sm"
                     onClick={e => { e.stopPropagation(); navigate('/formations/' + f.id); }}
                   >
                     Détails

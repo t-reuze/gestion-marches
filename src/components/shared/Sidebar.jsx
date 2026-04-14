@@ -4,7 +4,9 @@ import { SECTEURS, getMarchesBySecteur, formations } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { useFormationsMeta } from '../../context/FormationsMetaContext';
+import { useNewFormations } from '../../context/NewFormationsContext';
 import AddMarcheModal from '../AddMarcheModal';
+import AddFormationModal from '../AddFormationModal';
 
 /* ── Icons ──────────────────────────────────────────────────── */
 const IconPen = () => (
@@ -58,9 +60,11 @@ export default function Sidebar() {
   const { getSession }  = useNotation();
   const { getMeta }     = useMarcheMeta();
   const { getMeta: getFormMeta } = useFormationsMeta();
+  const { newFormations } = useNewFormations();
 
   const [search,    setSearch]    = useState('');
   const [showAdd,   setShowAdd]   = useState(false);
+  const [showAddF,  setShowAddF]  = useState(false);
   const [collapsed, setCollapsed] = useState(() => ({
     ...Object.fromEntries(Object.keys(SECTEURS).map(k => [k, true])),
     ...Object.fromEntries(FORMATION_GROUPS.map(g => [g.key, true])),
@@ -182,10 +186,23 @@ export default function Sidebar() {
             />
           </div>
 
+          {/* Bouton ajouter */}
+          <div style={{ padding: '0 12px 8px' }}>
+            <button
+              className="btn btn-sm"
+              style={{ width: '100%', fontSize: 12, background: '#001E45', color: '#fff', border: 'none' }}
+              onClick={() => setShowAddF(true)}
+            >
+              + Ajouter une formation
+            </button>
+          </div>
+          {showAddF && <AddFormationModal onClose={() => setShowAddF(false)} />}
+
           {/* Formations groups */}
           <nav className="sidebar-nav">
             {FORMATION_GROUPS.map(group => {
-              const items = formations
+              const allF = [...formations, ...newFormations];
+              const items = allF
                 .filter(group.filter)
                 .filter(f => !search || f.nom.toLowerCase().includes(search.toLowerCase()));
 
