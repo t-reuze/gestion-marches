@@ -151,21 +151,21 @@ export default function Formations() {
       {/* ── Hero Banner (orange) ─────────────────────────────── */}
       <div className="hero-banner" style={{ background: 'linear-gradient(160deg, #C2410C 0%, #E8501A 100%)' }}>
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="hero-eyebrow">Unicancer · Formation</div>
+          <div className="hero-eyebrow" style={{ color: '#fff' }}>Unicancer · Formation</div>
           <div className="hero-title">Formations</div>
           <div className="hero-subtitle">
             Suivez les formations à renouveler, en cours et planifiées.
           </div>
           <div className="hero-stats">
-            <span className="hero-stat">
+            <span className="hero-stat" style={{ background: 'rgba(0,30,69,.45)', borderColor: 'rgba(0,30,69,.3)' }}>
               <span className="hero-stat-dot" style={{ background: '#4ADE80' }} />
               {aRenouveler} à renouveler
             </span>
-            <span className="hero-stat">
+            <span className="hero-stat" style={{ background: 'rgba(0,30,69,.45)', borderColor: 'rgba(0,30,69,.3)' }}>
               <span className="hero-stat-dot" style={{ background: '#FBBF24' }} />
               {enCours} en cours
             </span>
-            <span className="hero-stat">
+            <span className="hero-stat" style={{ background: 'rgba(0,30,69,.45)', borderColor: 'rgba(0,30,69,.3)' }}>
               <span className="hero-stat-dot" style={{ background: '#93C5FD' }} />
               {urgentes} urgente{urgentes > 1 ? 's' : ''}
             </span>

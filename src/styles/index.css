@@ -390,8 +390,8 @@ code, kbd, pre { font-family: inherit; }
 .btn-accent:hover { filter: brightness(1.06); transform: translateY(-1px); }
 .btn-secondary { background: var(--orange-soft); color: var(--orange-h); border-color: var(--orange-border); }
 .btn-secondary:hover { background: #fee5d6; border-color: #f0a07A; }
-.btn-blue { background: var(--blue); color: #fff; border-color: transparent; }
-.btn-blue:hover { background: #1D4ED8; transform: translateY(-1px); }
+.btn-blue { background: #001E45; color: #fff; border-color: transparent; }
+.btn-blue:hover { background: #002456; transform: translateY(-1px); }
 .btn-outline { background: var(--surface); color: var(--text-2); border-color: var(--border); box-shadow: var(--e-1); }
 .btn-outline:hover { background: var(--surface-hover); border-color: var(--border-strong); color: var(--text); }
 .btn-ghost { background: transparent; border: none; color: var(--text-3); padding: 0 8px; height: 28px; border-radius: var(--r-sm); }
