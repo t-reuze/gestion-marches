@@ -412,7 +412,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     if (/standardis/i.test(lower)) return; // déjà traité
     const isBpu = /bpu|annexe.?5|bordereau|prix|tarif/i.test(lower) && !/chiffrage|mission.type/i.test(lower);
     const isChiffrage = /chiffrage|annexe.?3|mission.type|simulation/i.test(lower);
-    const isQt = /\bqt\b|questionnaire.tech|technique|annexe.?1/i.test(lower);
+    const isQt = /(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(lower);
     const isRse = /rse|durable|environn|developpement.durable/i.test(lower);
     if (!isBpu && !isChiffrage && !isQt && !isRse) return;
     return (async () => {
@@ -429,9 +429,53 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
   }
 
   // Cas 1 : sous-dossiers fournisseur (chacun = un fournisseur)
+  // Si les sous-dossiers sont des lots (Lot1/, Lot2/…), on descend d'un niveau
+  // pour trouver les vrais dossiers fournisseurs à l'intérieur de chaque lot.
   const rootSubdirs = await getSubdirs(rootHandle);
+  const isLotDir = (name) => /^lot\s*\d+$/i.test(name.trim());
+  const hasLotStructure = rootSubdirs.some(s => isLotDir(s.name));
+
+  let supplierFolders = []; // { dirName, dirHandle }
+  if (hasLotStructure) {
+    for (const { name: lotName, handle: lotHandle } of rootSubdirs) {
+      if (!isLotDir(lotName) && SKIP_FALLBACK.has(normSupName(lotName))) continue;
+      if (isLotDir(lotName)) {
+        const lotMatch = lotName.match(/lot\s*(\d+)/i);
+        const lotNum = lotMatch ? parseInt(lotMatch[1], 10) : null;
+        if (lotNum) autoLots.add(lotNum);
+        const lotSubdirs = await getSubdirs(lotHandle);
+        for (const { name, handle } of lotSubdirs) {
+          if (SKIP_FALLBACK.has(normSupName(name))) continue;
+          supplierFolders.push({ dirName: name, dirHandle: handle });
+          // Positionnement par lot : le fournisseur est dans ce dossier de lot
+          if (lotNum) {
+            const sn = normSupName(name);
+            const display = name.replace(/\s+(ok|OK|valid[eé])\s*$/i, '').trim();
+            ensure(sn, display);
+            supInfo[sn].lots.add(lotNum);
+          }
+        }
+      } else {
+        supplierFolders.push({ dirName: lotName, dirHandle: lotHandle });
+      }
+    }
+    // Dédoublonne par nom de fournisseur (même fournisseur dans plusieurs lots)
+    const seen = new Map();
+    for (const sf of supplierFolders) {
+      const key = normSupName(sf.dirName);
+      if (!seen.has(key)) seen.set(key, []);
+      seen.get(key).push(sf);
+    }
+    supplierFolders = [];
+    for (const [, entries] of seen) supplierFolders.push(entries[0]);
+  } else {
+    supplierFolders = rootSubdirs
+      .filter(s => !SKIP_FALLBACK.has(normSupName(s.name)))
+      .map(s => ({ dirName: s.name, dirHandle: s.handle }));
+  }
+
   let processedAny = false;
-  for (const { name: dirName, handle: dirHandle } of rootSubdirs) {
+  for (const { dirName, dirHandle } of supplierFolders) {
     const norm = normSupName(dirName);
     if (SKIP_FALLBACK.has(norm)) continue;
     const files = await getAllFiles(dirHandle);
@@ -467,12 +511,29 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     'ao', 'reponses', 'action a faire', 'actions a faire',
     'consignes', 'instructions', 'template', 'modele', 'modeles',
   ]);
-  const subdirs = await getSubdirs(rootHandle);
+  // Réutilise la même logique de détection lot/fournisseur que le scan principal
+  const subdirs2 = await getSubdirs(rootHandle);
   const folderMap = {};
-  for (const { name, handle } of subdirs) {
-    const n = normSupName(name);
-    if (SKIP_DIRS.has(n)) continue;
-    folderMap[n] = { name, handle };
+  if (hasLotStructure) {
+    for (const { name: lotName, handle: lotHandle } of subdirs2) {
+      if (isLotDir(lotName)) {
+        const lotSubs = await getSubdirs(lotHandle);
+        for (const { name, handle } of lotSubs) {
+          const n = normSupName(name);
+          if (SKIP_DIRS.has(n)) continue;
+          if (!folderMap[n]) folderMap[n] = { name, handle };
+        }
+      } else {
+        const n = normSupName(lotName);
+        if (!SKIP_DIRS.has(n)) folderMap[n] = { name: lotName, handle: lotHandle };
+      }
+    }
+  } else {
+    for (const { name, handle } of subdirs2) {
+      const n = normSupName(name);
+      if (SKIP_DIRS.has(n)) continue;
+      folderMap[n] = { name, handle };
+    }
   }
 
   const hasStdData = Object.keys(supInfo).length > 0;
@@ -524,7 +585,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       if (/contact|annexe.?4|interlocuteur|coordonn|referent|correspondant/i.test(l)) return 'Contacts';
       if (/bpu|annexe.?5|bordereau/i.test(l) && !/chiffrage|mission.type/i.test(l)) return 'BPU';
       if (/chiffrage|annexe.?3|mission.type|simulation/i.test(l)) return 'Chiffrage';
-      if (/\bqt\b|questionnaire.tech|technique|annexe.?1/i.test(l)) return 'QT';
+      if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
       if (/rse|durable|environn/i.test(l)) return 'RSE';
       if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
       return 'Autres';
@@ -675,7 +736,7 @@ export async function bundleResponsesByDocType(rootHandle, onProgress = () => {}
     if (/standardis/i.test(l)) return null; // exclure fichiers déjà standardisés
     if (/bpu|annexe.?5|bordereau/i.test(l) && !/chiffrage|mission.type/i.test(l)) return 'BPU';
     if (/chiffrage|annexe.?3|mission.type|simulation/i.test(l)) return 'Chiffrage';
-    if (/\bqt\b|questionnaire.tech|technique|annexe.?1/i.test(l)) return 'QT';
+    if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
     if (/rse|durable|environn|developpement.durable/i.test(l)) return 'RSE';
     if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
     if (/contact|annexe.?4|interlocuteur/i.test(l)) return 'Contacts';
@@ -683,7 +744,29 @@ export async function bundleResponsesByDocType(rootHandle, onProgress = () => {}
   };
 
   const subdirs = await getSubdirs(rootHandle);
-  const supplierDirs = subdirs.filter(s => !SKIP.has(normSupName(s.name)));
+  const isLotDir2 = (n) => /^lot\s*\d+$/i.test(n.trim());
+  const hasLots = subdirs.some(s => isLotDir2(s.name));
+
+  let supplierDirs = [];
+  if (hasLots) {
+    for (const { name, handle } of subdirs) {
+      if (isLotDir2(name)) {
+        const lotSubs = await getSubdirs(handle);
+        for (const sub of lotSubs) {
+          if (!SKIP.has(normSupName(sub.name))) {
+            const key = normSupName(sub.name);
+            if (!supplierDirs.some(s => normSupName(s.name) === key)) {
+              supplierDirs.push(sub);
+            }
+          }
+        }
+      } else if (!SKIP.has(normSupName(name))) {
+        supplierDirs.push({ name, handle });
+      }
+    }
+  } else {
+    supplierDirs = subdirs.filter(s => !SKIP.has(normSupName(s.name)));
+  }
   if (!supplierDirs.length) {
     throw new Error('Aucun sous-dossier fournisseur trouvé.');
   }

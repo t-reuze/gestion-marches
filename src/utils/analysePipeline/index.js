@@ -25,7 +25,7 @@ function classifyFileName(name) {
   // aussi "Annexe 5" dans leur nom (ex: "Annexe 5 - Questionnaire DD").
   if (/contact|annexe.?4|interlocuteur|coordonn|referent|correspondant/i.test(l)) return 'Contacts';
   if (/rse|developpement.?durable|d[eé]veloppement.?durable|durable|environn/i.test(l)) return 'RSE';
-  if (/\bqt\b|questionnaire.?tech|technique|annexe.?1/i.test(l)) return 'QT';
+  if (/(?:^|[\s_\-])qt(?:[\s_\-.]|$)|questionnaire.?tech|questionnaire.?technique|annexe.?1/i.test(l)) return 'QT';
   if (/chiffrage|annexe.?3|mission.?type|simulation/i.test(l)) return 'Chiffrage';
   if (/bpu|annexe.?5|bordereau/i.test(l)) return 'BPU';
   if (/dc1|dc2|kbis|rib|attestation|urssaf|ccap|cctp|attri|engagement|delegation|signe/i.test(l)) return 'Candidature';
@@ -62,12 +62,14 @@ async function listXlsxInSubdir(rootHandle, subdirName) {
   // 2. Fallback : rangement virtuel — scan récursif + classification par nom
   const wanted = norm(subdirName);
   const gathered = [];
+  const isLotDir = (n) => /^lot\s*\d+$/i.test(n.trim());
   async function walk(dir, depth = 0, supplierName = null) {
     if (depth > 6) return;
     for await (const [name, handle] of dir.entries()) {
       if (handle.kind === 'directory') {
         if (name.startsWith('.') || SKIP_DIRS.has(norm(name))) continue;
-        const nextSup = supplierName || (depth >= 0 ? name : null);
+        // Les dossiers "Lot N" ne sont pas des fournisseurs, on les traverse sans capturer le nom
+        const nextSup = supplierName || (depth >= 0 && !isLotDir(name) ? name : null);
         await walk(handle, depth + 1, nextSup);
       } else if (handle.kind === 'file') {
         if (!/\.xlsx$/i.test(name) || name.startsWith('~')) continue;
@@ -187,27 +189,51 @@ export async function processBpuFile(fileHandle, filename, marcheId) {
  * @returns {Promise<StandardizedBPU[]>}
  */
 export async function processBpuFolder(rootHandle, marcheId, onProgress = () => {}) {
-  const files = await listXlsxInSubdir(rootHandle, 'BPU');
-  if (!files.length) {
+  // BPU principal (Annexe 5)
+  const filesBpu = await listXlsxInSubdir(rootHandle, 'BPU');
+  // Chiffrage (Annexe 3) — fallback de positionnement quand l'Annexe 5 est vide
+  let filesChiffrage = [];
+  try { filesChiffrage = await listXlsxInSubdir(rootHandle, 'Chiffrage'); } catch (_) {}
+  const allFiles = [...filesBpu, ...filesChiffrage.map(f => ({ ...f, _chiffrage: true }))];
+  if (!allFiles.length) {
     throw new Error('Aucun fichier .xlsx trouvé dans le sous-dossier BPU/');
   }
-  const results = [];
-  for (let i = 0; i < files.length; i++) {
-    const { name, handle } = files[i];
-    onProgress(`${i + 1}/${files.length} — ${name}`);
+
+  // Map fournisseur → result fusionné (lots agrégés depuis BPU + Chiffrage)
+  const byFournisseur = new Map();
+  for (let i = 0; i < allFiles.length; i++) {
+    const { name, handle, _chiffrage } = allFiles[i];
+    onProgress(`${i + 1}/${allFiles.length} — ${name}`);
     try {
       const std = await processBpuFile(handle, name, marcheId);
-      results.push(std);
+      if (_chiffrage) std.meta.fromChiffrage = true;
+      const key = (std.fournisseur || '').toLowerCase().trim();
+      if (!byFournisseur.has(key)) {
+        byFournisseur.set(key, std);
+      } else {
+        // Fusion : pour chaque lot, on garde celui qui a le plus de lignes "filled"
+        const existing = byFournisseur.get(key);
+        for (const [lotNum, lot] of Object.entries(std.lots)) {
+          const prev = existing.lots[lotNum];
+          const newFilled = lot.meta.stats?.filled || 0;
+          const prevFilled = prev?.meta?.stats?.filled || 0;
+          if (!prev || newFilled > prevFilled) {
+            existing.lots[lotNum] = lot;
+          }
+        }
+      }
     } catch (e) {
-      results.push({
-        fournisseur: fournisseurFromFilename(name),
-        sourceFile: name,
-        lots: {},
-        meta: { detectedType: 'unknown', overallConfidence: 0, userValidated: false, error: String(e) },
-      });
+      const fournisseur = fournisseurFromFilename(name);
+      const key = fournisseur.toLowerCase().trim();
+      if (!byFournisseur.has(key)) {
+        byFournisseur.set(key, {
+          fournisseur, sourceFile: name, lots: {},
+          meta: { detectedType: 'unknown', overallConfidence: 0, userValidated: false, error: String(e) },
+        });
+      }
     }
   }
-  return results;
+  return Array.from(byFournisseur.values());
 }
 
 // Re-exports pour faciliter l'import (placeholder)
@@ -438,9 +464,16 @@ export async function processQuestionnaireFile(fileHandle, filename, docType, ma
   const sections = {};
   let totalConf = 0, sheetCount = 0;
 
+  // Si le nom du fichier indique un lot précis (ex: "QT_Lot1_..."), on ne lit que ce lot
+  const fileLotMatch = filename.match(/lot\s*(\d+)/i);
+  const fileLotNum = fileLotMatch ? parseInt(fileLotMatch[1], 10) : null;
+
   for (const sheetName of wb.SheetNames) {
     // Ne traite que les feuilles "Lot N" (réponses par lot)
     if (!/lot\s*\d+/i.test(sheetName)) continue;
+    // Si le fichier cible un lot précis, ignorer les feuilles des autres lots
+    const sheetLotMatch = sheetName.match(/lot\s*(\d+)/i);
+    if (fileLotNum && sheetLotMatch && parseInt(sheetLotMatch[1], 10) !== fileLotNum) continue;
     const ws = wb.Sheets[sheetName];
     const { headers, dataRows, headerRowIdx } = normalizeSheet(ws);
 
@@ -501,7 +534,8 @@ export async function processQuestionnaireFile(fileHandle, filename, docType, ma
 
 export async function processQuestionnaireFolder(rootHandle, subdirName, docType, marcheId, onProgress = () => {}) {
   const files = await listXlsxInSubdir(rootHandle, subdirName);
-  if (!files.length) throw new Error(`Aucun .xlsx dans le sous-dossier ${subdirName}/`);
+  if (!files.length) throw new Error(`Aucun fichier ${subdirName} détecté. Vérifiez que les fichiers contiennent "${subdirName}" ou "questionnaire technique" dans leur nom.`);
+
   const results = [];
   for (let i = 0; i < files.length; i++) {
     const { name, handle } = files[i];

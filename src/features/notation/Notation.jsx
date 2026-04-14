@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend as RechartsLegend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, Legend as RechartsLegend } from 'recharts';
 
 import Layout from '../../components/Layout';
 import { marches } from '../../data/mockData';
@@ -409,67 +409,46 @@ export default function Notation() {
               </div>
             ))}
           </div>
-          <div className="charts-grid" style={{ marginBottom: 20 }}>
-            <div className="card">
-              <div className="card-header"><span className="card-title">Notes par critère</span></div>
-              <div className="card-body" style={{ height: 280 }}>
-                {(() => {
-                  const chartData = questions.map(q => {
-                    const entry = { subject: String(q.num) };
-                    vendors.forEach(v => {
-                      if (q.skipped[v.name]) { entry[v.name] = null; return; }
-                      const n = q.notes[v.name];
-                      entry[v.name] = (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
-                    });
-                    return entry;
-                  });
-                  return (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="subject" tick={{ fontSize: 10 }} />
-                        <YAxis domain={[0, 5]} ticks={[0,1,2,3,4,5]} tick={{ fontSize: 10 }} />
-                        <RechartsTooltip />
-                        <RechartsLegend wrapperStyle={{ fontSize: 10 }} />
-                        {vendors.map(v => (
-                          <Bar key={v.name} dataKey={v.name} name={v.label.split('(')[0].trim()} fill={v.color + 'BB'} stroke={v.color} strokeWidth={1} radius={[3,3,0,0]} />
-                        ))}
-                      </BarChart>
-                    </ResponsiveContainer>
-                  );
-                })()}
+          {(() => {
+            // Regroupe les questions par thème/catégorie et calcule la moyenne par vendor
+            const themes = new Map();
+            for (const q of questions) {
+              const t = (q.theme || '').trim() || 'Sans catégorie';
+              if (!themes.has(t)) themes.set(t, []);
+              themes.get(t).push(q);
+            }
+            // Ne montre le graphe par catégorie que s'il y a au moins 2 catégories
+            const themeKeys = Array.from(themes.keys());
+            if (themeKeys.length < 2) return null;
+            const chartData = themeKeys.map(t => {
+              const qs = themes.get(t);
+              const entry = { category: t.length > 35 ? t.substring(0, 32) + '…' : t };
+              vendors.forEach(v => {
+                const noted = qs.filter(q => !q.skipped[v.name] && q.notes[v.name] !== null && q.notes[v.name] !== undefined && !isNaN(q.notes[v.name]));
+                entry[v.name] = noted.length > 0 ? +(noted.reduce((s, q) => s + q.notes[v.name], 0) / noted.length).toFixed(2) : null;
+              });
+              return entry;
+            });
+            return (
+              <div className="card" style={{ marginBottom: 20 }}>
+                <div className="card-header"><span className="card-title">Moyenne par catégorie</span></div>
+                <div className="card-body" style={{ height: Math.max(280, themeKeys.length * 40) }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" domain={[0, 5]} ticks={[0,1,2,3,4,5]} tick={{ fontSize: 10 }} />
+                      <YAxis type="category" dataKey="category" tick={{ fontSize: 10 }} width={140} />
+                      <RechartsTooltip />
+                      <RechartsLegend wrapperStyle={{ fontSize: 10 }} />
+                      {vendors.map(v => (
+                        <Bar key={v.name} dataKey={v.name} name={v.label.split('(')[0].trim()} fill={v.color + 'BB'} stroke={v.color} strokeWidth={1} radius={[0,3,3,0]} />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-            </div>
-            <div className="card">
-              <div className="card-header"><span className="card-title">Radar multi-critères</span></div>
-              <div className="card-body" style={{ height: 280 }}>
-                {(() => {
-                  const chartData = questions.map(q => {
-                    const entry = { subject: String(q.num) };
-                    vendors.forEach(v => {
-                      if (q.skipped[v.name]) { entry[v.name] = null; return; }
-                      const n = q.notes[v.name];
-                      entry[v.name] = (n !== null && n !== undefined && !isNaN(n)) ? +n.toFixed(2) : null;
-                    });
-                    return entry;
-                  });
-                  return (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={chartData}>
-                        <PolarGrid />
-                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
-                        <RechartsTooltip />
-                        <RechartsLegend wrapperStyle={{ fontSize: 10 }} />
-                        {vendors.map(v => (
-                          <Radar key={v.name} dataKey={v.name} name={v.label.split('(')[0].trim()} stroke={v.color} fill={v.color} fillOpacity={0.13} dot={{ r: 3 }} />
-                        ))}
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
+            );
+          })()}
           <div className="card">
             <div className="card-header"><span className="card-title">Détail par critère</span></div>
             <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
