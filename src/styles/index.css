@@ -151,7 +151,7 @@ code, kbd, pre { font-family: inherit; }
    SIDEBAR
 ================================================================ */
 .sidebar {
-  width: 244px;
+  width: 100%;
   flex-shrink: 0;
   background: var(--grad-navy);
   display: flex;
@@ -160,7 +160,14 @@ code, kbd, pre { font-family: inherit; }
   overflow-x: hidden;
   scrollbar-width: none;
   position: relative;
+  transition: width .3s cubic-bezier(.22,1,.36,1);
 }
+.sidebar-wrapper {
+  position: relative; flex-shrink: 0; display: flex;
+  width: 244px; transition: width .3s cubic-bezier(.22,1,.36,1);
+}
+.sidebar-wrapper--collapsed { width: 0; }
+.sidebar-wrapper--collapsed .sidebar { opacity: 0; pointer-events: none; overflow: hidden; }
 .sidebar::after {
   content: '';
   position: absolute; top: 0; right: 0;
@@ -169,6 +176,17 @@ code, kbd, pre { font-family: inherit; }
 }
 .sidebar::-webkit-scrollbar { display: none; }
 .sidebar--empty { justify-content: flex-end; }
+.sidebar-toggle {
+  position: absolute; top: 50%; right: -18px; z-index: 10;
+  transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--sb-bg); border: 1.5px solid var(--sb-border);
+  color: rgba(255,255,255,.5); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+.sidebar-toggle:hover { color: #fff; background: var(--orange); border-color: var(--orange); }
 
 /* Logo (legacy — conservé pour compatibilité) */
 .sidebar-logo {
