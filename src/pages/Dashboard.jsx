@@ -5,6 +5,8 @@ import StatusBadge from '../components/StatusBadge';
 import KpiCard from '../components/KpiCard';
 import { marches, SECTEURS, STATUT_CONFIG, formatDate } from '../data/mockData';
 import { useMarcheMeta } from '../context/MarcheMetaContext';
+import { useNewMarches } from '../context/NewMarchesContext';
+import AddMarcheModal from '../components/AddMarcheModal';
 
 /* ── KPI Icons ──────────────────────────────────────────────── */
 const IconFolder = () => (
@@ -41,8 +43,10 @@ export default function Dashboard() {
   const [filtre, setFiltre] = useState('tous');
   const [search, setSearch] = useState('');
   const [filtreSecteur, setFiltreSecteur] = useState('tous');
+  const [showAdd, setShowAdd] = useState(false);
   const navigate = useNavigate();
   const { getMeta } = useMarcheMeta();
+  const { newMarches } = useNewMarches();
 
   function mergeMarche(m) {
     const meta = getMeta(m.id);
@@ -54,7 +58,7 @@ export default function Dashboard() {
     };
   }
 
-  const marchesMerged = marches.map(mergeMarche);
+  const marchesMerged = [...marches, ...newMarches].map(mergeMarche);
   const total       = marchesMerged.length;
   const actifs      = marchesMerged.filter(m => m.statut !== 'cloture').length;
   const offres      = marchesMerged.reduce((s, m) => s + (Number(m.nbOffresRecues) || 0), 0);
@@ -201,7 +205,16 @@ export default function Dashboard() {
         <span className="section-heading-count">
           {marchesFiltres.length} résultat{marchesFiltres.length > 1 ? 's' : ''}
         </span>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => setShowAdd(true)}
+          style={{ marginLeft: 12 }}
+        >
+          + Ajouter un marché
+        </button>
       </div>
+
+      {showAdd && <AddMarcheModal onClose={() => setShowAdd(false)} />}
 
       {/* ── Cards ────────────────────────────────────────────── */}
       {marchesFiltres.length === 0 ? (
