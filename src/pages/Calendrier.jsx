@@ -358,20 +358,6 @@ export default function Calendrier() {
                         {ev.tag}
                       </span>
 
-                      {/* Urgent badge */}
-                      {urgent && (
-                        <span className="tag" style={{
-                          background: '#FEF2F2',
-                          color: '#EF4444',
-                          border: '1px solid #EF4444',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          whiteSpace: 'nowrap',
-                        }}>
-                          Urgent
-                        </span>
-                      )}
-
                       {/* Arrow */}
                       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--text-3, #94A3B8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                         <polyline points="7,4 13,10 7,16" />
