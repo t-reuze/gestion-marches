@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-
-/* ── Logo ───────────────────────────────────────────────────── */
+import NotificationsBell from '../NotificationsBell';
 
 const TABS = [
   {
@@ -22,6 +21,16 @@ const TABS = [
     label: 'Contacts',
     href: '/contacts',
     match: (p) => p.startsWith('/contacts'),
+  },
+  {
+    label: 'Calendrier',
+    href: '/calendrier',
+    match: (p) => p === '/calendrier',
+  },
+  {
+    label: 'Fournisseurs',
+    href: '/fournisseurs',
+    match: (p) => p === '/fournisseurs',
   },
 ];
 
@@ -48,6 +57,7 @@ export default function Navbar() {
       </div>
 
       <div className="navbar-right">
+        <NotificationsBell />
         <span className="navbar-version">v2026</span>
       </div>
     </nav>
