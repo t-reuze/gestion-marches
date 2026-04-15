@@ -173,7 +173,7 @@ export default function Calendrier() {
             </span>
             <span className="hero-stat">
               <span className="hero-stat-dot" style={{ background: '#EF4444' }} />
-              {events.filter(e => monthsUntil(e.date) >= 0 && monthsUntil(e.date) < 3).length} urgentes (&lt;3 mois)
+              {events.filter(e => monthsUntil(e.date) >= 0 && monthsUntil(e.date) < 3).length} urgentes
             </span>
           </div>
         </div>
