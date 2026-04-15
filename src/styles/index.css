@@ -294,10 +294,11 @@ code, kbd, pre { font-family: inherit; }
    NAVBAR — barre horizontale 4 sections
 ================================================================ */
 .navbar {
-  height: 64px; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFB 100%);
-  border-bottom: 2px solid #2D5F8A;
+  height: 64px; background: #FFFFFF;
+  border-bottom: 1px solid rgba(15,23,42,.08);
   display: flex; align-items: center; padding: 0 20px 0 0;
   flex-shrink: 0; z-index: var(--z-sticky); position: relative;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
 }
 .navbar-logo {
   display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 100%;
