@@ -33,7 +33,10 @@ function renderPieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent, n
 
 export default function ReportingCharts({ rows }) {
   const byFournisseur = useMemo(() => aggregateBy(rows, 'fournisseur', { topN: 10, caseInsensitive: true }), [rows]);
-  const byAnnee = useMemo(() => aggregateBy(rows, 'annee', { sortDir: 'asc' }), [rows]);
+  const byAnnee = useMemo(() => {
+    const agg = aggregateBy(rows, 'annee', { sortDir: 'asc' });
+    return [...agg].sort((a, b) => Number(a.name) - Number(b.name));
+  }, [rows]);
   const byMarche = useMemo(() => aggregateBy(rows, 'marcheGroupe', { topN: 12 }), [rows]);
 
   const refFournisseur = useRef(null);

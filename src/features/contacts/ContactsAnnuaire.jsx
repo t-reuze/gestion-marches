@@ -398,12 +398,13 @@ export default function ContactsAnnuaire() {
                   {editingContact === ct.id && (
                     <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-subtle)' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Nom" value={editForm.nom} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} />
-                        <select className="info-field-input" style={{ height: 32, fontSize: 12 }} value={editForm.fonction} onChange={e => setEditForm(f => ({ ...f, fonction: e.target.value }))}>
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Nom" value={editForm.nom || ''} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} />
+                        <select className="info-field-input" style={{ height: 32, fontSize: 12 }} value={editForm.fonction || ''} onChange={e => setEditForm(f => ({ ...f, fonction: e.target.value }))}>
                           {FONCTIONS_IMPORT.map(fn => <option key={fn} value={fn}>{fn}</option>)}
                         </select>
-                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
-                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Téléphone" value={editForm.telephone} onChange={e => setEditForm(f => ({ ...f, telephone: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Email" value={editForm.email || ''} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Téléphone" value={editForm.telephone || ''} onChange={e => setEditForm(f => ({ ...f, telephone: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12, gridColumn: '1 / -1' }} placeholder="Service" value={editForm.service || ''} onChange={e => setEditForm(f => ({ ...f, service: e.target.value }))} />
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => { saveEdit(clcc.id, ct); setEditingContact(null); }}>Sauvegarder</button>
@@ -424,6 +425,42 @@ export default function ContactsAnnuaire() {
   if (selectedFournisseur) {
     const f = fournisseursAgg.find(x => x.nom === selectedFournisseur);
     if (!f) { setSelectedFournisseur(null); return null; }
+
+    function saveFournisseurContact(ct, patch) {
+      const meta = getMeta(ct.marcheId);
+      const fournisseurs = (meta.fournisseurs || []).map(fr => {
+        if (fr.nom !== f.nom) return fr;
+        return {
+          ...fr,
+          contacts: (fr.contacts || []).map(c => {
+            const match =
+              (c.mail || '') === (ct.mail || '') &&
+              (c.nom || '').toLowerCase() === (ct.nom || '').toLowerCase() &&
+              (c.prenom || '').toLowerCase() === (ct.prenom || '').toLowerCase();
+            return match ? { ...c, ...patch } : c;
+          }),
+        };
+      });
+      setMeta(ct.marcheId, { fournisseurs });
+    }
+
+    function deleteFournisseurContact(ct) {
+      if (!window.confirm('Supprimer ce contact ?')) return;
+      const meta = getMeta(ct.marcheId);
+      const fournisseurs = (meta.fournisseurs || []).map(fr => {
+        if (fr.nom !== f.nom) return fr;
+        return {
+          ...fr,
+          contacts: (fr.contacts || []).filter(c => !(
+            (c.mail || '') === (ct.mail || '') &&
+            (c.nom || '').toLowerCase() === (ct.nom || '').toLowerCase() &&
+            (c.prenom || '').toLowerCase() === (ct.prenom || '').toLowerCase()
+          )),
+        };
+      });
+      setMeta(ct.marcheId, { fournisseurs });
+    }
+
     return (
       <Layout title={f.nom} sub={`— ${f.contacts.length} contact${f.contacts.length > 1 ? 's' : ''}`}>
         <button className="btn btn-outline btn-sm" style={{ marginBottom: 16 }}
@@ -443,22 +480,60 @@ export default function ContactsAnnuaire() {
           <div className="empty-state"><div className="empty-title">Aucun contact</div></div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-            {f.contacts.map((ct, i) => (
-              <div key={i} className="card" style={{ borderTop: '3px solid #8B5CF6' }}>
-                <div className="card-body">
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>
-                    {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '—'}
+            {f.contacts.map((ct, i) => {
+              const ctKey = 'f-' + i + '-' + (ct.mail || ct.nom || '');
+              const isEditing = editingContact === ctKey;
+              return (
+                <div key={ctKey} className="card" style={{ borderTop: '3px solid #8B5CF6' }}>
+                  <div className="card-body" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>
+                        {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '—'}
+                      </div>
+                      {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#8B5CF6', marginTop: 2 }}>{ct.fonction}</div>}
+                      {ct.mail && <div style={{ fontSize: 11, marginTop: 4 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.mail} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.mail}</a></div>}
+                      {ct.tel && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.tel}</div>}
+                      <div style={{ fontSize: 10, color: 'var(--blue)', marginTop: 6, cursor: 'pointer' }}
+                        onClick={() => navigate('/marche/' + ct.marcheId)}>
+                        &#x1F4C2; {ct.marcheNom}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 10, padding: '2px 6px', height: 22 }}
+                        title="Modifier"
+                        onClick={() => {
+                          setEditingContact(ctKey);
+                          setEditForm({ prenom: ct.prenom || '', nom: ct.nom || '', fonction: ct.fonction || '', mail: ct.mail || '', tel: ct.tel || '' });
+                        }}
+                      >&#x270F;&#xFE0F;</button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 10, padding: '2px 6px', height: 22, color: '#EF4444' }}
+                        title="Supprimer"
+                        onClick={() => deleteFournisseurContact(ct)}
+                      >&#x2715;</button>
+                    </div>
                   </div>
-                  {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#8B5CF6', marginTop: 2 }}>{ct.fonction}</div>}
-                  {ct.mail && <div style={{ fontSize: 11, marginTop: 4 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.mail} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.mail}</a></div>}
-                  {ct.tel && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.tel}</div>}
-                  <div style={{ fontSize: 10, color: 'var(--blue)', marginTop: 6, cursor: 'pointer' }}
-                    onClick={() => navigate('/marche/' + ct.marcheId)}>
-                    &#x1F4C2; {ct.marcheNom}
-                  </div>
+                  {isEditing && (
+                    <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-subtle)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Prénom" value={editForm.prenom || ''} onChange={e => setEditForm(fm => ({ ...fm, prenom: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Nom" value={editForm.nom || ''} onChange={e => setEditForm(fm => ({ ...fm, nom: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12, gridColumn: '1 / -1' }} placeholder="Fonction" value={editForm.fonction || ''} onChange={e => setEditForm(fm => ({ ...fm, fonction: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Email" value={editForm.mail || ''} onChange={e => setEditForm(fm => ({ ...fm, mail: e.target.value }))} />
+                        <input className="info-field-input" style={{ height: 32, fontSize: 12 }} placeholder="Téléphone" value={editForm.tel || ''} onChange={e => setEditForm(fm => ({ ...fm, tel: e.target.value }))} />
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-primary btn-sm" style={{ fontSize: 11 }} onClick={() => { saveFournisseurContact(ct, editForm); setEditingContact(null); }}>Sauvegarder</button>
+                        <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }} onClick={() => setEditingContact(null)}>Annuler</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Layout>
