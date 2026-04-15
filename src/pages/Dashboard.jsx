@@ -93,6 +93,31 @@ export default function Dashboard() {
   return (
     <Layout title="Marchés">
 
+      {/* ── Hero Banner ──────────────────────────────────────── */}
+      <div className="hero-banner">
+        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div className="hero-eyebrow">{'Unicancer \u00b7 Achats'}</div>
+          <div className="hero-title">{'March\u00e9s publics'}</div>
+          <div className="hero-subtitle">
+            {'Suivez, analysez et pilotez l\u2019ensemble de vos appels d\u2019offres en temps r\u00e9el.'}
+          </div>
+          <div className="hero-stats">
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#16A34A' }} />
+              {actifs + ' march\u00e9' + (actifs > 1 ? 's' : '') + ' actif' + (actifs > 1 ? 's' : '')}
+            </span>
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#D97706' }} />
+              {enAnalyse + ' en analyse'}
+            </span>
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#3B82F6' }} />
+              {offres + ' offre' + (offres > 1 ? 's' : '') + ' re\u00e7ue' + (offres > 1 ? 's' : '')}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* ── Secteur Pills ────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         <button
