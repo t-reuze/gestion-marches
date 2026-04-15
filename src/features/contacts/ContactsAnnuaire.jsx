@@ -381,7 +381,7 @@ export default function ContactsAnnuaire() {
         {/* CLCC header card */}
         <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid var(--blue)' }}>
           <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <ClccLogo clccId={clcc.id} nom={clcc.nom} size={56} />
+            <ClccLogo clccId={clcc.id} nom={clcc.nom} size={68} />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>{clcc.nom}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -869,7 +869,7 @@ export default function ContactsAnnuaire() {
                 onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
               >
                 <div className="card-body" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <ClccLogo clccId={c.id} nom={c.nom} size={48} />
+                  <ClccLogo clccId={c.id} nom={c.nom} size={60} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{c.nom}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
