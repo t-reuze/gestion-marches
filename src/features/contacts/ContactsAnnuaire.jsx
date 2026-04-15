@@ -592,7 +592,7 @@ export default function ContactsAnnuaire() {
         <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
           <input
             type="text" className="filter-input"
-            placeholder="Rechercher un \u00e9tablissement..."
+            placeholder="Rechercher un établissement..."
             value={search} onChange={e => setSearch(e.target.value)}
             style={{ flex: 1, maxWidth: 360 }}
           />

@@ -1,13 +1,8 @@
-// ══════════════════════════════════════════════════════════════
-// Contacts CLCC — Généré automatiquement depuis :
-// 00-Listing_Diffusion_CLCC_MAJ_31MAR2026.xlsx
+// Contacts CLCC — Généré automatiquement
+// Sources : Listing_Diffusion_CLCC + Cadres Supérieurs + Radiothérapeutes/Physiciens
 // Dernière import : 2026-04-15
-// NE PAS ÉDITER MANUELLEMENT — relancer scripts/import-clcc-contacts.mjs
-// ══════════════════════════════════════════════════════════════
+// NE PAS ÉDITER MANUELLEMENT
 
-/**
- * Structure : { [clccId]: { [fonction]: [{ nom, prenom, email, telephone }] } }
- */
 export const clccContacts = {
   "sainte-catherine": {
     "Acheteur": [
@@ -389,6 +384,129 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Coordinatrice Pôle Promotion - Unité de gestion de la RC - DRCI"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "GUERNI",
+        "prenom": "Marie",
+        "email": "m.guerni@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HUCK",
+        "prenom": "Constance",
+        "email": "c.huck@bordeaux.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "ARGAUD",
+        "prenom": "PATRICK",
+        "email": "p.argaud@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRAHMI",
+        "prenom": "Sihame",
+        "email": "s.brahmi@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUYARD",
+        "prenom": "Estelle",
+        "email": "e.guyard@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ERRABII",
+        "prenom": "Anass",
+        "email": "a.errabii@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RICH",
+        "prenom": "EMILIE",
+        "email": "e.rich@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CARON",
+        "prenom": "JEROME",
+        "email": "j.caron@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PAGE",
+        "prenom": "Jonathan",
+        "email": "j.page2@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ANIZAN",
+        "prenom": "Nadege",
+        "email": "n.anizan@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TAUPIAC",
+        "prenom": "Jean-Pierre",
+        "email": "j.taupiac@bordeaux.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "DUGUEY CACHET",
+        "prenom": "ODILE",
+        "email": "o.duguey-cachet@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PETIT",
+        "prenom": "ADELINE",
+        "email": "a.petit@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SARGOS",
+        "prenom": "PAUL",
+        "email": "p.sargos@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GILLON",
+        "prenom": "PAULINE",
+        "email": "p.gillon@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BATARD",
+        "prenom": "Stéphanie",
+        "email": "s.batard@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DE LA ROCHEFORDIERE",
+        "prenom": "Anne",
+        "email": "a.delarochefordiere@bordeaux.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ACHARD",
+        "prenom": "Vérane",
+        "email": "v.achard@bordeaux.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "BIAU",
+        "prenom": "ISABELLE",
+        "email": "i.biau@bordeaux.unicancer.fr",
+        "telephone": "",
+        "commentaire": "Directeur des soins et de l'organisation"
+      }
     ]
   },
   "baclesse": {
@@ -593,6 +711,251 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Directrice scientifique"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "GUIGO",
+        "prenom": "MARIN",
+        "email": "m.guigo@baclesse.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "ANDRES",
+        "prenom": "Romain",
+        "email": "r.andres@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DE SAINT VAAST",
+        "prenom": "Sophie",
+        "email": "s.de-saint-vaast@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RAYER",
+        "prenom": "MAXENCE",
+        "email": "m.rayer@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DELATTRE",
+        "prenom": "Gary",
+        "email": "g.delattre@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BEREJNY",
+        "prenom": "PHILIPPE",
+        "email": "p.berejny@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "JAUDET",
+        "prenom": "CYRIL",
+        "email": "c.jaudet@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LECHIPPEY",
+        "prenom": "LAETITIA",
+        "email": "l.lechippey@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BONNOR",
+        "prenom": "LAURINE",
+        "email": "l.bonnor@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MOIGNIER",
+        "prenom": "CYRIL",
+        "email": "c.moignier@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEBHERTZ",
+        "prenom": "DOROTHEE",
+        "email": "d.lebhertz@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BATALLA",
+        "prenom": "ALAIN",
+        "email": "a.batalla@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MERCIER SEBE",
+        "prenom": "KARINE",
+        "email": "k.mercier@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VELA",
+        "prenom": "ANTHONY",
+        "email": "a.vela@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LOISEAU",
+        "prenom": "CEDRIC",
+        "email": "c.loiseau@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BARRAUX",
+        "prenom": "VICTOR",
+        "email": "v.barraux@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUERIN",
+        "prenom": "LUCIE",
+        "email": "l.guerin@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CORROYER-DULMONT",
+        "prenom": "AURELIEN",
+        "email": "a.corroyer-dulmont@baclesse.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "GERY",
+        "prenom": "BERNARD",
+        "email": "b.gery@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "M VONDO",
+        "prenom": "CHE MABUBU",
+        "email": "cm.mvondo@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ALLOUACHE",
+        "prenom": "NEDJLA",
+        "email": "n.allouache@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SILVA",
+        "prenom": "MARLON",
+        "email": "m.silva@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEROUGE",
+        "prenom": "DELPHINE",
+        "email": "d.lerouge@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GOKARN",
+        "prenom": "NAREN",
+        "email": "n.gokarn@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "STEFAN",
+        "prenom": "DINU",
+        "email": "d.stefan@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HABRAND",
+        "prenom": "JEAN LOUIS",
+        "email": "jl.habrand@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GEFFRELOT",
+        "prenom": "JULIEN",
+        "email": "j.geffrelot@baclesse.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARSIGLIA",
+        "prenom": "HUGO",
+        "email": "h.marsiglia@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CESAIRE",
+        "prenom": "MATHIEU",
+        "email": "m.cesaire@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LECORNU",
+        "prenom": "MARIE",
+        "email": "m.lecornu@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LELEU",
+        "prenom": "THOMAS",
+        "email": "t.leleu@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MISSOHOU",
+        "prenom": "FERNAND",
+        "email": "f.missohou@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DAMILLEVILLE MARTIN",
+        "prenom": "MATHILDE",
+        "email": "m.damilleville@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RIVERAIN",
+        "prenom": "JEANNE",
+        "email": "j.riverain@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KHALLADI",
+        "prenom": "NAZIM",
+        "email": "n.khalladi@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOUTER",
+        "prenom": "JORDAN",
+        "email": "j.bouter@baclesse.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LARNAUDIE",
+        "prenom": "AUDREY",
+        "email": "a.larnaudie@baclesse.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "THARIAT",
+        "prenom": "JULIETTE",
+        "email": "j.thariat@baclesse.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "MATTA",
+        "prenom": "Carla",
+        "email": "c.matta@baclesse.unicancer.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR DES SOINS ET MEDICOTECHNIQUES"
+      }
     ]
   },
   "jean-perrin": {
@@ -794,6 +1157,191 @@ export const clccContacts = {
         "email": "emilie.villeneuve@clermont.unicancer.fr",
         "telephone": "",
         "commentaire": "Chef de projets INVESTIGATION"
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "GAY",
+        "prenom": "RAPHAEL",
+        "email": "raphael.gay@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GABILLARD",
+        "prenom": "Lou-Elise",
+        "email": "lou-elise.gabillard@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MILLARDET MARTIN",
+        "prenom": "CORINNE",
+        "email": "corinne.millardet-martin@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MOREIRA",
+        "prenom": "JEAN FRANCOIS",
+        "email": "jean-francois.moreira@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BERGER",
+        "prenom": "LUCIE",
+        "email": "lucie.berger@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHASSIN",
+        "prenom": "VINCENT",
+        "email": "vincent.chassin@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BILLOUX",
+        "prenom": "TOMMY",
+        "email": "tommy.billoux@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SAS",
+        "prenom": "NICOLAS",
+        "email": "nicolas.sas@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "POUGET",
+        "prenom": "ELEONORE",
+        "email": "eleonore.pouget@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LANARET",
+        "prenom": "MATHIEU",
+        "email": "mathieu.lanaret@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LACROIX",
+        "prenom": "JEAN-BAPTISTE",
+        "email": "jean-baptiste.lacroix@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHAFA",
+        "prenom": "SAMY",
+        "email": "samy.chafa@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GATEAU",
+        "prenom": "THEO",
+        "email": "theo.gateau@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PIERRAT",
+        "prenom": "NOELLE",
+        "email": "noelle.pierrat@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DEDIEU",
+        "prenom": "VERONIQUE",
+        "email": "veronique.dedieu@clermont.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "BENOIT",
+        "prenom": "CELINE",
+        "email": "celine.benoit@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAPEYRE",
+        "prenom": "MICHEL",
+        "email": "michel.lapeyre@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BELLIERE CALANDRY",
+        "prenom": "AURELIE",
+        "email": "aurelie.belliere-calandry@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LOOS",
+        "prenom": "GENEVIEVE",
+        "email": "genevieve.loos@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MIROIR",
+        "prenom": "JESSICA",
+        "email": "jessica.miroir@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MOREAU KERVAREC",
+        "prenom": "JULIETTE",
+        "email": "juliette.moreau@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GLEYZOLLE",
+        "prenom": "BAPTISTE",
+        "email": "baptiste.gleyzolle@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUILLEMIN",
+        "prenom": "FLORENT",
+        "email": "florent.guillemin@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "OTMAN",
+        "prenom": "HOSAMELDIN",
+        "email": "hosameldin.otman@clermont.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEYRAT",
+        "prenom": "BRICE",
+        "email": "brice.leyrat@clermont.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "BIAU",
+        "prenom": "JULIAN",
+        "email": "julian.biau@clermont.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "MAUBERT",
+        "prenom": "ALAIN",
+        "email": "alain.maubert@clermont.unicancer.fr",
+        "telephone": "",
+        "commentaire": "CADRE SUPERIEUR DE SANTE"
+      },
+      {
+        "nom": "VIDAL",
+        "prenom": "ROBIN",
+        "email": "robin.vidal@clermont.unicancer.fr",
+        "telephone": "",
+        "commentaire": "CADRE SUPERIEUR DE SANTE"
+      },
+      {
+        "nom": "REDON",
+        "prenom": "Guilaine",
+        "email": "guilaine.redon@clermont.unicancer.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR(RICE) DES SOINS"
       }
     ]
   },
@@ -1052,6 +1600,427 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Coordinatrice des moniteurs de Recherche Clinique - Section Promotion"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "AZRIA",
+        "prenom": "Joseph",
+        "email": "joseph.azria@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRASSART",
+        "prenom": "Carolinne",
+        "email": "carolinne.brassart@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KALLEL",
+        "prenom": "MOUNA",
+        "email": "mouna.kallel@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GOUNANE",
+        "prenom": "Yacine",
+        "email": "yacine.gounane@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KOBEISSI",
+        "prenom": "Gabriel",
+        "email": "gabriel.kobeissi@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LOPEZ",
+        "prenom": "HUGO",
+        "email": "hugo.lopez@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BENDAVID",
+        "prenom": "JEROME",
+        "email": "jerome.bendavid@curie.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "ASSULI",
+        "prenom": "JONAS",
+        "email": "jonas.assuli@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ECHAIB",
+        "prenom": "MARYAM",
+        "email": "maryam.echaib@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MONTEIL",
+        "prenom": "REMI",
+        "email": "remi.monteil@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHOKRI",
+        "prenom": "MAHA",
+        "email": "maha.chokri@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BENDAOUDI",
+        "prenom": "NORA",
+        "email": "nora.bendaoudi@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "FAYE",
+        "prenom": "Maxime",
+        "email": "maxime.faye@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BAUER",
+        "prenom": "Emilien",
+        "email": "emilien.bauer@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "POCHOT",
+        "prenom": "AMANDINE",
+        "email": "amandine.poncet@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VERDONCK",
+        "prenom": "JEROME",
+        "email": "jerome.verdonck@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RABOANARIJAONA",
+        "prenom": "ANDRIANIRINA",
+        "email": "andrianirina.raboanarijaona@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MAOUCHE",
+        "prenom": "Mohamed",
+        "email": "mohamed.maouche@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GHAFOORYAN SANGCHOOLI",
+        "prenom": "Mostafa",
+        "email": "mostafa.ghafooryansangchooli@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "AIT ITTO",
+        "prenom": "Hamza",
+        "email": "hamza.aititto@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LONKUTA",
+        "prenom": "Benedicte",
+        "email": "benedicte.lonkuta@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BIRBA-IARKANI",
+        "prenom": "IMENE",
+        "email": "imene.birba-iarkani@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BARON",
+        "prenom": "BRIAN",
+        "email": "brian.baron@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DAL",
+        "prenom": "ROMARIC",
+        "email": "romaric.dal@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HARRANG RIBEIRO",
+        "prenom": "MADISON",
+        "email": "madison.ribeiro@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BLANCHET",
+        "prenom": "MARIE",
+        "email": "marie.blanchet@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAHADY",
+        "prenom": "ROXANE",
+        "email": "roxane.lahady@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DIRAND",
+        "prenom": "ANNE-SOPHIE",
+        "email": "anne-sophie.dirand@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHEVILLARD",
+        "prenom": "CLEMENT",
+        "email": "clement.chevillard@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HEBRE",
+        "prenom": "ALEXANDRE",
+        "email": "alexandre.hebre@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "JURCZAK",
+        "prenom": "JULIEN",
+        "email": "julien.jurczak@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "JACQUEMIN",
+        "prenom": "Manon",
+        "email": "manon.jacquemin@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "YEBGA HOT",
+        "prenom": "Raïssa",
+        "email": "raissa.yebgahot@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "NAURAYE",
+        "prenom": "CATHERINE",
+        "email": "catherine.nauraye@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DE MARZI",
+        "prenom": "LUDOVIC",
+        "email": "ludovic.demarzi@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GOUDJIL",
+        "prenom": "FARID",
+        "email": "farid.goudjil@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PASQUIE",
+        "prenom": "ISABELLE",
+        "email": "isabelle.pasquie@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "COSTA",
+        "prenom": "EMILIE",
+        "email": "emilie.costa@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DUMAS",
+        "prenom": "JEAN-LUC",
+        "email": "jean-luc.dumas@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ZEFKILI",
+        "prenom": "SOFIA",
+        "email": "sofia.zefkili@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BELSHI",
+        "prenom": "REZART",
+        "email": "rezart.belshi@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LOSA",
+        "prenom": "SANDRA",
+        "email": "sandra.losa@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MELLA-TOUPIKOV",
+        "prenom": "CYRIELLE",
+        "email": "cyrielle.mella@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MASSET",
+        "prenom": "HELENE",
+        "email": "helene.masset@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VU-BEZIN",
+        "prenom": "JEREMI",
+        "email": "jeremi.vu-bezin@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRENOT",
+        "prenom": "JULIE",
+        "email": "julie.brenot@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "YOUNES",
+        "prenom": "TONY",
+        "email": "tony.younes@curie.fr",
+        "telephone": ""
+      }
+    ],
+    "Consultant Radiothérapie": [
+      {
+        "nom": "BLASZKA-JAULERRY",
+        "prenom": "BRIGITTE",
+        "email": "brigitte.blaszkajaulerry@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "AZZOUZI",
+        "prenom": "Niama",
+        "email": "niama.azzouzi@curie.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "FOURQUET",
+        "prenom": "ALAIN",
+        "email": "alain.fourquet@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KISSEL",
+        "prenom": "MANON",
+        "email": "manon.kissel@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOUAITA",
+        "prenom": "Ryan",
+        "email": "ryan.bouaita@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HELFRE",
+        "prenom": "SYLVIE",
+        "email": "sylvie.helfre@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MAMMAR",
+        "prenom": "HAMID",
+        "email": "hamid.mammar@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KIROVA",
+        "prenom": "YOULIA",
+        "email": "youlia.kirova@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CALUGARU",
+        "prenom": "VALENTIN",
+        "email": "valentin.calugaru@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHILLES WANG",
+        "prenom": "ANNE",
+        "email": "anne.chilles@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ALAPETITE",
+        "prenom": "CLAIRE",
+        "email": "claire.alapetite@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DENDALE",
+        "prenom": "REMI",
+        "email": "remi.dendale@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MUSAT",
+        "prenom": "ELENA",
+        "email": "elena.musat@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CAO",
+        "prenom": "KIM",
+        "email": "kim.cao@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "JOUGLAR",
+        "prenom": "EMMANUEL",
+        "email": "emmanuel.jouglar@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MINSAT",
+        "prenom": "MATHIEU",
+        "email": "mathieu.minsat@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GRAFF CAILLEAUD",
+        "prenom": "PIERRE",
+        "email": "pierre.graff@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LOO",
+        "prenom": "MAXIME",
+        "email": "maxime.loo@curie.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MAARADJI",
+        "prenom": "Safia",
+        "email": "safia.maaradji@curie.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "CREHANGE",
+        "prenom": "GILLES",
+        "email": "gilles.crehange@curie.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "BELORGEY",
+        "prenom": "Sabine",
+        "email": "sabine.belorgey@curie.fr",
+        "telephone": "",
+        "commentaire": "Directeur(trice) des soins"
+      }
     ]
   },
   "cgfl": {
@@ -1254,6 +2223,191 @@ export const clccContacts = {
         "email": "stiago@cgfl.fr",
         "telephone": "",
         "commentaire": "CRC - Responsable Administrative"
+      }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "RAKOTOSAMIMANANA",
+        "prenom": "Manou",
+        "email": "mrakoto@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SORDET",
+        "prenom": "Elodie",
+        "email": "esordet@cgfl.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "PHAM",
+        "prenom": "Tien Phong",
+        "email": "tpham@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "REINOSO REVELO",
+        "prenom": "Rebeca",
+        "email": "rreinoso@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOUKHAJOU",
+        "prenom": "Yahya",
+        "email": "yboukhajou@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PASTOR",
+        "prenom": "Théo",
+        "email": "tpastor@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GIAMPICCOLO",
+        "prenom": "François",
+        "email": "fgiampicco@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GILLET",
+        "prenom": "Paul",
+        "email": "pgillet@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ACHAG",
+        "prenom": "Ilyas",
+        "email": "iachag@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOUDET",
+        "prenom": "JULIEN",
+        "email": "jboudet@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DELCOUDERT",
+        "prenom": "LAURENT",
+        "email": "ldelcoudert@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARTIN",
+        "prenom": "Axel",
+        "email": "axmartin@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GONOD",
+        "prenom": "MATHIEU",
+        "email": "mgonod@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MERCIER",
+        "prenom": "MARIE HELENE",
+        "email": "mmercier@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BESSIERES",
+        "prenom": "IGOR",
+        "email": "ibessieres@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PETITFILS",
+        "prenom": "AURELIE",
+        "email": "apetitfils@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VRIGNEAUD",
+        "prenom": "JEAN MARC",
+        "email": "jmvrigneaud@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "AUBIGNAC",
+        "prenom": "LEONE",
+        "email": "laubignac@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "POPOFF",
+        "prenom": "ROMAIN",
+        "email": "rpopoff@cgfl.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "VULQUIN",
+        "prenom": "NOEMIE",
+        "email": "nvulquin@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHEVALIER",
+        "prenom": "CEDRIC",
+        "email": "cchevalier@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "QUIVRIN",
+        "prenom": "MAGALI",
+        "email": "mquivrin@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "THIBOUW",
+        "prenom": "DAVID",
+        "email": "dthibouw@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARTIN",
+        "prenom": "ETIENNE",
+        "email": "emartin@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROUFFIAC",
+        "prenom": "MAGALI",
+        "email": "mrouffiac@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GHIRARDI",
+        "prenom": "SARAH",
+        "email": "sghirardi@cgfl.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BONNET",
+        "prenom": "FLORE",
+        "email": "fbonnet@cgfl.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "TRUC",
+        "prenom": "GILLES",
+        "email": "gtruc@cgfl.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "HENON HILAIRE",
+        "prenom": "SOPHIE",
+        "email": "shenon@cgfl.fr",
+        "telephone": "",
+        "commentaire": "Directrice des Soins"
       }
     ]
   },
@@ -1524,6 +2678,295 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Responsable Cellule de Promotion de la Recherche Clinique"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "WAGNEUR",
+        "prenom": "Nicolas",
+        "email": "nicolas.wagneur@ico.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "CAEN",
+        "prenom": "Romain",
+        "email": "romain.caen@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BATISTA CAMEJO",
+        "prenom": "ARIANNA",
+        "email": "arianna.batista-camejo@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARSAC",
+        "prenom": "THOMAS",
+        "email": "thomas.marsac@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ALEXIS",
+        "prenom": "ANTHONY",
+        "email": "anthony.alexis@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROUSSEAU",
+        "prenom": "Alice",
+        "email": "alice.rousseau@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GAUTIER",
+        "prenom": "MATHILDE",
+        "email": "mathilde.gautier@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHIAVASSA",
+        "prenom": "SOPHIE",
+        "email": "sophie.chiavassa@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BREMAUD",
+        "prenom": "MAXIME",
+        "email": "maxime.bremaud@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DUFRENEIX",
+        "prenom": "STEPHANE",
+        "email": "stephane.dufreneix@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUILLERMINET",
+        "prenom": "CAMILLE",
+        "email": "camille.guillerminet@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MOIGNIER",
+        "prenom": "ALEXANDRA",
+        "email": "alexandra.moignier@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MESGOUEZ",
+        "prenom": "JEROME",
+        "email": "jerome.mesgouez@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "AUTRET",
+        "prenom": "DAMIEN",
+        "email": "damien.autret@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "THEOTIME",
+        "prenom": "CHRISTELLE",
+        "email": "christelle.theotime@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEGRAND",
+        "prenom": "CHRISTOPHE",
+        "email": "christophe.legrand@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "FERRER",
+        "prenom": "LUDOVIC",
+        "email": "ludovic.ferrer@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "JOSSET",
+        "prenom": "STEPHANIE",
+        "email": "stephanie.josset@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DELPON",
+        "prenom": "GREGORY",
+        "email": "gregory.delpon@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LLAGOSTERA",
+        "prenom": "CAMILLE",
+        "email": "camille.llagostera@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VARMENOT",
+        "prenom": "NICOLAS",
+        "email": "nicolas.varmenot@ico.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Consultant Radiothérapie": [
+      {
+        "nom": "VAUGIER",
+        "prenom": "LOIG",
+        "email": "loig.vaugier@ico.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "CARON",
+        "prenom": "DELPHINE",
+        "email": "delphine.caron@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TOMASZEWSKI",
+        "prenom": "FLORINE",
+        "email": "florine.tomaszewski@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PERENNEC",
+        "prenom": "TANGUY",
+        "email": "tanguy.perennec@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CAILLETEAU",
+        "prenom": "Axel",
+        "email": "axel.cailleteau@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SAUVAGE",
+        "prenom": "Louis Marie",
+        "email": "louismarie.sauvage@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HOUABES BENCHABANE",
+        "prenom": "Sarah",
+        "email": "sarah.houabes@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CAMPS--MALEA",
+        "prenom": "Alizée",
+        "email": "alizee.camps-malea@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MEGE",
+        "prenom": "MARTINE",
+        "email": "martine.mege@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MESGOUEZ NEBOUT",
+        "prenom": "NATHALIE",
+        "email": "nathalie.mesgouez-nebout@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RIO",
+        "prenom": "EMMANUEL",
+        "email": "emmanuel.rio@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LE BLANC-ONFROY",
+        "prenom": "MAGALI",
+        "email": "magali.le-blanc@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "THILLAYS",
+        "prenom": "FRANCOIS",
+        "email": "francois.thillays@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MERVOYER",
+        "prenom": "AUGUSTIN",
+        "email": "augustin.mervoyer@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PAUMIER",
+        "prenom": "AMAURY",
+        "email": "amaury.paumier@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GOINEAU GUICHON",
+        "prenom": "AURORE",
+        "email": "aurore.goineau@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "COLLIAUX",
+        "prenom": "JEREMY",
+        "email": "jeremy.colliaux@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOUSARSAR CAPELLI",
+        "prenom": "AMAL",
+        "email": "amal.bousarsarcapelli@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "POMMIER",
+        "prenom": "PASCAL",
+        "email": "pascal.pommier@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DORE",
+        "prenom": "MELANIE",
+        "email": "melanie.dore@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUIMAS",
+        "prenom": "VALENTINE",
+        "email": "valentine.guimas@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LANGE",
+        "prenom": "MARTIN",
+        "email": "martin.lange@ico.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROEUN",
+        "prenom": "Sovannarith",
+        "email": "sovannarith.roeun@ico.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "SUPIOT",
+        "prenom": "STEPHANE",
+        "email": "stephane.supiot@ico.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "CHAMBRE CLAVEL",
+        "prenom": "BEATRICE",
+        "email": "beatrice.chambreclavel@ico.unicancer.fr",
+        "telephone": "",
+        "commentaire": "Directrice des soins"
+      }
     ]
   },
   "oscar-lambret": {
@@ -1751,6 +3194,222 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Responsable Gestion de projets / Pharmacovigilance\r\nDirection de la Recherche Clinique et de l'innovation (DRCI)"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "JORAND",
+        "prenom": "AUDREY",
+        "email": "a-jorand@o-lambret.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "BEUCHERIE",
+        "prenom": "Morgane",
+        "email": "m-beucherie@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRIGE",
+        "prenom": "Eva",
+        "email": "e-brige@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "REIBEL",
+        "prenom": "Claire",
+        "email": "c-reibel@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "THOMAS",
+        "prenom": "Leo",
+        "email": "l-thomas@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RAULT",
+        "prenom": "ERWANN",
+        "email": "e-rault@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "COMTE",
+        "prenom": "PAULINE",
+        "email": "p-comte@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAFFARGUETTE",
+        "prenom": "JULIEN",
+        "email": "j-laffarguette@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CAYEZ",
+        "prenom": "ROMAIN",
+        "email": "r-cayez@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VANQUIN",
+        "prenom": "LUDOVIC",
+        "email": "l-vanquin@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DECOENE",
+        "prenom": "CAMILLE",
+        "email": "c-decoene@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LADJIMI",
+        "prenom": "MOHAMED TAHAR",
+        "email": "m-ladjimi@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARTIN",
+        "prenom": "SIMON",
+        "email": "s-martin@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BA",
+        "prenom": "Alexandre",
+        "email": "a-ba@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LACORNERIE",
+        "prenom": "THOMAS",
+        "email": "t-lacornerie@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CROP",
+        "prenom": "FREDERIK",
+        "email": "f-crop@o-lambret.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "ABANCOURT",
+        "prenom": "LUDWIGE",
+        "email": "l-abancourt@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TRENTESAUX-BIGO",
+        "prenom": "VICTORINE",
+        "email": "v-trentesauxbigo@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GOUBAND",
+        "prenom": "Alix",
+        "email": "a-gouband@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MIRABEL",
+        "prenom": "XAVIER",
+        "email": "x-mirabel@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LIEM",
+        "prenom": "XAVIER",
+        "email": "x-liem@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LE TINIER",
+        "prenom": "FLORENCE",
+        "email": "f-letinier@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MOUTTET AUDOUARD",
+        "prenom": "RAPHAELLE",
+        "email": "r-mouttetaudouard@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CORDOBA LARGO",
+        "prenom": "ABEL",
+        "email": "a-cordoba@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEMOINE GOBERT",
+        "prenom": "PAULINE",
+        "email": "p-lemoinegobert@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DWORCZAK",
+        "prenom": "MARIE",
+        "email": "m-dworczak@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LODYGA",
+        "prenom": "KAOUTAR",
+        "email": "k-lodyga@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROQUETTE",
+        "prenom": "ISAURE",
+        "email": "i-roquette@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ABELE",
+        "prenom": "MARIE",
+        "email": "m-abele@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAUDE",
+        "prenom": "Cécile",
+        "email": "c-laude@o-lambret.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "PASQUIER",
+        "prenom": "DAVID",
+        "email": "d-pasquier@o-lambret.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LARTIGAU",
+        "prenom": "ERIC",
+        "email": "e-lartigau@o-lambret.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "GISCARD-NEU",
+        "prenom": "SANDRINE",
+        "email": "s-giscard@o-lambret.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR-TRICE QUALITE & GESTION DES RISQUES COORDONNATEUR-TRICE RISQUES ASSOCIES AUX SOINS"
+      },
+      {
+        "nom": "DUTHEIL",
+        "prenom": "BERTRAND",
+        "email": "b-dutheil@o-lambret.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR-TRICE DES SOINS"
+      }
     ]
   },
   "leon-berard": {
@@ -1977,6 +3636,264 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Directeur de la Recherche Clinique\r\nDirection de la DRCI"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "LE ROY",
+        "prenom": "Thomas",
+        "email": "thomas.leroy@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "COLOMB",
+        "prenom": "ARNAUD",
+        "email": "arnaud.colomb@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "NATIER",
+        "prenom": "EMILIE",
+        "email": "emilie.natier@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HEMAIDIA",
+        "prenom": "Racha-Miloda",
+        "email": "racha.hemaidia@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SAYADI",
+        "prenom": "Diane",
+        "email": "diane.sayadi@lyon.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "DUBS",
+        "prenom": "PEGGY",
+        "email": "peggy.dubs@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BILLAUD",
+        "prenom": "GUILLAUME",
+        "email": "guillaume.billaud@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TOALOMBO MONTERO",
+        "prenom": "Edwin Daniel",
+        "email": "daniel.toalombo-montero@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DEBORNE",
+        "prenom": "Justine",
+        "email": "justine.deborne@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GASSA",
+        "prenom": "FREDERIC",
+        "email": "frederic.gassa@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DUPUIS",
+        "prenom": "PAULINE",
+        "email": "pauline.dupuis@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BELDJOUDI",
+        "prenom": "GUILLAUME",
+        "email": "guillaume.beldjoudi@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SANDT",
+        "prenom": "MAGALI",
+        "email": "magali.sandt@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAFAY",
+        "prenom": "FREDERIC",
+        "email": "frederic.lafay@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOISSARD",
+        "prenom": "PHILIPPE",
+        "email": "philippe.boissard@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOUYER",
+        "prenom": "CHARLENE",
+        "email": "charlene.bouyer@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BADEL",
+        "prenom": "JEAN-NOEL",
+        "email": "jeannoel.badel@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ZAHRA",
+        "prenom": "MYRIAM",
+        "email": "myriam.ayadi@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BISTON",
+        "prenom": "MARIE CLAUDE",
+        "email": "marieclaude.biston@lyon.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Consultant Radiothérapie": [
+      {
+        "nom": "MAMMAR",
+        "prenom": "VINCENT",
+        "email": "vincent.mammar@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CARRIE",
+        "prenom": "CHRISTIAN",
+        "email": "christian.carrie@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "POU",
+        "prenom": "Paul",
+        "email": "paul.pou@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHARRET",
+        "prenom": "Julien",
+        "email": "julien.charret@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DURAND",
+        "prenom": "ANNE",
+        "email": "anne.durand@lyon.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "BAUWENS",
+        "prenom": "Laurence",
+        "email": "laurence.bauwens@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GREGOIRE",
+        "prenom": "Vincent",
+        "email": "vincent.gregoire@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LE ROY",
+        "prenom": "Charlotte",
+        "email": "charlotte.leroy@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MIRAN",
+        "prenom": "Chloé",
+        "email": "chloe.miran@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RACADOT",
+        "prenom": "SEVERINE",
+        "email": "severine.racadot@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAUDE",
+        "prenom": "CECILE",
+        "email": "cecile.laude@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "WAISSI",
+        "prenom": "WAISSE",
+        "email": "waisse.waissi@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARTEL-LAFAY",
+        "prenom": "ISABELLE",
+        "email": "isabelle.martel-lafay@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SUNYACH",
+        "prenom": "Marie-Pierre Pascale",
+        "email": "mariepierre.sunyach@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CLAUDE-DEFEZ",
+        "prenom": "LINE",
+        "email": "line.claude@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TANGUY",
+        "prenom": "RONAN",
+        "email": "ronan.tanguy@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MONCHARMONT",
+        "prenom": "CORALIE",
+        "email": "coralie.moncharmont@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SERRAND",
+        "prenom": "JESSICA",
+        "email": "jessica.serrand@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PETRE",
+        "prenom": "Adeline",
+        "email": "adeline.petre@lyon.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SERRE",
+        "prenom": "Anne-Agathe",
+        "email": "anne-agathe.serre@lyon.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "SIMON",
+        "prenom": "MARTINE",
+        "email": "martine.simon@lyon.unicancer.fr",
+        "telephone": "",
+        "commentaire": "DIRECTION DES SOINS ADJOINTE"
+      },
+      {
+        "nom": "GALVEZ",
+        "prenom": "CHRISTELLE",
+        "email": "christelle.galvez@lyon.unicancer.fr",
+        "telephone": "",
+        "commentaire": "DIRECTRICE DES SOINS ET DES PARCOURS"
+      }
     ]
   },
   "ipc": {
@@ -2158,6 +4075,153 @@ export const clccContacts = {
         "email": "pakradounij@ipc.unicancer.fr",
         "telephone": "",
         "commentaire": "Directrice de la recherche clinique et de l'innovation"
+      }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "LAINE",
+        "prenom": "GABRIELLE",
+        "email": "planesg@ipc.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "ALIZARD",
+        "prenom": "STEPHANIE",
+        "email": "alizards@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PRANGERES",
+        "prenom": "Elise",
+        "email": "prangerese@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BENKEMOUCHE",
+        "prenom": "AHCENE",
+        "email": "benkemouchea@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MERNISSI",
+        "prenom": "ISMAIL",
+        "email": "mernissii@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BUONSIGNORI",
+        "prenom": "PAUL",
+        "email": "buonsignorip@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MAILLEUX",
+        "prenom": "HUGUES",
+        "email": "mailleuxh@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "FAU",
+        "prenom": "PIERRE",
+        "email": "faup@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "FERRE",
+        "prenom": "MARJORIE",
+        "email": "ferrem@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DARREON",
+        "prenom": "JULIEN",
+        "email": "darreonj@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BENKREIRA",
+        "prenom": "MOHAMED",
+        "email": "benkreiram@ipc.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "CASABIANCA",
+        "prenom": "LAURENCE",
+        "email": "gonzaguel@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SALEM",
+        "prenom": "NAJI",
+        "email": "salemn@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TALLET",
+        "prenom": "AGNES",
+        "email": "richarda@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUENOLE",
+        "prenom": "MORGAN",
+        "email": "guenolem@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TYRAN",
+        "prenom": "MARGUERITE",
+        "email": "tyranm@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DINCA",
+        "prenom": "IULIANA",
+        "email": "baltaretui@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VARELA CAGETTI",
+        "prenom": "LEONEL",
+        "email": "varelacagettil@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TCHAKAMIAN",
+        "prenom": "VERONIQUE",
+        "email": "favrelv@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DASSA",
+        "prenom": "MICHAËL",
+        "email": "dassam@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MUGARD",
+        "prenom": "CLAIRE",
+        "email": "petitc2@ipc.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROBIN",
+        "prenom": "SOPHIE",
+        "email": "robins@ipc.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "TONOLI",
+        "prenom": "Anne",
+        "email": "tonolia@ipc.unicancer.fr",
+        "telephone": "",
+        "commentaire": "COORDONNATEUR(TRICE) GENERAL(E) DES SOINS"
       }
     ]
   },
@@ -2347,6 +4411,234 @@ export const clccContacts = {
         "email": "aurore.moussion@icm.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable de l'Unité promotion (DRCI)"
+      }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "MURZI",
+        "prenom": "Amandine",
+        "email": "amandine.murzi@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MIONE",
+        "prenom": "CECILE",
+        "email": "cecile.mione@icm.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "MACKOWIAK",
+        "prenom": "JULIEN",
+        "email": "julien.mackowiak@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "WACHARINE",
+        "prenom": "MAHA",
+        "email": "maha.wacharine@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GOBE",
+        "prenom": "MANALE",
+        "email": "manale.gobe@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BERKANE",
+        "prenom": "IKRAME",
+        "email": "ikrame.berkane@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HINAULT",
+        "prenom": "PAULINE",
+        "email": "pauline.hinault@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SANTORO",
+        "prenom": "LORE",
+        "email": "lore.santoro@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SIMEON",
+        "prenom": "SEBASTIEN",
+        "email": "sebastien.simeon@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PRUNARETTY",
+        "prenom": "JESSICA",
+        "email": "jessica.prunaretty@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MOREL",
+        "prenom": "AURELIE",
+        "email": "aurelie.morel@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DEBUIRE",
+        "prenom": "PIERRE",
+        "email": "pierre.debuire@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VALDENAIRE",
+        "prenom": "SIMON",
+        "email": "simon.valdenaire@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TRAUCHESSEC",
+        "prenom": "DORIAN",
+        "email": "dorian.trauchessec@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BIZOT",
+        "prenom": "NICOLAS",
+        "email": "nicolas.bizot@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "AILLERES",
+        "prenom": "NORBERT",
+        "email": "norbert.ailleres@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "FENOGLIETTO",
+        "prenom": "PASCAL",
+        "email": "pascal.fenoglietto@icm.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "MICHALET",
+        "prenom": "MORGAN",
+        "email": "morgan.michalet@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "WELMANT",
+        "prenom": "JULIEN",
+        "email": "julien.welmant@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KESKES",
+        "prenom": "AICHA",
+        "email": "aicha.keskes@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEMANSKI",
+        "prenom": "CLAIRE",
+        "email": "claire.lemanski@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHARISSOUX",
+        "prenom": "MARIE",
+        "email": "marie.charissoux@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LLACER MOSCARDO",
+        "prenom": "CARMEN",
+        "email": "carmen.llacer@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOISSELIER",
+        "prenom": "PIERRE",
+        "email": "pierre.boisselier@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RIOU",
+        "prenom": "OLIVIER",
+        "email": "olivier.riou@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CANTALOUBE",
+        "prenom": "MARIE",
+        "email": "marie.cantaloube@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DRAGHICI",
+        "prenom": "ROXANA",
+        "email": "roxana.draghici@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DEMONTOY",
+        "prenom": "SYLVAIN",
+        "email": "sylvain.demontoy@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CABAILLE",
+        "prenom": "MORGANE",
+        "email": "morgane.cabaille@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DE MERIC DE BELLEFON",
+        "prenom": "MAILYS",
+        "email": "mailys.de-meric-de-bellefon@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LOPEZ",
+        "prenom": "LAURA",
+        "email": "laura.lopez@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARGUERIT",
+        "prenom": "ALEXIS",
+        "email": "alexis.marguerit@icm.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "AZRIA",
+        "prenom": "DAVID",
+        "email": "david.azria@icm.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOURGIER",
+        "prenom": "CELINE",
+        "email": "celine.bourgier@icm.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "DAVY",
+        "prenom": "STEPHANIE",
+        "email": "stephanie.davy@icm.unicancer.fr",
+        "telephone": "",
+        "commentaire": "Cadre Supérieur de Santé"
+      },
+      {
+        "nom": "GUILLAUMON",
+        "prenom": "CEDRIC",
+        "email": "cedric.guillaumon@icm.unicancer.fr",
+        "telephone": "",
+        "commentaire": "Directeur des Soins et Services Médico-Techniques"
       }
     ]
   },
@@ -2550,6 +4842,179 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Responsable Centre de Recherche clinique\r\nCôté Investigation"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "MEYER",
+        "prenom": "Céline",
+        "email": "c.meyer@nancy.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "LOUSTAUD",
+        "prenom": "Tiphaine",
+        "email": "t.loustaud@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "AU APPAVOU",
+        "prenom": "Richard",
+        "email": "r.auappavou@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "WAGNER",
+        "prenom": "Laura",
+        "email": "l.wagner@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "WEBER",
+        "prenom": "Loriane",
+        "email": "l.weber@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SANDJONG NANGMEDJIO",
+        "prenom": "Saturnin Orly",
+        "email": "s.sandjong@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GERARD",
+        "prenom": "Karine",
+        "email": "k.herlevin@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GRANDGIRARD",
+        "prenom": "Noe",
+        "email": "n.grandgirard@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MEKNACI",
+        "prenom": "Emilie",
+        "email": "e.meknaci@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BUCHHEIT",
+        "prenom": "Isabelle",
+        "email": "i.buchheit@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARCHESI",
+        "prenom": "Vincent",
+        "email": "v.marchesi@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HUGER",
+        "prenom": "Sandrine",
+        "email": "s.huger@nancy.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "GEHIN",
+        "prenom": "William",
+        "email": "w.gehin@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHARRA-BRUNAUD",
+        "prenom": "Claire",
+        "email": "c.brunaud@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RENARD",
+        "prenom": "Sophie",
+        "email": "s.renard@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "FAIVRE",
+        "prenom": "Jean-Christophe",
+        "email": "jc.faivre@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "STEFANI",
+        "prenom": "Anais",
+        "email": "a.stefani@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "JOLNEROVSKI",
+        "prenom": "Maria",
+        "email": "m.jolnerovski@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PY",
+        "prenom": "Jean Francois",
+        "email": "jf.py@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CUENIN",
+        "prenom": "Mathilde",
+        "email": "m.cuenin@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DEMOGEOT",
+        "prenom": "Nicolas",
+        "email": "n.demogeot@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARTZ",
+        "prenom": "Nicolas",
+        "email": "n.martz@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRUAND",
+        "prenom": "Marie",
+        "email": "m.bruand@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SELLAMI",
+        "prenom": "Selima",
+        "email": "s.sellami@nancy.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "PEIFFERT",
+        "prenom": "Didier",
+        "email": "d.peiffert@nancy.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ESCHWEGE",
+        "prenom": "Pascal",
+        "email": "p.eschwege@nancy.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "GOLFOUSE",
+        "prenom": "Stéphanie",
+        "email": "s.golfouse@nancy.unicancer.fr",
+        "telephone": "",
+        "commentaire": "Directeur(ice) des Soins"
+      }
     ]
   },
   "lacassagne": {
@@ -2732,6 +5197,185 @@ export const clccContacts = {
         "email": "christine.lovera@nice.unicancer.fr",
         "telephone": "",
         "commentaire": "Directrice DRCI"
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "DRUY",
+        "prenom": "FRANCOIS",
+        "email": "francois.druy@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GAUTIER",
+        "prenom": "MATHIEU",
+        "email": "mathieu.gautier@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAVILLE",
+        "prenom": "AURELIA",
+        "email": "aurelia.mana@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "RIZZI",
+        "prenom": "YASSINE",
+        "email": "yassine.rizzi@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "L HOMEL",
+        "prenom": "BAPTISTE",
+        "email": "baptiste.lhomel@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VANGVICHITH",
+        "prenom": "MAEVA",
+        "email": "maeva.vangvichith@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GASTEUIL",
+        "prenom": "JEAN",
+        "email": "jean.gasteuil@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "OUAKKAD",
+        "prenom": "WALID",
+        "email": "walid.ouakkad@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TOUZANI",
+        "prenom": "Youssef",
+        "email": "youssef.touzani@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KOULIBALY",
+        "prenom": "PIERRE MALICK",
+        "email": "malick.koulibaly@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ANGELLIER",
+        "prenom": "GAELLE",
+        "email": "gaelle.angellier@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DEJEAN",
+        "prenom": "CATHERINE",
+        "email": "catherine.dejean@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VIDAL",
+        "prenom": "MARIE",
+        "email": "marie.vidal@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HOFVERBERG",
+        "prenom": "CLAUDINE MARIE",
+        "email": "claudine.hofverberg@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MANEVAL",
+        "prenom": "DANIEL",
+        "email": "daniel.maneval@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "POPOTTE",
+        "prenom": "Christian",
+        "email": "christian.popotte@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ALI",
+        "prenom": "Yasmine",
+        "email": "yasmine.ali@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MARAGE",
+        "prenom": "Louis",
+        "email": "louis.marage@nice.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Consultant Radiothérapie": [
+      {
+        "nom": "PINTO",
+        "prenom": "NATHALIE",
+        "email": "nathalie.pinto@nice.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "LE GUYADER",
+        "prenom": "Maud",
+        "email": "maud.leguyader@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BONDIAU",
+        "prenom": "PIERRE YVES",
+        "email": "pierre-yves.bondiau@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ALOI",
+        "prenom": "DEBORAH",
+        "email": "deborah.aloi@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GROULIER",
+        "prenom": "ANAIS",
+        "email": "anais.groulier@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "COURTAULT DESLANDES",
+        "prenom": "FLORA",
+        "email": "flora.courtault-deslandes@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BARRET",
+        "prenom": "MEDERIC",
+        "email": "mederic.barret@nice.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "HANNOUN-LEVI",
+        "prenom": "JEAN MICHEL",
+        "email": "jean-michel.hannoun-levi@nice.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DOYEN",
+        "prenom": "JEROME",
+        "email": "jerome.doyen@nice.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "OUDIN KAZINIERCZAK",
+        "prenom": "JULIE",
+        "email": "julie.oudin@nice.unicancer.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR SOINS INFIRMIERS"
       }
     ]
   },
@@ -2935,6 +5579,165 @@ export const clccContacts = {
         "email": "stephane.vignot@reims.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable Dpt Enseignement Recherche"
+      }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "INVERNIZZI",
+        "prenom": "CAMILLE",
+        "email": "camille.invernizzi@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ETTALHAOUI",
+        "prenom": "LEILA",
+        "email": "leila.ettalhaoui@reims.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "GODRON",
+        "prenom": "François",
+        "email": "francois.godron@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "WANKO",
+        "prenom": "NICK",
+        "email": "nick.wanko@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "AIT CHRIF",
+        "prenom": "Abdelaziz",
+        "email": "abdelaziz.aitchrif@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HMAD",
+        "prenom": "Zakaria",
+        "email": "zakaria.hmad@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUENDOUZEN",
+        "prenom": "SOFIANE",
+        "email": "sofiane.guendouzen@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROQUE",
+        "prenom": "ALEXANDRE",
+        "email": "alexandre.roque@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOURDON",
+        "prenom": "GREGORY",
+        "email": "gregory.bourdon@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HOOG",
+        "prenom": "CHRISTOPHER",
+        "email": "christopher.hoog@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROUSSELLE",
+        "prenom": "AURELIEN",
+        "email": "aurelien.rousselle@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BEN ABDENNEBI",
+        "prenom": "AYMEN",
+        "email": "aymen.benabdennebi@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BELGE",
+        "prenom": "Dominique",
+        "email": "dominique.belge@reims.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "ANTONI",
+        "prenom": "DELPHINE",
+        "email": "delphine.antoni@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GUILBERT",
+        "prenom": "PHILIPPE",
+        "email": "philippe.guilbert@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BOUCHE",
+        "prenom": "GREGOIRE",
+        "email": "gregoire.bouche@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VIGNEAU",
+        "prenom": "ESTELLE",
+        "email": "estelle.vigneau@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TORIELLI",
+        "prenom": "PAOLO",
+        "email": "paolo.torielli@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "FONTAINE",
+        "prenom": "MARINE",
+        "email": "marine.fontaine@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BALLA MEKIAS",
+        "prenom": "SAIDA",
+        "email": "saida.ballamekias@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DA SILVA RIBEIRO MOTA",
+        "prenom": "ANTONIO",
+        "email": "antonio.dasilvaribeiromota@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BEDDOK",
+        "prenom": "Arnaud",
+        "email": "arnaud.beddok@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "COUDERC",
+        "prenom": "Alain",
+        "email": "alain.couderc@reims.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SLIMANE",
+        "prenom": "Khemaies",
+        "email": "khemaies.slimane@reims.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "HUMMER",
+        "prenom": "YANN",
+        "email": "yann.hummer@reims.unicancer.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR DES SOINS"
       }
     ]
   },
@@ -3163,6 +5966,173 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "Directeur Administratif de la Recherche Clinique"
       }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "MORJANI",
+        "prenom": "Moncef",
+        "email": "m.morjani@rennes.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "LEMAIRE",
+        "prenom": "LUCIEN",
+        "email": "l.lemaire@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DELABY",
+        "prenom": "NOLWENN",
+        "email": "n.delaby@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HERMOUET",
+        "prenom": "RAPHAEL",
+        "email": "r.hermouet@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LE DEROFF",
+        "prenom": "CORALIE",
+        "email": "c.lederoff@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEFEUVRE",
+        "prenom": "RONAN",
+        "email": "r.lefeuvre@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ABIDAR",
+        "prenom": "SOUNDOUS",
+        "email": "s.abidar@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CLEUZIOU",
+        "prenom": "Jean-Pierre",
+        "email": "jp.cleuziou@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BELLEC",
+        "prenom": "JULIEN",
+        "email": "j.bellec@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAFOND",
+        "prenom": "CAROLINE",
+        "email": "c.lafond@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "JOUYAUX",
+        "prenom": "FANNY",
+        "email": "f.jouyaux@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BARATEAU",
+        "prenom": "ANAIS",
+        "email": "a.barateau@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ROCH",
+        "prenom": "PATRICE",
+        "email": "p.roch@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAFFONT",
+        "prenom": "SOPHIE",
+        "email": "s.laffont@rennes.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "WILLIAUME",
+        "prenom": "DANIELE",
+        "email": "d.williaume@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LECOUILLARD",
+        "prenom": "ISABELLE",
+        "email": "i.lecouillard@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BENCHALAL",
+        "prenom": "MOHAMED",
+        "email": "m.benchalal@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LESEUR",
+        "prenom": "JULIE",
+        "email": "j.leseur@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DUVERGE",
+        "prenom": "LOIG",
+        "email": "l.duverge@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BATY",
+        "prenom": "MANON",
+        "email": "m.baty@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRIENS",
+        "prenom": "AURELIEN",
+        "email": "a.briens@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEFEBVRE",
+        "prenom": "LORIANE",
+        "email": "l.lefebvre@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MASSON",
+        "prenom": "INGRID",
+        "email": "i.masson@rennes.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "DE CREVOISIER",
+        "prenom": "RENAUD",
+        "email": "r.de-crevoisier@rennes.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CASTELLI",
+        "prenom": "JOEL",
+        "email": "j.castelli@rennes.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "LELIEVRE",
+        "prenom": "NADINE",
+        "email": "n.lelievre@rennes.unicancer.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR DES SOINS"
+      }
     ]
   },
   "becquerel": {
@@ -3350,6 +6320,135 @@ export const clccContacts = {
         "telephone": "",
         "commentaire": "ARC Manager"
       }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "PANNIER",
+        "prenom": "Mathilde",
+        "email": "mathilde.pannier@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LINCA",
+        "prenom": "Simona",
+        "email": "simona.linca@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "COLARD",
+        "prenom": "Elyse",
+        "email": "elyse.colard@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CLARISSE",
+        "prenom": "Perrine",
+        "email": "perrine.clarisse@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DERREUMAUX",
+        "prenom": "Sylvie",
+        "email": "sylvie.derreumaux@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TORFEH",
+        "prenom": "Eva",
+        "email": "eva.torfeh@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DIEUDONNE",
+        "prenom": "Arnaud",
+        "email": "arnaud.dieudonne@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GASNIER",
+        "prenom": "Anne",
+        "email": "anne.gasnier@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HAPDEY",
+        "prenom": "Sébastien",
+        "email": "sebastien.hapdey@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "GENSANNE",
+        "prenom": "David",
+        "email": "david.gensanne@chb.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "AMAR",
+        "prenom": "Sandrine",
+        "email": "sandrine.amar@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRASSELET",
+        "prenom": "Adrien",
+        "email": "adrien.brasselet@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VITUCCI",
+        "prenom": "Pasquale",
+        "email": "pasquale.vitucci@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MNIF",
+        "prenom": "Hajer",
+        "email": "hajer.mnif@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BENYOUCEF",
+        "prenom": "Ahmed",
+        "email": "ahmed.benyoucef@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VERESEZAN",
+        "prenom": "Ovidiu",
+        "email": "ovidiu.veresezan@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LEVITCHI",
+        "prenom": "Mihai-Barbu",
+        "email": "mihai-barbu.levitchi@chb.unicancer.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BELLEFQIH",
+        "prenom": "Sara",
+        "email": "sara.bellefqih@chb.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "THUREAU",
+        "prenom": "Sébastien",
+        "email": "sebastien.thureau@chb.unicancer.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "BERTRAND",
+        "prenom": "Elisabeth",
+        "email": "elisabeth.bertrand@chb.unicancer.fr",
+        "telephone": "",
+        "commentaire": "Directrice des Soins"
+      }
     ]
   },
   "paul-strauss": {
@@ -3527,6 +6626,135 @@ export const clccContacts = {
         "email": "v.sartori@institut-strauss.fr",
         "telephone": "",
         "commentaire": "Coordinatrice\r\nUnité de recherche clinique"
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "MAGNENET",
+        "prenom": "Pascale",
+        "email": "p.magnenet@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "MORGADO",
+        "prenom": "Mario",
+        "email": "m.morgado@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "MOENCH",
+        "prenom": "Denis",
+        "email": "d.moench@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "ALLEGRINI",
+        "prenom": "Oreste",
+        "email": "o.allegrini@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "NIEDERST",
+        "prenom": "Claudine",
+        "email": "c.niederst@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "MEYER",
+        "prenom": "Philippe",
+        "email": "p.meyer@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "DEHAYNIN",
+        "prenom": "Nicolas",
+        "email": "n.dehaynin@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "JARNET",
+        "prenom": "Delphine",
+        "email": "d.jarnet@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "EL AZHAR",
+        "prenom": "Halima",
+        "email": "h.el azhar@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "BARTOLUCCI",
+        "prenom": "Laurent",
+        "email": "l.bartolucci@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "SALVADORI",
+        "prenom": "Julien",
+        "email": "j.salvadori@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "ARBOR",
+        "prenom": "Florence",
+        "email": "f.arbor@icans.eu",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "GUIHARD",
+        "prenom": "Sébastien",
+        "email": "s.guihard@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "CLAVIER",
+        "prenom": "Jean-Baptiste",
+        "email": "j.clavier@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "VIGNERON",
+        "prenom": "Céline",
+        "email": "c.vigneron@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "BRAHIMI",
+        "prenom": "Youssef",
+        "email": "y.brahimi@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "MENOUX",
+        "prenom": "Ines",
+        "email": "i.menoux@icans.eu",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "NOEL",
+        "prenom": "Georges",
+        "email": "g.noel@icans.eu",
+        "telephone": ""
+      },
+      {
+        "nom": "ANTONI",
+        "prenom": "Delphine",
+        "email": "d.antoni@icans.eu",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "DOLIVET",
+        "prenom": "Valérie",
+        "email": "v.dolivet@icans.eu",
+        "telephone": "",
+        "commentaire": "Directrice des soins infirmiers  de rééducation et médico-techniques"
       }
     ]
   },
@@ -3716,6 +6944,197 @@ export const clccContacts = {
         "email": "poublanc.muriel@iuct-oncopole.fr",
         "telephone": "",
         "commentaire": "Responsable Bureau des Essais Cliniques"
+      }
+    ],
+    "Assistant Spécialiste Radiothérapie": [
+      {
+        "nom": "ANTOUN",
+        "prenom": "Claire",
+        "email": "antoun.claire@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ZERBIB",
+        "prenom": "Caroline",
+        "email": "zerbib.caroline@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LATRECHE",
+        "prenom": "Amina",
+        "email": "latreche.amina@iuct-oncopole.fr",
+        "telephone": ""
+      }
+    ],
+    "Physicien Médical": [
+      {
+        "nom": "POULICHET",
+        "prenom": "Florian",
+        "email": "poulichet.florian@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SIMON",
+        "prenom": "Luc",
+        "email": "simon.luc@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "TOURNIER",
+        "prenom": "Aurelie",
+        "email": "tournier.aurelie@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "PARENT",
+        "prenom": "Laure",
+        "email": "parent.laure@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "BRUN",
+        "prenom": "Thomas",
+        "email": "brun.thomas@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VALLOT",
+        "prenom": "Delphine",
+        "email": "vallot.delphine@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ARNAUD",
+        "prenom": "Francois Xavier",
+        "email": "arnaud.francoisxavier@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "STADLER",
+        "prenom": "Marine",
+        "email": "stadler.marine@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DELBAERE",
+        "prenom": "Alexia",
+        "email": "delbaere.alexia@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "SAYAH",
+        "prenom": "Farzam",
+        "email": "sayah.farzam@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CASELLES",
+        "prenom": "Olivier",
+        "email": "caselles.olivier@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "HANGARD",
+        "prenom": "Gregory",
+        "email": "hangard.gregory@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "VIEILLEVIGNE",
+        "prenom": "Laure",
+        "email": "vieillevigne.laure@iuct-oncopole.fr",
+        "telephone": ""
+      }
+    ],
+    "Radiothérapeute": [
+      {
+        "nom": "PIRAM",
+        "prenom": "Lucie",
+        "email": "piram.lucie@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DALMASSO",
+        "prenom": "Celine",
+        "email": "dalmasso.celine@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "POUEDRAS",
+        "prenom": "Juliette",
+        "email": "pouedras.juliette@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "IZAR",
+        "prenom": "Francoise",
+        "email": "izar.francoise@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MASSABEAU",
+        "prenom": "Carole",
+        "email": "massabeau.carole@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "DUCASSOU",
+        "prenom": "Anne",
+        "email": "ducassou.anne@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "MODESTO",
+        "prenom": "Anouchka",
+        "email": "modesto.anouchka@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KHALIFA",
+        "prenom": "Jonathan",
+        "email": "khalifa.jonathan@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "ATTAL KHALIFA",
+        "prenom": "Justine",
+        "email": "attalkhalifa.justine@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "CHIRA",
+        "prenom": "Ciprian",
+        "email": "chira.ciprian@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "KELLER",
+        "prenom": "Audrey",
+        "email": "keller.audrey@iuct-oncopole.fr",
+        "telephone": ""
+      }
+    ],
+    "PU-PH Radiothérapie": [
+      {
+        "nom": "MOYAL",
+        "prenom": "Elisabeth",
+        "email": "moyal.elisabeth@iuct-oncopole.fr",
+        "telephone": ""
+      },
+      {
+        "nom": "LAPRIE",
+        "prenom": "Anne",
+        "email": "laprie.anne@iuct-oncopole.fr",
+        "telephone": ""
+      }
+    ],
+    "Directeur des Soins": [
+      {
+        "nom": "BARIC",
+        "prenom": "Lilian",
+        "email": "baric.lilian@iuct-oncopole.fr",
+        "telephone": "",
+        "commentaire": "DIRECTEUR DES SOINS"
       }
     ]
   },
@@ -3926,9 +7345,9 @@ export const clccContacts = {
   }
 };
 
-/** Liste de toutes les fonctions présentes dans les données */
 export const FONCTIONS_IMPORT = [
   "Acheteur",
+  "Assistant Spécialiste Radiothérapie",
   "Cadre de santé Bloc opératoire",
   "Cadre de santé Médecine Nucléaire",
   "Cadre de santé Radiologie",
@@ -3938,16 +7357,21 @@ export const FONCTIONS_IMPORT = [
   "Chef de service Médecine Nucléaire",
   "Chef de service Radiologie",
   "Chef de service Radiothérapie",
+  "Consultant Radiothérapie",
+  "Directeur des Soins",
   "Directeur Technique",
   "DRH",
   "DSI",
   "Ingénieur Biomédical",
   "Médecin Nucléaire",
   "Physicien Médecine Nucléaire",
+  "Physicien Médical",
   "Physicien Radiologie Conventionnelle",
   "Physicien Radiothérapie",
+  "PU-PH Radiothérapie",
   "Radiologue",
   "Radiopharmacien",
+  "Radiothérapeute",
   "Référent Formation Externe",
   "Référent Formation Interne",
   "Référent Qualité",
