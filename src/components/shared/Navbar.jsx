@@ -27,11 +27,6 @@ const TABS = [
     href: '/calendrier',
     match: (p) => p === '/calendrier',
   },
-  {
-    label: 'Fournisseurs',
-    href: '/fournisseurs',
-    match: (p) => p === '/fournisseurs',
-  },
 ];
 
 export default function Navbar() {
