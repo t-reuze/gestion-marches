@@ -30,10 +30,10 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="navbar-logo">
+      <div className="navbar-logo" style={{ cursor: 'default' }}>
         <img src="/unicancer-logo.svg" alt="Unicancer" className="navbar-logo-img" />
         <span className="navbar-tagline">Gestion des projets</span>
-      </Link>
+      </div>
 
       <div className="navbar-tabs">
         {TABS.map((tab) => (
