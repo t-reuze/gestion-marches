@@ -8,15 +8,14 @@ import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { isConfigured, loginMicrosoft, getAccount, logoutMicrosoft, initMsal } from '../../utils/msalConfig';
 import { syncAllToOutlook, syncClccToOutlook, exportContactsVCF } from '../../utils/outlookSync';
 
-const COLORS = ['#1A4FA8', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#0891B2', '#DB2777', '#0D9488', '#DC2626', '#7C3AED'];
+const NAVY = '#2D5F8A';
 
 function initials(nom) {
   return nom.split(/\s+/).filter(Boolean).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
 
-function fonctionColor(fn) {
-  const i = FONCTIONS_IMPORT.indexOf(fn);
-  return COLORS[i >= 0 ? i % COLORS.length : COLORS.length - 1];
+function fonctionColor() {
+  return NAVY;
 }
 
 function SectionTabs({ section, setSection }) {
@@ -31,8 +30,8 @@ function SectionTabs({ section, setSection }) {
           onClick={() => setSection(t.id)}
           style={{
             padding: '10px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-            borderBottom: section === t.id ? '2px solid #1A4FA8' : '2px solid transparent',
-            color: section === t.id ? '#1A4FA8' : '#6b7280',
+            borderBottom: section === t.id ? '2px solid #2D5F8A' : '2px solid transparent',
+            color: section === t.id ? '#2D5F8A' : '#6b7280',
             marginBottom: -1,
           }}>
           {t.label}
@@ -467,7 +466,7 @@ export default function ContactsAnnuaire() {
           onClick={() => setSelectedFournisseur(null)}>
           &larr; Retour aux fournisseurs
         </button>
-        <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #8B5CF6' }}>
+        <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid #2D5F8A' }}>
           <div className="card-body">
             <div style={{ fontWeight: 700, fontSize: 16 }}>{f.nom}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -484,13 +483,13 @@ export default function ContactsAnnuaire() {
               const ctKey = 'f-' + i + '-' + (ct.mail || ct.nom || '');
               const isEditing = editingContact === ctKey;
               return (
-                <div key={ctKey} className="card" style={{ borderTop: '3px solid #8B5CF6' }}>
+                <div key={ctKey} className="card" style={{ borderTop: '3px solid #2D5F8A' }}>
                   <div className="card-body" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13 }}>
                         {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '—'}
                       </div>
-                      {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#8B5CF6', marginTop: 2 }}>{ct.fonction}</div>}
+                      {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#2D5F8A', marginTop: 2 }}>{ct.fonction}</div>}
                       {ct.mail && <div style={{ fontSize: 11, marginTop: 4 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.mail} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.mail}</a></div>}
                       {ct.tel && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.tel}</div>}
                       <div style={{ fontSize: 10, color: 'var(--blue)', marginTop: 6, cursor: 'pointer' }}
@@ -571,11 +570,11 @@ export default function ContactsAnnuaire() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
             {filteredFour.map(f => (
               <div key={f.nom} className="card"
-                style={{ cursor: 'pointer', borderLeft: '4px solid #8B5CF6' }}
+                style={{ cursor: 'pointer', borderLeft: '4px solid #2D5F8A' }}
                 onClick={() => setSelectedFournisseur(f.nom)}>
                 <div className="card-body" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                   <div style={{
-                    width: 48, height: 48, borderRadius: '50%', background: '#8B5CF6',
+                    width: 48, height: 48, borderRadius: '50%', background: '#2D5F8A',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0,
                   }}>{initials(f.nom)}</div>
@@ -587,7 +586,7 @@ export default function ContactsAnnuaire() {
                   </div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 20, fontWeight: 700,
-                      color: f.contacts.length > 0 ? '#8B5CF6' : 'var(--text-muted)' }}>
+                      color: f.contacts.length > 0 ? '#2D5F8A' : 'var(--text-muted)' }}>
                       {f.contacts.length}
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
@@ -662,7 +661,7 @@ export default function ContactsAnnuaire() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
           {filtered.map((c, i) => {
-            const color = COLORS[i % COLORS.length];
+            const color = NAVY;
             return (
               <div
                 key={c.id}
