@@ -110,15 +110,21 @@ function ClccLogo({ clccId, nom, size = 48 }) {
   }
 
   return (
-    <img
-      src={logoUrl}
-      alt={nom}
-      onError={() => setImgError(true)}
-      style={{
-        width: size, height: size, borderRadius: '50%', objectFit: 'contain',
-        background: '#fff', border: '1px solid rgba(15,23,42,.08)', flexShrink: 0,
-      }}
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: '#fff', border: '1px solid rgba(15,23,42,.08)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden', padding: size * 0.12,
+    }}>
+      <img
+        src={logoUrl}
+        alt={nom}
+        onError={() => setImgError(true)}
+        style={{
+          width: '100%', height: '100%', objectFit: 'contain',
+        }}
     />
+    </div>
   );
 }
 
