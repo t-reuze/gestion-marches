@@ -92,7 +92,7 @@ export default function Accueil() {
           onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(232,80,26,.4)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 24px rgba(232,80,26,.3)'; }}
         >
-          {'Commencer \u2192'}
+          {'Acc\u00e9der \u00e0 PRISM \u2192'}
         </button>
       </div>
 
