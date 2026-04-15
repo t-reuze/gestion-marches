@@ -10,6 +10,85 @@ import { syncAllToOutlook, syncClccToOutlook, exportContactsVCF } from '../../ut
 
 const NAVY = '#2D5F8A';
 
+// ── Détection genre par prénom ───────────────────────────────
+const PRENOMS_FEMININS = new Set([
+  'alice','amelie','amélie','amandine','andrea','andréa','angelique','angélique','anne',
+  'annie','audrey','aurelie','aurélie','beatrice','béatrice','bernadette','brigitte',
+  'camille','carla','caroline','catherine','cecile','cécile','celine','céline',
+  'chantal','charlene','charlène','charlotte','christelle','christine','claire',
+  'clarisse','claudine','clementine','clémentine','colette','corinne','danielle',
+  'delphine','denise','diane','dominique','dorothee','dorothée','edith','eliane',
+  'éliane','elisabeth','élisabeth','elise','élise','eloise','éloïse','emilie','émilie',
+  'emma','estelle','eve','ève','fabienne','fanny','florence','francoise','françoise',
+  'frederique','frédérique','gabrielle','genevieve','geneviève','ghislaine','guilaine',
+  'gwenaelle','gwenaëlle','guylene','guylène','helene','hélène','henriette','hermine',
+  'hien','isabelle','jacqueline','jeanne','jessica','jocelyne','josiane','judith',
+  'julie','juliette','justine','karine','laetitia','laure','laurence','lea','léa',
+  'leone','léone','liliane','lison','louisa','louise','lucie','lydie','madeleine',
+  'manon','margit','marguerite','maria','marianne','marie','marine','marion',
+  'marlene','marlène','marthe','martine','mathilde','melanie','mélanie','michele',
+  'michèle','mireille','monique','muriel','myriam','nadia','nadine','nathalie',
+  'nicole','nina','noemie','noémie','odette','odile','olivia','pascale','patricia',
+  'pauline','peggy','rachel','raphaelle','raphaëlle','rebecca','renata','rosalie',
+  'roxane','sabine','sandrine','sarah','severine','séverine','simone','solange',
+  'sophie','stephanie','stéphanie','suzanne','sylvie','therese','thérèse',
+  'valerie','valérie','vanessa','veronique','véronique','virginie','viviane','yasmine',
+]);
+
+function isFeminin(prenom) {
+  if (!prenom) return false;
+  const p = prenom.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().split(/[\s-]/)[0];
+  if (PRENOMS_FEMININS.has(p)) return true;
+  // Heuristique : prénoms se terminant par -e, -a, -ine, -elle, -ette
+  if (/^(mari|sophi|laur|clair|ann|juli|luci|alic|emili|carolin)/.test(p)) return true;
+  return false;
+}
+
+const FEMINISATION = {
+  'Acheteur':             ['Acheteur', 'Acheteuse'],
+  'Ingénieur Biomédical': ['Ingénieur Biomédical', 'Ingénieure Biomédicale'],
+  'Physicien Médical':    ['Physicien Médical', 'Physicienne Médicale'],
+  'Physicien Radiothérapie': ['Physicien Radiothérapie', 'Physicienne Radiothérapie'],
+  'Physicien Médecine Nucléaire': ['Physicien Médecine Nucléaire', 'Physicienne Médecine Nucléaire'],
+  'Physicien Radiologie Conventionnelle': ['Physicien Radiologie Conventionnelle', 'Physicienne Radiologie Conventionnelle'],
+  'Médecin Nucléaire':    ['Médecin Nucléaire', 'Médecin Nucléaire'],
+  'Radiologue':           ['Radiologue', 'Radiologue'],
+  'Radiothérapeute':      ['Radiothérapeute', 'Radiothérapeute'],
+  'Radiopharmacien':      ['Radiopharmacien', 'Radiopharmacienne'],
+  'Directeur Technique':  ['Directeur Technique', 'Directrice Technique'],
+  'Directeur des Soins':  ['Directeur des Soins', 'Directrice des Soins'],
+  'Chef de service Radiothérapie': ['Chef de service Radiothérapie', 'Cheffe de service Radiothérapie'],
+  'Chef de service Bloc opératoire': ['Chef de service Bloc opératoire', 'Cheffe de service Bloc opératoire'],
+  'Chef de service Médecine Nucléaire': ['Chef de service Médecine Nucléaire', 'Cheffe de service Médecine Nucléaire'],
+  'Chef de service Radiologie': ['Chef de service Radiologie', 'Cheffe de service Radiologie'],
+  'Chef de service Anatomopathologie': ['Chef de service Anatomopathologie', 'Cheffe de service Anatomopathologie'],
+  'Référent Qualité':     ['Référent Qualité', 'Référente Qualité'],
+  'Référent Radioprotection (Travailleur)': ['Référent Radioprotection (Travailleur)', 'Référente Radioprotection (Travailleur)'],
+  'Référent Radioprotection (Patient)': ['Référent Radioprotection (Patient)', 'Référente Radioprotection (Patient)'],
+  'Référent Formation Interne': ['Référent Formation Interne', 'Référente Formation Interne'],
+  'Référent Formation Externe': ['Référent Formation Externe', 'Référente Formation Externe'],
+  'Responsable Physique Médicale': ['Responsable Physique Médicale', 'Responsable Physique Médicale'],
+  'Responsable Recherche Clinique (BEC)': ['Responsable Recherche Clinique (BEC)', 'Responsable Recherche Clinique (BEC)'],
+  'Cadre de santé Radiothérapie': ['Cadre de santé Radiothérapie', 'Cadre de santé Radiothérapie'],
+  'Cadre de santé Radiologie': ['Cadre de santé Radiologie', 'Cadre de santé Radiologie'],
+  'Cadre de santé Bloc opératoire': ['Cadre de santé Bloc opératoire', 'Cadre de santé Bloc opératoire'],
+  'Cadre de santé Médecine Nucléaire': ['Cadre de santé Médecine Nucléaire', 'Cadre de santé Médecine Nucléaire'],
+  'Consultant Radiothérapie': ['Consultant Radiothérapie', 'Consultante Radiothérapie'],
+  'PU-PH Radiothérapie':  ['PU-PH Radiothérapie', 'PU-PH Radiothérapie'],
+  'Assistant Spécialiste Radiothérapie': ['Assistant Spécialiste Radiothérapie', 'Assistante Spécialiste Radiothérapie'],
+};
+
+function feminiser(fonction, prenom) {
+  if (!prenom) return fonction;
+  const fem = isFeminin(prenom);
+  // Handle multi-fonctions (comma separated)
+  return fonction.split(', ').map(fn => {
+    const entry = FEMINISATION[fn];
+    if (entry) return fem ? entry[1] : entry[0];
+    return fn;
+  }).join(', ');
+}
+
 function initials(nom) {
   return nom.split(/\s+/).filter(Boolean).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
@@ -144,6 +223,7 @@ export default function ContactsAnnuaire() {
             dedup.set(key, {
               id: 'import-' + c.id + '-' + key,
               nom: [ct.prenom, ct.nom].filter(Boolean).join(' ') || ct.nom,
+              prenom: ct.prenom || '',
               fonction,
               service: '',
               email: ct.email || '',
@@ -247,7 +327,7 @@ export default function ContactsAnnuaire() {
   function exportClccExcel(clccData, contacts) {
     const rows = contacts.map(ct => ({
       'Nom': ct.nom,
-      'Fonction': ct.fonction,
+      'Fonction': feminiser(ct.fonction, ct.prenom),
       'Email': ct.email || '',
       'Téléphone': ct.telephone || '',
       'Service': ct.service || '',
@@ -266,7 +346,7 @@ export default function ContactsAnnuaire() {
           'Centre': c.nom,
           'Ville': c.ville,
           'Nom': ct.nom,
-          'Fonction': ct.fonction,
+          'Fonction': feminiser(ct.fonction, ct.prenom),
           'Email': ct.email || '',
           'Téléphone': ct.telephone || '',
           'Service': ct.service || '',
@@ -385,7 +465,7 @@ export default function ContactsAnnuaire() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 2 }}>{ct.nom}</div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 4 }}>{ct.fonction}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 4 }}>{feminiser(ct.fonction, ct.prenom)}</div>
                       {ct.service && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F3E2; {ct.service}</div>}
                       {ct.email && <div style={{ fontSize: 11 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.email} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.email}</a></div>}
                       {ct.telephone && <div style={{ fontSize: 11 }}>&#x1F4DE; <a href={'tel:' + ct.telephone} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.telephone}</a></div>}
@@ -529,7 +609,7 @@ export default function ContactsAnnuaire() {
                       <div style={{ fontWeight: 700, fontSize: 13 }}>
                         {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '—'}
                       </div>
-                      {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#2D5F8A', marginTop: 2 }}>{ct.fonction}</div>}
+                      {ct.fonction && <div style={{ fontSize: 11, fontWeight: 600, color: '#2D5F8A', marginTop: 2 }}>{feminiser(ct.fonction, ct.prenom)}</div>}
                       {ct.mail && <div style={{ fontSize: 11, marginTop: 4 }}>&#x2709;&#xFE0F; <a href={'mailto:' + ct.mail} style={{ color: 'var(--blue)', textDecoration: 'none' }} onClick={e => e.stopPropagation()}>{ct.mail}</a></div>}
                       {ct.tel && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>&#x1F4DE; {ct.tel}</div>}
                       <div style={{ fontSize: 10, color: 'var(--blue)', marginTop: 6, cursor: 'pointer' }}
