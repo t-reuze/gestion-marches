@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { findAnswer, SUGGESTED_QUESTIONS, SYSTEM_PROMPT, KNOWLEDGE_BASE } from '../data/copilotKnowledge';
+import { findAnswer, getClarification, SYSTEM_PROMPT, ENTRIES } from '../data/copilotKnowledge';
 
 const AZURE_ENDPOINT = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT || '';
 const AZURE_KEY = import.meta.env.VITE_AZURE_OPENAI_KEY || '';
@@ -65,13 +65,10 @@ export default function CopilotWidget() {
     try {
       let answer;
 
-      // 1. Try local knowledge base first
-      const localAnswer = findAnswer(q);
-
       if (isAzureConfigured()) {
-        // 2. If Azure configured, use it with full context
+        // Mode AI : Azure OpenAI avec contexte complet
         const contextMsg = getPageContext(location.pathname);
-        const knowledgeContext = KNOWLEDGE_BASE.map(e => e.answer).join('\n\n---\n\n');
+        const knowledgeContext = ENTRIES.map(e => '### ' + e.topic + '\n' + e.answer).join('\n\n---\n\n');
 
         const apiMessages = [
           { role: 'system', content: SYSTEM_PROMPT + '\n\nBASE DE CONNAISSANCES :\n' + knowledgeContext + (contextMsg ? '\n\nCONTEXTE ACTUEL : ' + contextMsg : '') },
@@ -79,21 +76,21 @@ export default function CopilotWidget() {
           userMsg,
         ];
         answer = await callAzureOpenAI(apiMessages);
-      } else if (localAnswer) {
-        // 3. Local answer found
-        answer = localAnswer;
       } else {
-        // 4. No answer found, suggest questions
-        answer = `Je n'ai pas trouvé de réponse précise à votre question dans ma base de connaissances.
+        // Mode local : moteur sémantique
+        // D'abord vérifier si la question est trop vague
+        const clarification = getClarification(q);
+        const localAnswer = findAnswer(q, messages);
 
-Essayez de reformuler, ou posez une question sur :
-- La **navigation** dans l'outil
-- La **notation** des fournisseurs
-- Les **contacts** et l'annuaire CLCC
-- Le **reporting** et les exports
-- Les **formations**
+        if (localAnswer) {
+          answer = localAnswer;
+        } else if (clarification) {
+          answer = clarification;
+        } else {
+          answer = `Je n'ai pas trouvé de réponse précise à cette question. Pourriez-vous reformuler ?
 
-💡 *Pour des réponses plus précises, l'administrateur peut connecter Azure OpenAI (Copilot) via les variables d'environnement.*`;
+Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Comment exporter en Excel ?"`;
+        }
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: answer }]);

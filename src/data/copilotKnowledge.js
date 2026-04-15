@@ -1,338 +1,469 @@
 // ══════════════════════════════════════════════════════════════
-// Base de connaissances du SaaS — Gestion des Marchés UNICANCER
-// Utilisée par le chatbot Copilot pour guider les utilisateurs
+// Base de connaissances — Assistant UNICANCER
+// Moteur de recherche sémantique par scoring TF-IDF simplifié
 // ══════════════════════════════════════════════════════════════
 
 export const SYSTEM_PROMPT = `Tu es l'assistant intégré de la plateforme "Gestion des Marchés" d'UNICANCER.
 Tu aides les utilisateurs (acheteurs, ingénieurs biomédicaux, pharmaciens, chefs de service) à utiliser l'outil.
 
-RÈGLES :
+RÈGLES STRICTES :
 - Réponds en français, de façon concise et directe
-- Guide l'utilisateur pas à pas si nécessaire
-- Si tu ne connais pas la réponse, dis-le honnêtement
+- Réfléchis à ce que l'utilisateur veut VRAIMENT avant de répondre
+- Si la question est vague, pose une question de clarification
+- Guide pas à pas avec des étapes numérotées
 - Ne donne jamais d'informations médicales ou de conseil juridique
 - Utilise le vouvoiement
+- Si tu ne sais pas, dis "Je ne suis pas sûr, mais voici ce que je peux vous dire..."
 
-CONTEXTE DE L'OUTIL :
-La plateforme est un SaaS de gestion des marchés publics pour les centrales d'achat UNICANCER.
-Elle permet de gérer les appels d'offres, la notation des fournisseurs, le reporting et les contacts des 19 CLCC (Centres de Lutte Contre le Cancer).`;
+STRUCTURE DE L'APPLICATION :
+- 4 sections navbar : Marchés, Formations, Reporting, Contacts
+- Sidebar gauche : marchés groupés par secteur (Investissements, Pharma, Logistique, R&D)
+- Chaque marché a des onglets : Analyse, Notation, Réponses fournisseurs, Informations, Reporting, Interlocuteurs, ERP·KPI
+- Contacts = annuaire des 19 CLCC (Centres de Lutte Contre le Cancer) avec 491 contacts par fonction
+- Formations = formations scientifiques avec inscriptions, documents, modèle économique`;
 
-export const KNOWLEDGE_BASE = [
-  // ── Navigation principale ──────────────────────────────────
+// ── Entrées de la base (topic + question patterns + réponse) ──
+
+export const ENTRIES = [
+  // ── CONTACTS ───────────────────────────────────────────────
   {
-    keywords: ['navigation', 'menu', 'section', 'où', 'trouver', 'accéder', 'page', 'aller'],
-    answer: `La plateforme comporte 4 sections principales accessibles depuis la barre de navigation en haut :
+    topic: 'contacts_trouver',
+    patterns: ['trouver contact', 'chercher contact', 'où contact', 'mes contacts', 'trouver interlocuteur', 'trouver quelqu'],
+    answer: `Pour trouver vos contacts :
 
-**Marchés** — Tableau de bord avec tous les marchés, filtrables par secteur (Investissements, Pharma, Logistique, R&D) et par statut.
+1. Cliquez sur **"Contacts"** dans la barre de navigation en haut
+2. Vous verrez les **19 CLCC** (centres Unicancer) sous forme de cartes
+3. Cliquez sur le centre qui vous intéresse
+4. Utilisez le **menu déroulant** pour filtrer par fonction (Acheteur, DRH, Physicien, etc.)
+5. Utilisez la **barre de recherche** pour chercher par nom ou email
 
-**Formations** — Liste des formations scientifiques à renouveler ou en cours. Vous pouvez gérer les inscriptions, documents et modèles économiques.
-
-**Reporting** — Tableaux de bord Excel avec suivi CA et maintenance. Importez vos fichiers Excel pour générer des graphiques et KPIs.
-
-**Contacts** — Annuaire des 19 CLCC avec 491 contacts classés par fonction (Acheteurs, DRH, Physiciens, etc.).`
+Vous pouvez aussi chercher un contact depuis un marché → onglet **"Interlocuteurs"**.`
   },
   {
-    keywords: ['sidebar', 'barre latérale', 'gauche', 'secteur'],
-    answer: `La barre latérale gauche affiche les marchés groupés par secteur. Vous pouvez :
-- Cliquer sur un secteur pour le déplier/replier
-- Cliquer sur un marché pour accéder directement à sa fiche
-- Utiliser la barre de recherche en haut de la sidebar pour filtrer les marchés
-- Le point coloré à côté de chaque marché indique son statut (bleu = ouvert, jaune = en analyse, etc.)`
-  },
+    topic: 'contacts_ajouter',
+    patterns: ['ajouter contact', 'nouveau contact', 'créer contact', 'rajouter'],
+    answer: `Pour ajouter un contact :
 
-  // ── Marchés ────────────────────────────────────────────────
-  {
-    keywords: ['marché', 'marchés', 'tableau de bord', 'dashboard', 'liste'],
-    answer: `Le **Tableau de bord** (page d'accueil) affiche tous les marchés sous forme de cartes.
-
-**Filtrer les marchés :**
-- Par secteur : cliquez sur les boutons "Investissements", "Pharma", "Logistique", "R&D"
-- Par statut : utilisez les onglets "Ouverts", "En analyse", "Attribution", "Reporting", "Clôturés"
-- Par nom : tapez dans la barre de recherche
-
-**Accéder à un marché :**
-Cliquez sur la carte du marché. Vous arriverez sur ses onglets : Analyse, Notation, Informations, Reporting, Interlocuteurs, ERP·KPI.`
+1. Allez dans **Contacts** (barre de navigation)
+2. Cliquez sur le **CLCC** concerné
+3. Cliquez sur **"+ Ajouter un contact"** en haut à droite
+4. Remplissez : Nom, Fonction, Service, Email, Téléphone
+5. Cochez les **marchés liés** si applicable
+6. Cliquez **"Enregistrer"**`
   },
   {
-    keywords: ['statut', 'ouvert', 'analyse', 'attribution', 'cloturé', 'clôturé', 'reporting'],
-    answer: `Chaque marché a un statut qui indique son avancement :
+    topic: 'contacts_modifier',
+    patterns: ['modifier contact', 'éditer contact', 'changer contact', 'mettre à jour contact', 'supprimer contact'],
+    answer: `Pour modifier un contact, cliquez sur le bouton **crayon** sur sa carte, modifiez les champs, puis cliquez "Sauvegarder".
 
-- **Ouvert** (bleu) — L'appel d'offres est en cours, les fournisseurs peuvent répondre
-- **En analyse** (jaune) — Les offres sont reçues et en cours d'évaluation
-- **Attribution** (violet) — Le marché est en phase de sélection finale
-- **En cours / Reporting** (gris) — Le marché est attribué, en phase d'exécution
-- **Clôturé** (vert) — Le marché est terminé
-
-Vous pouvez modifier le statut d'un marché depuis l'onglet **Informations**.`
+Pour supprimer un contact, cliquez sur le bouton **croix** (✗) et confirmez.`
   },
   {
-    keywords: ['secteur', 'investissement', 'pharma', 'logistique', 'r&d'],
-    answer: `Les marchés sont organisés en 4 secteurs :
+    topic: 'contacts_mail',
+    patterns: ['envoyer mail', 'envoyer email', 'mailing', 'mailto', 'outlook', 'email groupe', 'contacter', 'mail groupé', 'écrire'],
+    answer: `3 façons d'envoyer des emails :
 
-- **Investissements** — Équipements biomédicaux (accélérateurs, IRM, médecine nucléaire, biologie moléculaire...)
-- **Pharma** — Médicaments, hygiène, produits de contraste, nutrition, macrobiopsie...
-- **Logistique** — Fournitures de laboratoire, contrôles réglementaires, intérim & recrutement...
-- **R&D** — Marchés de recherche et développement
+**Mail individuel** — Cliquez sur l'adresse email d'un contact → Outlook s'ouvre.
 
-Utilisez les boutons secteur sur le tableau de bord pour filtrer.`
+**Mail à une fonction (tous les CLCC)** — Page Contacts → dropdown "Envoyer un mail par fonction..." → choisissez ex: "Ingénieur Biomédical (19 emails)" → Outlook s'ouvre avec tous les destinataires.
+
+**Mail à une fonction (un seul CLCC)** — Ouvrez un centre → filtrez par fonction → cliquez "Envoyer un mail (N)".`
+  },
+  {
+    topic: 'contacts_clcc',
+    patterns: ['CLCC', 'centre', 'centres', 'combien de centres', 'liste centres', 'annuaire'],
+    answer: `L'annuaire contient les **19 Centres de Lutte Contre le Cancer** du réseau UNICANCER (Gustave Roussy, Institut Curie, Centre Léon Bérard, etc.).
+
+Chaque centre a ses contacts classés par **fonction** : Acheteur, DRH, DSI, Ingénieur Biomédical, Physicien, Chef de service, Référent Qualité, etc.
+
+Accès : **Contacts** dans la barre de navigation.`
+  },
+  {
+    topic: 'contacts_export',
+    patterns: ['exporter contact', 'export excel contact', 'télécharger contact', 'xlsx contact'],
+    answer: `Pour exporter les contacts :
+
+**Tout l'annuaire** — Page Contacts → bouton **"Exporter tout (.xlsx)"** en haut à droite.
+
+**Un seul CLCC** — Ouvrez le centre → bouton **"Exporter Excel"** à côté du filtre fonctions.
+
+Le fichier Excel contient : Centre, Ville, Nom, Fonction, Email, Téléphone.`
   },
 
-  // ── Analyse / AO ───────────────────────────────────────────
+  // ── MARCHÉS ────────────────────────────────────────────────
   {
-    keywords: ['analyse', 'offre', 'AO', 'appel', 'dossier', 'fournisseur', 'standardis'],
-    answer: `L'onglet **Analyse** d'un marché permet d'analyser les réponses des fournisseurs à un appel d'offres.
+    topic: 'marches_liste',
+    patterns: ['liste marché', 'voir marché', 'tous les marchés', 'tableau de bord', 'dashboard', 'accueil'],
+    answer: `Le **Tableau de bord** (page d'accueil) affiche tous les marchés.
 
-**Comment ça marche :**
-1. Cliquez sur "Sélectionner un dossier AO" pour charger le dossier contenant les réponses fournisseurs
-2. L'outil détecte automatiquement les fichiers : BPU, questionnaires techniques, fiches contacts, RSE
-3. Consultez l'onglet "Standardisation BPU" pour comparer les prix
-4. Consultez l'onglet "Questionnaire Technique" pour les réponses techniques
-5. L'onglet "Contrôle Qualité" vérifie la complétude des dossiers
+**Filtrer :**
+- Par **secteur** : boutons "Investissements", "Pharma", "Logistique", "R&D"
+- Par **statut** : onglets "Ouverts", "En analyse", "Attribution", etc.
+- Par **nom** : barre de recherche
 
-**Format attendu :** Dossier avec sous-dossiers par fournisseur, contenant des fichiers Excel (.xlsx).`
+**Accéder à un marché** : cliquez sur sa carte → vous arrivez sur ses onglets.`
+  },
+  {
+    topic: 'marches_statut',
+    patterns: ['statut', 'ouvert', 'en analyse', 'attribution', 'clôturé', 'avancement', 'progression'],
+    answer: `Les statuts des marchés :
+
+- **Ouvert** (bleu) — Appel d'offres en cours
+- **En analyse** (jaune) — Offres en cours d'évaluation
+- **Attribution** (violet) — Sélection finale
+- **En cours** (gris) — Marché attribué, en exécution
+- **Clôturé** (vert) — Terminé
+
+Pour modifier : allez sur le marché → onglet **"Informations"** → champ "Statut".`
+  },
+  {
+    topic: 'marches_secteur',
+    patterns: ['secteur', 'investissement', 'pharma', 'logistique', 'r&d', 'catégorie'],
+    answer: `4 secteurs de marchés :
+
+- **Investissements** — Équipements biomédicaux (accélérateurs, IRM, biologie moléculaire...)
+- **Pharma** — Médicaments, hygiène, produits de contraste, nutrition...
+- **Logistique** — Fournitures de labo, contrôles réglementaires, intérim...
+- **R&D** — Recherche et développement
+
+Filtrez par secteur sur le tableau de bord avec les boutons en haut.`
+  },
+  {
+    topic: 'marches_onglets',
+    patterns: ['onglet', 'onglets marché', 'que contient', 'fiche marché', 'page marché'],
+    answer: `Chaque marché a ces onglets :
+
+- **Analyse** — Charger un dossier AO, voir les offres standardisées
+- **Notation** — Importer un Excel et noter les fournisseurs critère par critère
+- **Réponses fournisseurs** — Voir les réponses de chaque prestataire (après import)
+- **Informations** — Métadonnées du marché (statut, référent, dates, budget, tags)
+- **Reporting** — Suivi et bilan si le marché a du reporting
+- **Interlocuteurs** — Contacts liés à ce marché
+- **ERP · KPI** — Indicateurs de performance (budget tracker, timeline)`
   },
 
-  // ── Notation ───────────────────────────────────────────────
+  // ── NOTATION ───────────────────────────────────────────────
   {
-    keywords: ['notation', 'noter', 'note', 'critère', 'évaluer', 'évaluation', 'excel', 'import'],
-    answer: `L'onglet **Notation** permet de noter les fournisseurs critère par critère.
+    topic: 'notation_comment',
+    patterns: ['notation', 'noter', 'évaluer', 'note', 'critère', 'fournisseur', 'comment noter'],
+    answer: `Pour noter les fournisseurs :
 
-**Pour commencer :**
-1. Allez sur un marché → onglet "Notation"
-2. Importez votre fichier Excel d'évaluation (glissez-déposez ou cliquez "Parcourir")
-3. Le fichier doit respecter le template Unicancer : ligne 4 = en-têtes fournisseurs, lignes 5+ = critères
+1. Allez sur un marché → onglet **"Notation"**
+2. **Importez** votre fichier Excel d'évaluation (glissez-déposez ou "Parcourir")
+3. Naviguez entre les critères avec **Précédent / Suivant**
+4. Pour chaque fournisseur : notez de **0 à 5** (slider ou étoiles)
+5. Vous pouvez marquer "Non noté" pour exclure un critère
+6. Les **moyennes** se calculent en temps réel en haut
 
-**Pendant la notation :**
-- Naviguez entre les questions avec les boutons Précédent/Suivant
-- Notez chaque fournisseur de 0 à 5 (slider ou étoiles)
-- Vous pouvez marquer un critère comme "Non noté" pour l'exclure
-- Les moyennes se mettent à jour en temps réel
+**Format attendu** : fichier .xlsx — ligne 4 = en-têtes fournisseurs, lignes 5+ = critères.`
+  },
+  {
+    topic: 'notation_export',
+    patterns: ['exporter note', 'exporter notation', 'export xlsx', 'télécharger note', 'résultat notation'],
+    answer: `Après la notation :
 
-**Après la notation :**
-- Onglet "Synthèse" : classement, graphiques radar et barres
-- Bouton "Exporter XLSX" : télécharge le fichier avec vos notes intégrées`
+1. Allez sur l'onglet **"Synthèse"** (dans la page Notation)
+2. Vous verrez le **classement**, les graphiques radar et barres
+3. Cliquez **"Exporter XLSX"** → le fichier se télécharge avec vos notes intégrées
+
+Le fichier exporté reprend le fichier original avec les notes remplies dans les colonnes J-O.`
   },
 
-  // ── Réponses fournisseurs ──────────────────────────────────
+  // ── ANALYSE / AO ───────────────────────────────────────────
   {
-    keywords: ['réponse', 'fournisseur', 'réponses fournisseurs', 'comparaison'],
-    answer: `L'onglet **Réponses fournisseurs** apparaît après avoir chargé un fichier Excel dans la Notation.
+    topic: 'analyse_ao',
+    patterns: ['analyse', 'appel d\'offre', 'AO', 'dossier', 'offre', 'standardis', 'BPU', 'questionnaire'],
+    answer: `L'onglet **Analyse** permet d'analyser un dossier d'appel d'offres :
 
-Il affiche les réponses de chaque fournisseur question par question, avec :
-- Les réponses textuelles à chaque critère
-- La note attribuée
-- Vos commentaires
+1. Cliquez **"Sélectionner un dossier AO"**
+2. L'outil détecte les fichiers : BPU, questionnaires techniques, fiches contacts, RSE
+3. Onglet **"Standardisation BPU"** → compare les prix entre fournisseurs
+4. Onglet **"Questionnaire Technique"** → réponses techniques
+5. Onglet **"Contrôle Qualité"** → vérifie la complétude
 
-Utilisez les onglets fournisseurs en haut pour naviguer entre les prestataires.
-Vous pouvez exporter cette vue en PDF via le bouton "Exporter PDF".`
+**Structure attendue** : un dossier avec des sous-dossiers par fournisseur contenant des fichiers .xlsx.`
   },
 
-  // ── Informations marché ────────────────────────────────────
+  // ── FORMATIONS ─────────────────────────────────────────────
   {
-    keywords: ['information', 'infos', 'modifier', 'référent', 'budget', 'date', 'progression', 'tag'],
-    answer: `L'onglet **Informations** d'un marché permet de consulter et modifier ses métadonnées :
+    topic: 'formations',
+    patterns: ['formation', 'formations', 'renouvellement', 'inscription', 'pédagogique', 'inscrire'],
+    answer: `Section **Formations** (barre de navigation) :
 
-- **Référent marché** — Nom du responsable
-- **Statut** — Ouvert, En analyse, Attribution, Reporting, Clôturé
-- **Progression** — Pourcentage d'avancement (slider)
-- **Nombre de lots et offres reçues**
-- **Budget estimé**
-- **Dates clés** — Limite de dépôt, attribution prévue
-- **Tags** — Mots-clés pour retrouver le marché
+**Vue liste** — Tableau avec domaine, date d'échéance, statut, responsable. Les dates en rouge = échéance < 6 mois.
 
-Cliquez "Sauvegarder" pour enregistrer vos modifications.`
+**Vue détail** (cliquez sur une formation) :
+- **Informations** — Données générales et statut
+- **Inscriptions** — Gérer les inscrits
+- **Documents** — Pièces jointes
+- **Modèle économique** — Calcul automatique des coûts`
   },
 
-  // ── Reporting ──────────────────────────────────────────────
+  // ── REPORTING ──────────────────────────────────────────────
   {
-    keywords: ['reporting', 'rapport', 'graphique', 'synthèse', 'excel', 'CA', 'maintenance'],
-    answer: `La section **Reporting** propose deux modes :
+    topic: 'reporting',
+    patterns: ['reporting', 'rapport', 'graphique', 'suivi', 'CA', 'maintenance', 'bilan'],
+    answer: `Le **Reporting** est accessible de deux façons :
 
-**Reporting par marché :**
-Accessible depuis l'onglet "Reporting" d'un marché. Affiche la progression, les KPIs et le tableau de synthèse de ce marché spécifique.
+**Reporting global** — Barre de navigation → "Reporting". Importez un fichier Excel de suivi pour générer des graphiques (CA, maintenance).
 
-**Reporting global :**
-Accessible depuis la barre de navigation → "Reporting". Vous pouvez :
-1. Importer un fichier Excel de suivi (CA, maintenance)
-2. Voir les graphiques générés automatiquement
-3. Filtrer par période, par centre, par type
-4. Exporter les graphiques en Excel
+**Reporting par marché** — Sur un marché qui a du reporting → onglet "Reporting". Affiche la progression, les KPIs et le tableau de synthèse.
 
-Le bouton "Exporter PDF" (🖨️) génère une version imprimable.`
+Vous pouvez exporter en PDF via le bouton 🖨️.`
   },
 
   // ── ERP / KPI ──────────────────────────────────────────────
   {
-    keywords: ['erp', 'kpi', 'indicateur', 'budget tracker', 'timeline'],
-    answer: `L'onglet **ERP · KPI** d'un marché affiche les indicateurs de performance :
+    topic: 'erp',
+    patterns: ['erp', 'kpi', 'indicateur', 'performance', 'budget tracker'],
+    answer: `L'onglet **ERP · KPI** d'un marché affiche :
 
-- **Budget tracker** — Suivi du budget consommé vs estimé
-- **Timeline** — Événements clés du marché
-- **Notes** — Espace libre pour ajouter des commentaires
+- **Budget tracker** — Suivi budget consommé vs estimé
+- **Timeline** — Événements clés
+- **Notes** — Commentaires libres
 
-Cette section est encore en développement. Les données sont saisies manuellement pour l'instant.`
+Cette section est en cours de développement.`
   },
 
-  // ── Contacts / CLCC ────────────────────────────────────────
+  // ── EXPORT / IMPORT ────────────────────────────────────────
   {
-    keywords: ['contact', 'annuaire', 'CLCC', 'centre', 'interlocuteur', 'email', 'mail'],
-    answer: `La section **Contacts** est un annuaire des 19 Centres de Lutte Contre le Cancer (CLCC).
+    topic: 'export_general',
+    patterns: ['exporter', 'export', 'télécharger', 'pdf', 'xlsx', 'excel', 'imprimer'],
+    answer: `Les exports disponibles :
 
-**Vue principale :**
-- 19 cartes CLCC avec le nombre de contacts par centre
-- Barre de recherche pour filtrer par nom ou ville
-- Dropdown "Envoyer un mail par fonction" pour contacter tous les contacts d'une même fonction
-- Bouton "Exporter tout (.xlsx)" pour télécharger l'annuaire complet
+- **Contacts** → Excel (.xlsx) — par CLCC ou annuaire complet
+- **Notation** → Excel (.xlsx) — fichier avec notes intégrées
+- **Reporting** → PDF (bouton 🖨️)
+- **Réponses fournisseurs** → PDF
 
-**Vue détail CLCC :**
-Cliquez sur un centre pour voir ses contacts, filtrés par fonction :
-- Dropdown pour choisir une fonction (Acheteur, DRH, Physicien, etc.)
-- Barre de recherche dans le centre
-- Bouton "Envoyer un mail" → ouvre Outlook avec tous les emails
-- Bouton "Exporter Excel" → télécharge les contacts du centre
-- Clic sur un email → ouvre Outlook directement
-- Clic sur un téléphone → lance l'appel`
-  },
-  {
-    keywords: ['ajouter contact', 'nouveau contact', 'créer contact'],
-    answer: `Pour ajouter un contact à un CLCC :
-
-1. Allez dans **Contacts** (barre de navigation)
-2. Cliquez sur le CLCC concerné
-3. Cliquez sur le bouton **"+ Ajouter un contact"** en haut à droite
-4. Remplissez le formulaire : Nom, Fonction, Service, Email, Téléphone
-5. Cochez les marchés liés si applicable
-6. Cliquez "Enregistrer le contact"
-
-Le contact sera sauvegardé et visible dans l'annuaire.`
-  },
-  {
-    keywords: ['modifier contact', 'supprimer contact', 'éditer contact'],
-    answer: `Pour modifier un contact :
-- Cliquez sur le bouton crayon (✏️) sur la carte du contact
-- Modifiez les champs dans le formulaire inline
-- Cliquez "Sauvegarder"
-
-Pour supprimer un contact :
-- Cliquez sur le bouton croix (✗) sur la carte du contact
-- Confirmez la suppression
-
-Note : les contacts importés depuis le listing Excel peuvent aussi être modifiés ou masqués.`
-  },
-  {
-    keywords: ['envoyer mail', 'mailing', 'mailto', 'outlook', 'email groupe'],
-    answer: `Plusieurs façons d'envoyer des emails depuis la plateforme :
-
-**Mail individuel :** Cliquez sur l'adresse email d'un contact → Outlook s'ouvre avec le destinataire.
-
-**Mail par fonction (tous les CLCC) :** Sur la page Contacts, utilisez le dropdown "Envoyer un mail par fonction..." → sélectionnez une fonction (ex: "Ingénieur Biomédical (19 emails)") → Outlook s'ouvre avec tous les destinataires.
-
-**Mail par fonction (un CLCC) :** Dans la vue détail d'un CLCC, filtrez par fonction puis cliquez "Envoyer un mail (N)" → Outlook s'ouvre avec les contacts filtrés.`
+Tous les fichiers se téléchargent dans votre dossier Téléchargements.`
   },
 
-  // ── Formations ─────────────────────────────────────────────
+  // ── RECHERCHE ──────────────────────────────────────────────
   {
-    keywords: ['formation', 'formations', 'renouvellement', 'inscription', 'pédagogique'],
-    answer: `La section **Formations** liste les formations scientifiques UNICANCER.
-
-**Vue liste :**
-- Tableau avec domaine, date d'échéance, statut de renouvellement, responsable pédagogique, contact
-- Les dates en rouge = échéance dans moins de 6 mois
-
-**Vue détail** (cliquez sur une formation) :
-- **Informations** — Données générales, statut, responsable
-- **Inscriptions** — Liste des inscrits, ajout/modification
-- **Documents** — Pièces jointes liées à la formation
-- **Modèle économique** — Calcul automatique des coûts (pédagogie, formateurs, déplacements, temps salarial)`
-  },
-
-  // ── Fonctionnalités générales ──────────────────────────────
-  {
-    keywords: ['export', 'exporter', 'télécharger', 'pdf', 'xlsx', 'excel'],
-    answer: `Plusieurs exports sont disponibles :
-
-- **Export Excel (.xlsx)** — Contacts (par CLCC ou global), Reporting
-- **Export PDF** — Reporting (bouton 🖨️ "Exporter PDF")
-- **Export XLSX des notes** — Notation (bouton "Exporter XLSX" après la notation)
-
-Tous les exports se téléchargent directement dans votre dossier Téléchargements.`
-  },
-  {
-    keywords: ['recherche', 'chercher', 'filtrer', 'trouver'],
+    topic: 'recherche',
+    patterns: ['recherche', 'chercher', 'filtrer', 'trouver', 'barre de recherche'],
     answer: `Vous pouvez chercher à plusieurs endroits :
 
-- **Tableau de bord** — Barre de recherche par nom ou référence de marché
+- **Tableau de bord** — Recherche par nom ou référence de marché
 - **Sidebar** — Recherche rapide dans la liste des marchés
-- **Contacts** — Recherche par nom de CLCC, ville ou contact
-- **Vue détail CLCC** — Recherche par nom, email ou fonction
+- **Contacts** — Recherche par CLCC, ville ou nom de contact
+- **Dans un CLCC** — Recherche par nom, email ou fonction
 
-Tous les filtres fonctionnent en temps réel (pas besoin de valider).`
-  },
-  {
-    keywords: ['raccourci', 'astuce', 'conseil', 'productivité'],
-    answer: `Quelques astuces pour gagner du temps :
-
-- **Glissez-déposez** vos fichiers Excel directement sur la zone d'import (Notation, Analyse)
-- **Clic sur un email** = ouvre Outlook directement
-- **Clic sur un téléphone** = lance l'appel via Teams
-- **Filtrez par secteur** sur le tableau de bord pour réduire la liste
-- **Export groupé** : "Envoyer un mail par fonction" contacte tous les CLCC d'un coup`
+Tous les filtres fonctionnent en **temps réel**.`
   },
 
-  // ── Aide / Problèmes ──────────────────────────────────────
+  // ── NAVIGATION ─────────────────────────────────────────────
   {
-    keywords: ['problème', 'bug', 'erreur', 'marche pas', 'bloqué', 'aide'],
-    answer: `Si vous rencontrez un problème :
+    topic: 'navigation',
+    patterns: ['navigation', 'menu', 'section', 'page', 'aller', 'accéder', 'où se trouve'],
+    answer: `La plateforme a **4 sections principales** dans la barre de navigation en haut :
 
-1. **Rafraîchissez la page** (Ctrl+Shift+R) — résout la plupart des problèmes d'affichage
-2. **Vérifiez le format du fichier** — Les imports attendent du .xlsx (pas .xls, .csv ou .pdf)
-3. **Données non sauvegardées ?** — Les données sont stockées dans votre navigateur. Si vous changez de navigateur ou videz le cache, elles seront perdues.
+1. **Marchés** — Tableau de bord, tous les marchés par secteur
+2. **Formations** — Formations scientifiques
+3. **Reporting** — Suivi global (import Excel)
+4. **Contacts** — Annuaire des 19 CLCC
 
-Si le problème persiste, contactez l'équipe technique.`
+La **sidebar gauche** liste les marchés groupés par secteur. Cliquez sur un marché pour ouvrir sa fiche.`
+  },
+
+  // ── AIDE / PROBLÈMES ──────────────────────────────────────
+  {
+    topic: 'probleme',
+    patterns: ['problème', 'bug', 'erreur', 'marche pas', 'bloqué', 'page blanche', 'ne fonctionne pas'],
+    answer: `En cas de problème :
+
+1. **Ctrl+Shift+R** — Rafraîchissement forcé (résout la plupart des soucis d'affichage)
+2. Vérifiez le **format du fichier** — Les imports attendent du .xlsx uniquement
+3. **Données disparues ?** — Elles sont dans le cache du navigateur. Changer de navigateur ou vider le cache les supprime.
+
+Si ça persiste, contactez l'équipe technique.`
   },
   {
-    keywords: ['données', 'sauvegarde', 'stockage', 'perdre', 'cache'],
-    answer: `Les données de la plateforme sont stockées à deux niveaux :
+    topic: 'donnees',
+    patterns: ['données', 'sauvegarde', 'stockage', 'perdre', 'cache', 'localStorage'],
+    answer: `Les données sont stockées à deux niveaux :
 
-- **Données statiques** (marchés, formations, contacts importés) — dans le code source, partagées par tous
-- **Données dynamiques** (notes, méta, contacts ajoutés manuellement) — dans le localStorage de votre navigateur
+- **Statiques** (marchés, formations, contacts importés) — dans le code, partagées par tous
+- **Dynamiques** (notes, modifications, contacts ajoutés) — dans le **localStorage** de votre navigateur
 
-⚠️ Le localStorage est lié à votre navigateur. Si vous changez de navigateur, videz le cache, ou utilisez la navigation privée, les données dynamiques ne seront pas disponibles.`
+⚠️ Le localStorage est lié à votre navigateur. Si vous changez de navigateur ou videz le cache, les données dynamiques seront perdues.`
+  },
+
+  // ── ASTUCES ────────────────────────────────────────────────
+  {
+    topic: 'astuces',
+    patterns: ['astuce', 'conseil', 'raccourci', 'productivité', 'gagner du temps', 'tips'],
+    answer: `Astuces pour gagner du temps :
+
+- **Glissez-déposez** vos fichiers Excel sur la zone d'import
+- **Clic sur un email** → ouvre Outlook directement
+- **Clic sur un téléphone** → lance l'appel via Teams
+- **"Envoyer un mail par fonction"** → contacte tous les CLCC d'un coup
+- **Filtrez par secteur** pour réduire la liste des marchés
+- **Sidebar rétractable** : cliquez la flèche pour gagner de l'espace`
+  },
+
+  // ── APPEL TÉLÉPHONIQUE ─────────────────────────────────────
+  {
+    topic: 'telephone',
+    patterns: ['appeler', 'téléphone', 'tel', 'appel', 'teams'],
+    answer: `Pour appeler un contact :
+
+Cliquez sur son **numéro de téléphone** dans sa fiche contact → l'appel se lance via Teams ou votre application téléphone par défaut.
+
+Les numéros sont cliquables partout dans l'application (annuaire CLCC et interlocuteurs par marché).`
+  },
+
+  // ── SIDEBAR ────────────────────────────────────────────────
+  {
+    topic: 'sidebar',
+    patterns: ['sidebar', 'barre latérale', 'gauche', 'réduire', 'replier', 'ouvrir sidebar'],
+    answer: `La **sidebar gauche** affiche les marchés groupés par secteur.
+
+- Cliquez sur un **secteur** pour le déplier/replier
+- Cliquez sur un **marché** pour ouvrir sa fiche
+- La **barre de recherche** en haut filtre les marchés
+- Le **bouton flèche** à droite réduit/agrandit la sidebar
+- Le **point coloré** indique le statut du marché`
+  },
+
+  // ── C'EST QUOI / PRÉSENTATION ─────────────────────────────
+  {
+    topic: 'presentation',
+    patterns: ['c\'est quoi', 'à quoi sert', 'présentation', 'objectif', 'outil', 'plateforme'],
+    answer: `**Gestion des Marchés** est un outil développé par UNICANCER pour les centrales d'achat.
+
+Il permet de :
+- **Gérer les appels d'offres** — suivi, analyse, notation des fournisseurs
+- **Piloter les marchés** — statut, progression, KPIs
+- **Gérer les contacts** — annuaire des 19 CLCC avec 491 interlocuteurs
+- **Suivre les formations** — inscriptions, documents, modèle économique
+- **Reporting** — tableaux de bord et graphiques depuis vos fichiers Excel
+
+L'outil est destiné aux professionnels de santé : acheteurs, ingénieurs biomédicaux, pharmaciens, DRH.`
   },
 ];
 
-// ── Recherche dans la base de connaissances ──────────────────
+// ── Normalisation ────────────────────────────────────────────
 
-export function findAnswer(question) {
-  const q = question.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  let bestMatch = null;
-  let bestScore = 0;
-
-  for (const entry of KNOWLEDGE_BASE) {
-    let score = 0;
-    for (const kw of entry.keywords) {
-      const kwNorm = kw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      if (q.includes(kwNorm)) score += 2;
-      // Partial word match
-      const words = kwNorm.split(/\s+/);
-      for (const w of words) {
-        if (w.length > 2 && q.includes(w)) score += 1;
-      }
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = entry;
-    }
-  }
-
-  return bestMatch && bestScore >= 2 ? bestMatch.answer : null;
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/['']/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-export const SUGGESTED_QUESTIONS = [
-  'Comment fonctionne la notation ?',
-  'Où trouver les contacts ?',
-  'Comment exporter un fichier Excel ?',
-  'Comment envoyer un mail groupé ?',
-  'Comment ajouter un contact ?',
-  'Quels sont les secteurs de marchés ?',
-];
+// Mots vides français
+const STOP_WORDS = new Set([
+  'je', 'tu', 'il', 'elle', 'on', 'nous', 'vous', 'ils', 'elles',
+  'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'au', 'aux',
+  'ce', 'cette', 'ces', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son', 'sa', 'ses',
+  'et', 'ou', 'mais', 'donc', 'car', 'ni', 'que', 'qui', 'dont', 'quoi',
+  'dans', 'sur', 'sous', 'avec', 'pour', 'par', 'en', 'a', 'est',
+  'ne', 'pas', 'plus', 'rien', 'jamais',
+  'suis', 'es', 'est', 'sommes', 'etes', 'sont',
+  'ai', 'as', 'avons', 'avez', 'ont',
+  'faire', 'fait', 'fais', 'peut', 'peux', 'veux', 'veut', 'dois', 'doit',
+  'comment', 'pourquoi', 'quand', 'combien',
+  'ça', 'ca', 'y', 'si', 'se', 'me', 'te',
+  'bien', 'tres', 'aussi', 'encore', 'deja',
+  'bonjour', 'salut', 'merci', 'svp', 'stp',
+]);
+
+function extractWords(text) {
+  return normalize(text).split(' ').filter(w => w.length > 1 && !STOP_WORDS.has(w));
+}
+
+// Radicaux simplifiés (stemming basique français)
+function stem(word) {
+  if (word.length < 4) return word;
+  return word
+    .replace(/(ement|ation|ment|eur|euse|eurs|euses|tion|sion|ite|ites)$/, '')
+    .replace(/(er|ir|re|ant|ent|ons|ent|ez|ais|ait|aient)$/, '')
+    .replace(/(es|s)$/, '');
+}
+
+// ── Moteur de recherche ──────────────────────────────────────
+
+export function findAnswer(question, conversationHistory = []) {
+  const qWords = extractWords(question);
+  const qStems = qWords.map(stem);
+  const qNorm = normalize(question);
+
+  if (qWords.length === 0) return null;
+
+  const scores = ENTRIES.map(entry => {
+    let score = 0;
+
+    // 1. Pattern matching (poids fort)
+    for (const pattern of entry.patterns) {
+      const pNorm = normalize(pattern);
+      // Exact pattern match in question
+      if (qNorm.includes(pNorm)) {
+        score += 10;
+      }
+      // Word-level overlap with patterns
+      const pWords = pNorm.split(' ').filter(w => w.length > 1);
+      const matchedWords = pWords.filter(pw => qWords.some(qw => qw === pw || stem(qw) === stem(pw)));
+      if (matchedWords.length === pWords.length && pWords.length > 0) {
+        score += 8; // All pattern words matched
+      } else {
+        score += matchedWords.length * 3;
+      }
+    }
+
+    // 2. Topic match (poids moyen)
+    const topicWords = entry.topic.split('_').filter(w => w.length > 1);
+    for (const tw of topicWords) {
+      if (qStems.some(qs => qs === stem(tw) || qs.includes(stem(tw)) || stem(tw).includes(qs))) {
+        score += 4;
+      }
+    }
+
+    // 3. Answer content match (poids faible — fallback)
+    const answerNorm = normalize(entry.answer);
+    for (const qw of qWords) {
+      if (answerNorm.includes(qw)) score += 0.5;
+    }
+
+    return { entry, score };
+  });
+
+  // Sort by score descending
+  scores.sort((a, b) => b.score - a.score);
+
+  const best = scores[0];
+  const second = scores[1];
+
+  // Threshold : need at least score 4 to be relevant
+  if (!best || best.score < 4) return null;
+
+  // If two entries are very close in score, combine them
+  if (second && second.score >= best.score * 0.7 && second.score >= 4) {
+    return best.entry.answer + '\n\n---\n\n' + second.entry.answer;
+  }
+
+  return best.entry.answer;
+}
+
+// ── Réponse de clarification ─────────────────────────────────
+
+export function getClarification(question) {
+  const qNorm = normalize(question);
+  const words = extractWords(question);
+
+  // Too vague
+  if (words.length <= 1) {
+    return `Pourriez-vous préciser votre question ? Par exemple :
+- "Comment noter les fournisseurs ?"
+- "Où trouver les contacts d'un CLCC ?"
+- "Comment exporter un fichier Excel ?"`;
+  }
+
+  return null;
+}
