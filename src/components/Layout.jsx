@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Navbar     from './shared/Navbar';
 import Sidebar    from './shared/Sidebar';
 import Breadcrumb from './shared/Breadcrumb';
+import CopilotWidget from './CopilotWidget';
 
 const SIDEBAR_ORANGE = {
   '--sb-bg': '#C2410C',
@@ -62,6 +63,7 @@ export default function Layout({ children, title, sub, actions }) {
           </main>
         </div>
       </div>
+      <CopilotWidget />
     </div>
   );
 }
