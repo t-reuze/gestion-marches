@@ -136,9 +136,9 @@ export default function CopilotWidget() {
               </svg>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E' }}>Assistant UNICANCER</div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E' }}>Copilot</div>
               <div style={{ fontSize: 10, color: aiMode === 'ai' ? '#16A34A' : '#64748B' }}>
-                {aiMode === 'ai' ? 'Claude AI connecté' : 'Mode local'}
+                {aiMode === 'ai' ? 'Connecté' : 'En attente de connexion Azure'}
               </div>
             </div>
             <button
