@@ -149,7 +149,7 @@ export default function Dashboard() {
         <KpiCard
           label="Total marchés"
           value={total}
-          color="#001E45"
+          color="#1E3A5F"
           icon={<IconFolder />}
           sub={actifs + ' actif' + (actifs > 1 ? 's' : '')}
         />

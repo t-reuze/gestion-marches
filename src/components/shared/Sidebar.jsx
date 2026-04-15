@@ -190,7 +190,7 @@ export default function Sidebar() {
           <div style={{ padding: '0 12px 8px' }}>
             <button
               className="btn btn-sm"
-              style={{ width: '100%', fontSize: 12, background: '#001E45', color: '#fff', border: 'none' }}
+              style={{ width: '100%', fontSize: 12, background: '#1E3A5F', color: '#fff', border: 'none' }}
               onClick={() => setShowAddF(true)}
             >
               + Ajouter une formation

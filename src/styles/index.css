@@ -32,7 +32,7 @@ code, kbd, pre { font-family: inherit; }
   --orange-light:   #FF6B35;
   --orange-soft:    #FFF3EE;
   --orange-border:  #FECBB0;
-  --navy:           #001E45;
+  --navy:           #1E3A5F;
   --bg:             #F4F5F9;
   --surface:        #FFFFFF;
   --surface-subtle: #F9FAFB;
@@ -49,12 +49,12 @@ code, kbd, pre { font-family: inherit; }
   --blue:           #2563EB; --blue-soft:    #EFF6FF; --blue-text:    #1E3A5F;
   --purple:         #7C3AED; --purple-soft:  #F5F3FF; --purple-text:  #4C1D95;
   --grad-orange:  linear-gradient(135deg, #E8501A 0%, #FF6B35 100%);
-  --grad-navy:    linear-gradient(160deg, #001120 0%, #002456 100%);
+  --grad-navy:    linear-gradient(160deg, #162D4A 0%, #1E3A5F 100%);
   --grad-surface: linear-gradient(180deg, #FFFFFF 0%, #FAFBFD 100%);
   --grad-subtle:  linear-gradient(135deg, #F8F9FB 0%, #F0F2F7 100%);
-  --sb-bg:          #000F24;
-  --sb-text:        rgba(255,255,255,.42);
-  --sb-hover:       rgba(255,255,255,.055);
+  --sb-bg:          #1E3A5F;
+  --sb-text:        rgba(255,255,255,.55);
+  --sb-hover:       rgba(255,255,255,.08);
   --sb-active-bg:   rgba(232,80,26,.16);
   --sb-active-glow: rgba(232,80,26,.25);
   --sb-border:      rgba(255,255,255,.05);
@@ -390,8 +390,8 @@ code, kbd, pre { font-family: inherit; }
 .btn-accent:hover { filter: brightness(1.06); transform: translateY(-1px); }
 .btn-secondary { background: var(--orange-soft); color: var(--orange-h); border-color: var(--orange-border); }
 .btn-secondary:hover { background: #fee5d6; border-color: #f0a07A; }
-.btn-blue { background: #001E45; color: #fff; border-color: transparent; }
-.btn-blue:hover { background: #002456; transform: translateY(-1px); }
+.btn-blue { background: var(--navy); color: #fff; border-color: transparent; }
+.btn-blue:hover { background: #162D4A; transform: translateY(-1px); }
 .btn-outline { background: var(--surface); color: var(--text-2); border-color: var(--border); box-shadow: var(--e-1); }
 .btn-outline:hover { background: var(--surface-hover); border-color: var(--border-strong); color: var(--text); }
 .btn-ghost { background: transparent; border: none; color: var(--text-3); padding: 0 8px; height: 28px; border-radius: var(--r-sm); }
@@ -472,7 +472,7 @@ code, kbd, pre { font-family: inherit; }
 .table-container { overflow-x: auto; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--e-2); }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead tr { background: var(--sb-bg); }
-th { padding: 0 16px; height: 40px; text-align: left; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .11em; color: rgba(255,255,255,.56); white-space: nowrap; }
+th { padding: 0 16px; height: 40px; text-align: left; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .11em; color: rgba(255,255,255,.75); white-space: nowrap; }
 td { padding: 0 16px; height: 46px; border-bottom: 1px solid rgba(15,23,42,.05); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: var(--surface-subtle); }
