@@ -93,8 +93,8 @@ export default function Sidebar() {
           {/* Bouton ajouter */}
           <div style={{ padding: '0 12px 8px' }}>
             <button
-              className="btn btn-primary btn-sm"
-              style={{ width: '100%', fontSize: 12 }}
+              className="btn btn-sm"
+              style={{ width: '100%', fontSize: 12, background: '#2D5F8A', color: '#fff', border: 'none' }}
               onClick={() => setShowAdd(true)}
             >
               + Ajouter un marché
@@ -190,7 +190,7 @@ export default function Sidebar() {
           <div style={{ padding: '0 12px 8px' }}>
             <button
               className="btn btn-sm"
-              style={{ width: '100%', fontSize: 12, background: '#1E3A5F', color: '#fff', border: 'none' }}
+              style={{ width: '100%', fontSize: 12, background: '#2D5F8A', color: '#fff', border: 'none' }}
               onClick={() => setShowAddF(true)}
             >
               + Ajouter une formation

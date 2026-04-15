@@ -206,9 +206,9 @@ export default function Dashboard() {
           {marchesFiltres.length} résultat{marchesFiltres.length > 1 ? 's' : ''}
         </span>
         <button
-          className="btn btn-primary btn-sm"
+          className="btn btn-sm"
           onClick={() => setShowAdd(true)}
-          style={{ marginLeft: 12 }}
+          style={{ marginLeft: 12, background: '#2D5F8A', color: '#fff', border: 'none' }}
         >
           + Ajouter un marché
         </button>
