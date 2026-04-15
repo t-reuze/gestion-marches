@@ -8,6 +8,7 @@ import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { useSourcingTemplates } from '../../context/SourcingTemplatesContext';
 import SourcingTemplatePicker from './SourcingTemplatePicker';
 import SourcingCriteresEditor from './SourcingCriteresEditor';
+import SourcingFournisseurCR from './SourcingFournisseurCR';
 
 const STATUTS_SHORTLIST = [
   { key: 'a-contacter', label: 'À contacter',    color: '#64748B' },
@@ -44,6 +45,7 @@ export default function MarcheSourcing() {
 
   const [criteresOpen, setCriteresOpen] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [selectedFournisseurId, setSelectedFournisseurId] = useState(null);
 
   if (!marche) return (
     <Layout title="Marché introuvable">
@@ -73,6 +75,18 @@ export default function MarcheSourcing() {
 
   function updateSections(nextSections) {
     setMeta(id, { sourcingCriteres: nextSections });
+  }
+
+  const sourcingCRs = meta.sourcingCRs || {};
+  function saveCR(fournisseurId, cr) {
+    setMeta(id, { sourcingCRs: { ...sourcingCRs, [fournisseurId]: cr } });
+  }
+  function crStats(fournisseurId) {
+    const cr = sourcingCRs[fournisseurId];
+    if (!cr) return { has: false, filled: 0, total: 0 };
+    const all = (currentSections || []).flatMap(s => s.criteres || []);
+    const filled = all.filter(c => (cr.valeurs?.[c.id] || '').trim()).length;
+    return { has: true, filled, total: all.length, updatedAt: cr.updatedAt };
   }
 
   // Annuaire agrégé (mêmes sources que le picker d'interlocuteurs)
@@ -217,6 +231,23 @@ export default function MarcheSourcing() {
 
   const title = marche.reference + ' — ' + marche.nom;
   const statutBadge = STATUT_CONFIG[marche.statut] || {};
+
+  // Vue détail : CR fournisseur
+  const selectedFournisseur = selectedFournisseurId ? shortlist.find(s => s.id === selectedFournisseurId) : null;
+  if (selectedFournisseur) {
+    return (
+      <Layout title={title} sub={'— Sourcing · CR ' + selectedFournisseur.nom}>
+        <MarcheNavTabs />
+        <SourcingFournisseurCR
+          fournisseur={selectedFournisseur}
+          sections={currentSections}
+          cr={sourcingCRs[selectedFournisseur.id]}
+          onSave={cr => saveCR(selectedFournisseur.id, cr)}
+          onBack={() => setSelectedFournisseurId(null)}
+        />
+      </Layout>
+    );
+  }
 
   return (
     <Layout title={title} sub="— Sourcing">
@@ -411,6 +442,17 @@ export default function MarcheSourcing() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: 4 }}>
+                          {(() => {
+                            const cs = crStats(item.id);
+                            return (
+                              <button
+                                className={'btn btn-sm ' + (cs.has ? 'btn-primary' : 'btn-outline')}
+                                style={{ fontSize: 11, whiteSpace: 'nowrap' }}
+                                title={cs.has ? cs.filled + '/' + cs.total + ' critères renseignés' : 'Créer le CR de réunion'}
+                                onClick={() => setSelectedFournisseurId(item.id)}
+                              >📋 CR{cs.has ? ' ' + cs.filled + '/' + cs.total : ''}</button>
+                            );
+                          })()}
                           <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }} onClick={() => startEdit(item)}>✏️</button>
                           <button className="btn btn-outline btn-sm" style={{ fontSize: 11, color: '#EF4444', borderColor: '#EF4444' }} onClick={() => remove(item.id)}>✗</button>
                         </div>
