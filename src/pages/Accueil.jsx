@@ -64,7 +64,7 @@ export default function Accueil() {
           textAlign: 'center', marginBottom: 0,
           background: 'linear-gradient(180deg, #FFFFFF 30%, rgba(255,255,255,.4) 100%)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+          fontFamily: "'Inter', system-ui, sans-serif",
           position: 'relative', zIndex: 1,
         }}>
           PRISM
@@ -117,7 +117,7 @@ export default function Accueil() {
         ].map((s, i) => (
           <div key={i} style={{ textAlign: 'center' }}>
             <div style={{
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: 36, fontWeight: 700,
+              fontFamily: "'Space Mono', monospace", fontSize: 36, fontWeight: 700,
               color: s.color, lineHeight: 1, marginBottom: 8,
             }}>{s.value}</div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,.3)', fontWeight: 500 }}>{s.label}</div>

@@ -6,13 +6,13 @@
    Source Figma : Free Landing Page for Design Subscription
 ================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ── RESET ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: 13.5px;
@@ -109,8 +109,8 @@ code, kbd, pre { font-family: inherit; }
   --e-4: 0 0 0 1px rgba(15,23,42,.03), 0 14px 40px rgba(15,23,42,.12), 0 4px 12px rgba(15,23,42,.06);
   --sh-xs: var(--e-1); --sh-sm: var(--e-2); --sh-md: var(--e-3); --sh-lg: var(--e-4);
   --shadow-xs: var(--e-1); --shadow-sm: var(--e-2); --shadow-md: var(--e-3); --shadow-lg: var(--e-4);
-  --font-sans: 'Outfit', system-ui, sans-serif;
-  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter', system-ui, sans-serif;
   --font-mono: 'Space Mono', 'SFMono-Regular', Consolas, monospace;
   --space-1: 4px;  --space-2: 8px;   --space-3: 12px;
   --space-4: 16px; --space-5: 20px;  --space-6: 24px;
