@@ -18,6 +18,7 @@ export function getMarchesBySecteur(secteurId) {
 // ═══════════════════════════════════════════════════════════
 
 export const STATUT_CONFIG = {
+  sourcing:    { label: 'Sourcing',    color: '#0EA5E9', bg: '#E0F2FE' },
   ouvert:      { label: 'Ouvert',      color: '#3B82F6', bg: '#EFF6FF' },
   analyse:     { label: 'En analyse',  color: '#F59E0B', bg: '#FFFBEB' },
   attribution: { label: 'Attribution', color: '#8B5CF6', bg: '#F5F3FF' },

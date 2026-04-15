@@ -17,10 +17,12 @@ export default function MarcheNavTabs() {
     : path.includes('/analyse')                   ? 'analyse'
     : path.includes('/reporting')                 ? 'reporting'
     : path.includes('/interlocuteurs')            ? 'interlocuteurs'
+    : path.includes('/sourcing')                  ? 'sourcing'
     : path.includes('/erp')                       ? 'erp'
     : 'notation';
 
   const tabList = [
+    { key: 'sourcing',       label: 'Sourcing',              path: '/marche/' + id + '/sourcing',       show: true },
     { key: 'analyse',        label: 'Analyse',               path: '/marche/' + id + '/analyse',        show: true },
     { key: 'notation',       label: 'Notation',              path: '/marche/' + id + '/notation',       show: true },
     { key: 'reponses',       label: 'Réponses fournisseurs', path: '/marche/' + id + '/reponses',       show: !!getSession(id) },

@@ -10,6 +10,7 @@ import AnalyseMarche        from './features/ao/AnalyseMarche';
 import ContactsAnnuaire     from './features/contacts/ContactsAnnuaire';
 import ClccContactForm      from './features/contacts/ClccContactForm';
 import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
+import MarcheSourcing       from './features/sourcing/MarcheSourcing';
 import ErpKpi               from './features/erp/ErpKpi';
 import Calendrier           from './pages/Calendrier';
 import Fournisseurs         from './pages/Fournisseurs';
@@ -19,6 +20,7 @@ import { NewMarchesProvider }            from './context/NewMarchesContext';
 import { FormationsMetaProvider }        from './context/FormationsMetaContext';
 import { ReportingDataProvider }         from './context/ReportingDataContext';
 import { NewFormationsProvider }         from './context/NewFormationsContext';
+import { SourcingTemplatesProvider }     from './context/SourcingTemplatesContext';
 import { marches }          from './data/mockData';
 
 function MarcheRedirect() {
@@ -46,6 +48,7 @@ const router = createHashRouter([
   { path: '/marche/:id/infos',              element: <MarcheInfos /> },
   { path: '/marche/:id/analyse',            element: <AnalyseMarche /> },
   { path: '/marche/:id/interlocuteurs',     element: <MarcheInterlocuteurs /> },
+  { path: '/marche/:id/sourcing',           element: <MarcheSourcing /> },
   { path: '/marche/:id/erp',               element: <ErpKpi /> },
   { path: '/marche/:id',                    element: <MarcheRedirect /> },
   { path: '*',                              element: <Navigate to="/" replace /> },
@@ -58,9 +61,11 @@ export default function App() {
     <NewMarchesProvider>
     <NewFormationsProvider>
     <ReportingDataProvider>
+    <SourcingTemplatesProvider>
     <NotationProvider>
       <RouterProvider router={router} />
     </NotationProvider>
+    </SourcingTemplatesProvider>
     </ReportingDataProvider>
     </NewFormationsProvider>
     </NewMarchesProvider>
