@@ -1,38 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { findAnswer, getClarification, SYSTEM_PROMPT, ENTRIES } from '../data/copilotKnowledge';
+import { findAnswer, getClarification } from '../data/copilotKnowledge';
 
-const AZURE_ENDPOINT = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT || '';
-const AZURE_KEY = import.meta.env.VITE_AZURE_OPENAI_KEY || '';
-const AZURE_DEPLOYMENT = import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT || 'gpt-4o';
-
-function isAzureConfigured() {
-  return !!(AZURE_ENDPOINT && AZURE_KEY);
-}
-
-async function callAzureOpenAI(messages) {
-  const url = `${AZURE_ENDPOINT}/openai/deployments/${AZURE_DEPLOYMENT}/chat/completions?api-version=2024-02-01`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'api-key': AZURE_KEY },
-    body: JSON.stringify({ messages, temperature: 0.3, max_tokens: 800 }),
-  });
-  if (!res.ok) throw new Error('Erreur Azure OpenAI : ' + res.status);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || 'Désolé, je n\'ai pas pu générer de réponse.';
-}
+const PROXY_URL = 'http://localhost:3001/api';
 
 function getPageContext(pathname) {
-  if (pathname === '/' || pathname === '') return 'L\'utilisateur est sur le Tableau de bord (liste des marchés).';
-  if (pathname.includes('/formations')) return 'L\'utilisateur consulte la section Formations.';
-  if (pathname.includes('/reporting')) return 'L\'utilisateur est dans la section Reporting.';
-  if (pathname.includes('/contacts')) return 'L\'utilisateur est dans la section Contacts / Annuaire CLCC.';
-  if (pathname.includes('/analyse')) return 'L\'utilisateur est sur l\'onglet Analyse d\'un marché.';
-  if (pathname.includes('/notation')) return 'L\'utilisateur est sur l\'onglet Notation d\'un marché.';
-  if (pathname.includes('/reponses')) return 'L\'utilisateur est sur l\'onglet Réponses fournisseurs d\'un marché.';
-  if (pathname.includes('/infos')) return 'L\'utilisateur est sur l\'onglet Informations d\'un marché.';
-  if (pathname.includes('/interlocuteurs')) return 'L\'utilisateur est sur l\'onglet Interlocuteurs d\'un marché.';
-  if (pathname.includes('/erp')) return 'L\'utilisateur est sur l\'onglet ERP/KPI d\'un marché.';
+  if (pathname === '/' || pathname === '') return 'Tableau de bord (liste des marchés)';
+  if (pathname.includes('/formations')) return 'Section Formations';
+  if (pathname.includes('/reporting')) return 'Section Reporting';
+  if (pathname.includes('/contacts')) return 'Section Contacts / Annuaire CLCC';
+  if (pathname.includes('/analyse')) return 'Onglet Analyse d\'un marché';
+  if (pathname.includes('/notation')) return 'Onglet Notation d\'un marché';
+  if (pathname.includes('/reponses')) return 'Onglet Réponses fournisseurs';
+  if (pathname.includes('/infos')) return 'Onglet Informations d\'un marché';
+  if (pathname.includes('/interlocuteurs')) return 'Onglet Interlocuteurs d\'un marché';
+  if (pathname.includes('/erp')) return 'Onglet ERP/KPI d\'un marché';
   return '';
 }
 
@@ -41,9 +23,17 @@ export default function CopilotWidget() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [aiMode, setAiMode] = useState(null); // null = not checked, 'ai' = proxy ok, 'local' = fallback
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   const location = useLocation();
+
+  // Check if proxy is running
+  useEffect(() => {
+    fetch(PROXY_URL + '/health').then(r => r.json())
+      .then(d => setAiMode(d.hasApiKey ? 'ai' : 'local'))
+      .catch(() => setAiMode('local'));
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -59,43 +49,36 @@ export default function CopilotWidget() {
     setInput('');
 
     const userMsg = { role: 'user', content: q };
-    setMessages(prev => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setLoading(true);
 
     try {
       let answer;
 
-      if (isAzureConfigured()) {
-        // Mode AI : Azure OpenAI avec contexte complet
-        const contextMsg = getPageContext(location.pathname);
-        const knowledgeContext = ENTRIES.map(e => '### ' + e.topic + '\n' + e.answer).join('\n\n---\n\n');
-
-        const apiMessages = [
-          { role: 'system', content: SYSTEM_PROMPT + '\n\nBASE DE CONNAISSANCES :\n' + knowledgeContext + (contextMsg ? '\n\nCONTEXTE ACTUEL : ' + contextMsg : '') },
-          ...messages.slice(-10),
-          userMsg,
-        ];
-        answer = await callAzureOpenAI(apiMessages);
+      if (aiMode === 'ai') {
+        // Mode Claude AI — proxy local
+        const res = await fetch(PROXY_URL + '/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: newMessages.slice(-12),
+            pageContext: getPageContext(location.pathname),
+          }),
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        answer = data.answer;
       } else {
-        // Mode local : moteur sémantique
-        // D'abord vérifier si la question est trop vague
+        // Mode local — moteur sémantique
         const clarification = getClarification(q);
         const localAnswer = findAnswer(q, messages);
-
-        if (localAnswer) {
-          answer = localAnswer;
-        } else if (clarification) {
-          answer = clarification;
-        } else {
-          answer = `Je n'ai pas trouvé de réponse précise à cette question. Pourriez-vous reformuler ?
-
-Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Comment exporter en Excel ?"`;
-        }
+        answer = localAnswer || clarification || 'Je n\'ai pas trouvé de réponse précise. Pourriez-vous reformuler votre question ?';
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: '❌ Erreur : ' + err.message }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Erreur : ' + err.message }]);
     }
     setLoading(false);
   }
@@ -119,8 +102,8 @@ Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Co
             boxShadow: '0 4px 20px rgba(232,80,26,.35), 0 2px 8px rgba(0,0,0,.1)',
             transition: 'transform .2s, box-shadow .2s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(232,80,26,.45)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 20px rgba(232,80,26,.35), 0 2px 8px rgba(0,0,0,.1)'; }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = ''; }}
         >
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -132,48 +115,53 @@ Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Co
       {open && (
         <div style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-          width: 400, height: 540, borderRadius: 16,
+          width: 420, height: 560, borderRadius: 16,
           background: '#FFFFFF', border: '1px solid rgba(15,23,42,.1)',
           boxShadow: '0 12px 40px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06)',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}>
           {/* Header */}
           <div style={{
-            padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12,
+            padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
             borderBottom: '1px solid rgba(15,23,42,.08)',
             background: 'linear-gradient(135deg, #FFF3EE 0%, #FFFFFF 100%)',
           }}>
             <div style={{
-              width: 36, height: 36, borderRadius: '50%',
+              width: 34, height: 34, borderRadius: '50%',
               background: 'linear-gradient(135deg, #E8501A 0%, #FF6B35 100%)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#1A1A2E' }}>Assistant UNICANCER</div>
-              <div style={{ fontSize: 11, color: '#64748B' }}>
-                {isAzureConfigured() ? 'Copilot AI actif' : 'Base de connaissances locale'}
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#1A1A2E' }}>Assistant UNICANCER</div>
+              <div style={{ fontSize: 10, color: aiMode === 'ai' ? '#16A34A' : '#64748B' }}>
+                {aiMode === 'ai' ? 'Claude AI connecté' : 'Mode local'}
               </div>
             </div>
             <button
+              onClick={() => { setMessages([]); }}
+              style={{
+                width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: 'rgba(15,23,42,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#64748B', fontSize: 12, marginRight: 4,
+              }}
+              title="Nouvelle conversation"
+            >&#x21BB;</button>
+            <button
               onClick={() => setOpen(false)}
               style={{
-                width: 28, height: 28, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer',
                 background: 'rgba(15,23,42,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#64748B', fontSize: 16, transition: 'background .15s',
+                color: '#64748B', fontSize: 14,
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(15,23,42,.12)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(15,23,42,.06)'}
-            >
-              &#x2715;
-            </button>
+            >&#x2715;</button>
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
+          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 8px' }}>
             {messages.length === 0 && (
               <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748B', fontSize: 13 }}>
                 Posez votre question ci-dessous.
@@ -186,19 +174,17 @@ Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Co
                 marginBottom: 10,
               }}>
                 <div style={{
-                  maxWidth: '85%', padding: '10px 14px', borderRadius: 12,
-                  fontSize: 13, lineHeight: 1.6,
+                  maxWidth: '88%', padding: '10px 14px', borderRadius: 12,
+                  fontSize: 13, lineHeight: 1.65,
                   ...(msg.role === 'user'
                     ? { background: '#E8501A', color: '#fff', borderBottomRightRadius: 4 }
                     : { background: '#F5F6FA', color: '#1A1A2E', borderBottomLeftRadius: 4, border: '1px solid rgba(15,23,42,.06)' }
                   ),
-                  whiteSpace: 'pre-wrap',
                 }}>
                   {msg.content.split('\n').map((line, j) => {
-                    // Simple markdown bold
                     const parts = line.split(/(\*\*[^*]+\*\*)/g);
                     return (
-                      <div key={j} style={{ marginBottom: line === '' ? 8 : 2 }}>
+                      <div key={j} style={{ marginBottom: line === '' ? 6 : 1 }}>
                         {parts.map((part, k) =>
                           part.startsWith('**') && part.endsWith('**')
                             ? <strong key={k}>{part.slice(2, -2)}</strong>
@@ -216,7 +202,7 @@ Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Co
                 <div style={{
                   padding: '10px 18px', borderRadius: 12, background: '#F5F6FA',
                   borderBottomLeftRadius: 4, border: '1px solid rgba(15,23,42,.06)',
-                  display: 'flex', gap: 4, alignItems: 'center',
+                  display: 'flex', gap: 5, alignItems: 'center',
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#E8501A', animation: 'copilotDot 1s infinite 0s' }} />
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#E8501A', animation: 'copilotDot 1s infinite .2s' }} />
@@ -228,7 +214,7 @@ Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Co
 
           {/* Input */}
           <div style={{
-            padding: '12px 16px', borderTop: '1px solid rgba(15,23,42,.08)',
+            padding: '10px 14px', borderTop: '1px solid rgba(15,23,42,.08)',
             display: 'flex', gap: 8, alignItems: 'center',
           }}>
             <input
@@ -242,7 +228,6 @@ Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Co
                 flex: 1, height: 38, padding: '0 14px', borderRadius: 10,
                 border: '1px solid rgba(15,23,42,.12)', fontSize: 13,
                 outline: 'none', background: '#FFFFFF', color: '#1A1A2E',
-                transition: 'border-color .15s',
               }}
               onFocus={e => e.target.style.borderColor = '#E8501A'}
               onBlur={e => e.target.style.borderColor = 'rgba(15,23,42,.12)'}
@@ -254,7 +239,6 @@ Par exemple : "Comment noter les fournisseurs ?", "Où sont les contacts ?", "Co
                 width: 38, height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
                 background: input.trim() ? 'linear-gradient(135deg, #E8501A, #FF6B35)' : '#F1F5F9',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background .15s',
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
