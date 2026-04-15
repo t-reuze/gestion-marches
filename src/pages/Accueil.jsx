@@ -115,7 +115,7 @@ export default function Accueil() {
         {/* Title */}
         <h1 style={{
           fontSize: 72, fontWeight: 800, letterSpacing: '-.04em', lineHeight: 1,
-          marginBottom: 20, textAlign: 'center',
+          marginBottom: 12, textAlign: 'center',
           background: 'linear-gradient(135deg, #FFFFFF 0%, #E8501A 50%, #FF6B35 100%)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
@@ -123,13 +123,22 @@ export default function Accueil() {
           PRISM
         </h1>
 
+        {/* Gestion des projets */}
+        <h2 style={{
+          fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,.7)',
+          letterSpacing: '-.01em', marginBottom: 16, textAlign: 'center',
+        }}>
+          Gestion des projets
+        </h2>
+
         {/* Subtitle */}
         <p style={{
-          fontSize: 16, color: 'rgba(255,255,255,.5)', lineHeight: 1.7, textAlign: 'center',
-          maxWidth: 520, marginBottom: 40,
+          fontSize: 15, color: 'rgba(255,255,255,.4)', lineHeight: 1.7, textAlign: 'center',
+          maxWidth: 540, marginBottom: 40,
         }}>
-          Pilotez vos march&eacute;s publics, suivez les formations, g&eacute;rez vos contacts
-          et anticipez les &eacute;ch&eacute;ances &mdash; au service des centrales d'achat UNICANCER.
+          Suivez, analysez et pilotez l'ensemble de vos appels d'offres en temps r&eacute;el.
+          G&eacute;rez vos contacts, anticipez les &eacute;ch&eacute;ances et centralisez
+          le pilotage de vos march&eacute;s publics &mdash; au service des centrales d'achat UNICANCER.
         </p>
 
         {/* Stats */}
