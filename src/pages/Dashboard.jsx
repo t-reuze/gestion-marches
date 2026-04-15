@@ -91,38 +91,7 @@ export default function Dashboard() {
   });
 
   return (
-    <Layout title="Tableau de bord" sub="Vue d'ensemble des marchés">
-
-      {/* ── Hero Banner ──────────────────────────────────────── */}
-      <div className="hero-banner">
-        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="hero-eyebrow">Unicancer · Achats</div>
-          <div className="hero-title">Gestion des projets</div>
-          <div className="hero-subtitle">
-            Suivez, analysez et pilotez l'ensemble de vos appels d'offres en temps réel.
-          </div>
-          <div className="hero-stats">
-            <span className="hero-stat">
-              <span className="hero-stat-dot" style={{ background: '#4ADE80' }} />
-              {actifs} marché{actifs > 1 ? 's' : ''} actif{actifs > 1 ? 's' : ''}
-            </span>
-            <span className="hero-stat">
-              <span className="hero-stat-dot" style={{ background: '#FBBF24' }} />
-              {enAnalyse} en analyse
-            </span>
-            <span className="hero-stat">
-              <span className="hero-stat-dot" style={{ background: '#60A5FA' }} />
-              {offres} offre{offres > 1 ? 's' : ''} reçue{offres > 1 ? 's' : ''}
-            </span>
-            {budgetTotal > 0 && (
-              <span className="hero-stat">
-                <span className="hero-stat-dot" style={{ background: '#E8501A' }} />
-                {formatBudget(budgetTotal)} estimé
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+    <Layout title="Marchés">
 
       {/* ── Secteur Pills ────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
