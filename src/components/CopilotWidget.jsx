@@ -178,33 +178,8 @@ Essayez de reformuler, ou posez une question sur :
           {/* Messages */}
           <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
             {messages.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>&#x1F44B;</div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: '#1A1A2E', marginBottom: 4 }}>
-                  Comment puis-je vous aider ?
-                </div>
-                <div style={{ fontSize: 12, color: '#64748B', marginBottom: 16 }}>
-                  Posez une question sur l'utilisation de la plateforme.
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {SUGGESTED_QUESTIONS.map(q => (
-                    <button
-                      key={q}
-                      onClick={() => handleSend(q)}
-                      style={{
-                        padding: '8px 14px', borderRadius: 8,
-                        border: '1px solid rgba(232,80,26,.2)',
-                        background: '#FFF3EE', color: '#E8501A',
-                        fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                        textAlign: 'left', transition: 'all .15s',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#E8501A'; e.currentTarget.style.color = '#fff'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#FFF3EE'; e.currentTarget.style.color = '#E8501A'; }}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748B', fontSize: 13 }}>
+                Posez votre question ci-dessous.
               </div>
             )}
 
