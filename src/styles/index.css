@@ -294,10 +294,10 @@ code, kbd, pre { font-family: inherit; }
    NAVBAR — barre horizontale 4 sections
 ================================================================ */
 .navbar {
-  height: 64px; background: #FFFFFF; border-bottom: 1px solid var(--border);
+  height: 64px; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFB 100%);
+  border-bottom: 2px solid #2D5F8A;
   display: flex; align-items: center; padding: 0 20px 0 0;
   flex-shrink: 0; z-index: var(--z-sticky); position: relative;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 .navbar-logo {
   display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 100%;
@@ -306,7 +306,7 @@ code, kbd, pre { font-family: inherit; }
 }
 .navbar-logo:hover { opacity: .85; }
 .navbar-logo-img { height: 40px; width: auto; }
-.navbar-tagline { font-size: 14px; color: var(--text); letter-spacing: .02em; font-weight: 600; }
+.navbar-tagline { font-size: 15px; color: #2D5F8A; letter-spacing: .02em; font-weight: 700; }
 .navbar-tabs { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 16px; height: 100%; flex: 1; }
 .navbar-tab {
   display: flex; align-items: center; padding: 8px 20px; margin: 0 3px;

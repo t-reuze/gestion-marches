@@ -90,7 +90,6 @@ export default function Accueil() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <img src="/unicancer-logo.svg" alt="Unicancer" style={{ height: 36 }} />
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>UNICANCER</span>
         </div>
         <span style={{
           fontSize: 9, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase',
