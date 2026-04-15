@@ -3,7 +3,7 @@
  * Logique de scan et compilation de dossiers AO fournisseurs.
  * Paramétré par une config marché (lots, docLabels, bpuReq, lotSheets…).
  *
- * Extrait de AnalyseUnicancer.jsx pour être réutilisable par marché.
+ * Extrait de AnalyseMarche.jsx pour être réutilisable par marché.
  */
 import XLSX from 'xlsx-js-style';
 import JSZip from 'jszip';
