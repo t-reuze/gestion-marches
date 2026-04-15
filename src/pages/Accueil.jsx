@@ -28,19 +28,7 @@ export default function Accueil() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="/unicancer-logo.svg" alt="" style={{ height: 28, filter: 'brightness(0) invert(1)', opacity: .6 }} />
         </div>
-        <button
-          onClick={() => navigate('/marches')}
-          style={{
-            padding: '10px 24px', borderRadius: 8,
-            background: '#E8501A', border: 'none', color: '#fff',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            transition: 'opacity .15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '.85'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        >
-          Accéder à la plateforme
-        </button>
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', color: 'rgba(255,255,255,.25)' }}>v2026</span>
       </nav>
 
       {/* ── Hero ────────────────────────────────────────── */}
