@@ -2,207 +2,170 @@ import { useNavigate } from 'react-router-dom';
 import { marches, formations } from '../data/mockData';
 import { useMarcheMeta } from '../context/MarcheMetaContext';
 
-const SECTIONS = [
-  {
-    label: 'Marchés',
-    sub: 'Appels d\'offres, notation et analyse des fournisseurs',
-    href: '/marches',
-    color: '#E8501A',
-    gradient: 'linear-gradient(135deg, #E8501A 0%, #FF6B35 100%)',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="18" rx="2"/><line x1="8" y1="21" x2="8" y2="3"/><line x1="2" y1="9" x2="22" y2="9"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Formations',
-    sub: 'Formations scientifiques et inscriptions',
-    href: '/formations',
-    color: '#16A34A',
-    gradient: 'linear-gradient(135deg, #16A34A 0%, #22C55E 100%)',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c0 2 3 4 6 4s6-2 6-4v-5"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Reporting',
-    sub: 'Tableaux de bord et suivi CA',
-    href: '/reporting',
-    color: '#2D5F8A',
-    gradient: 'linear-gradient(135deg, #2D5F8A 0%, #3B82F6 100%)',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="1,16 6,10 11,13 18,4 23,10"/><line x1="1" y1="20" x2="23" y2="20"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Contacts',
-    sub: 'Annuaire des 19 centres CLCC',
-    href: '/contacts',
-    color: '#8B5CF6',
-    gradient: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="9" cy="7" r="3"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7"/>
-        <circle cx="18" cy="8" r="2.5"/><path d="M18 13c2.5 0 4.5 2 4.5 4.5"/>
-      </svg>
-    ),
-  },
-  {
-    label: 'Calendrier',
-    sub: 'Planning et échéances clés',
-    href: '/calendrier',
-    color: '#D97706',
-    gradient: 'linear-gradient(135deg, #D97706 0%, #FBBF24 100%)',
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-    ),
-  },
+const NAV = [
+  { label: 'Marchés', href: '/marches' },
+  { label: 'Formations', href: '/formations' },
+  { label: 'Reporting', href: '/reporting' },
+  { label: 'Contacts', href: '/contacts' },
+  { label: 'Calendrier', href: '/calendrier' },
 ];
 
 export default function Accueil() {
   const navigate = useNavigate();
   const { getMeta } = useMarcheMeta();
 
-  const totalMarches = marches.length;
+  const total = marches.length;
   const actifs = marches.filter(m => (getMeta(m.id).statut || m.statut) !== 'cloture').length;
-  const totalFormations = formations.length;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0F1B2D', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: '#0A0E17', color: '#fff', overflow: 'hidden' }}>
 
-      {/* ── Navbar minimale ─────────────────────────────── */}
-      <div style={{
-        padding: '18px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      {/* ── Navbar ──────────────────────────────────────── */}
+      <nav style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '20px 48px', position: 'relative', zIndex: 10,
       }}>
-        <img src="/unicancer-logo.svg" alt="Unicancer" style={{ height: 32, filter: 'brightness(0) invert(1)', opacity: .7 }} />
-        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.1em', color: 'rgba(255,255,255,.25)' }}>v2026</span>
-      </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src="/unicancer-logo.svg" alt="" style={{ height: 28, filter: 'brightness(0) invert(1)', opacity: .6 }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.4)', letterSpacing: '.02em' }}>
+            UNICANCER
+          </span>
+        </div>
+        <button
+          onClick={() => navigate('/marches')}
+          style={{
+            padding: '10px 24px', borderRadius: 8,
+            background: '#E8501A', border: 'none', color: '#fff',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            transition: 'opacity .15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '.85'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
+          Accéder à la plateforme
+        </button>
+      </nav>
 
       {/* ── Hero ────────────────────────────────────────── */}
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '0 32px 40px', position: 'relative',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '80px 32px 60px', position: 'relative',
       }}>
-        {/* Gradient orbs */}
+        {/* Glow */}
         <div style={{
-          position: 'absolute', top: '10%', left: '15%', width: 400, height: 400, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(232,80,26,.12) 0%, transparent 70%)', pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: '5%', right: '10%', width: 350, height: 350, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(45,95,138,.15) 0%, transparent 70%)', pointerEvents: 'none',
+          position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)',
+          width: 800, height: 600, borderRadius: '50%',
+          background: 'radial-gradient(ellipse, rgba(232,80,26,.08) 0%, transparent 60%)',
+          pointerEvents: 'none',
         }} />
 
-        {/* Badge */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '8px 20px', borderRadius: 24,
-          background: 'rgba(232,80,26,.12)', border: '1px solid rgba(232,80,26,.2)',
-          fontSize: 12, fontWeight: 500, color: '#FF8A5C', letterSpacing: '.01em',
-          marginBottom: 28, backdropFilter: 'blur(8px)',
-        }}>
-          Plateforme de R&eacute;f&eacute;rencement et d'Intelligence des Services et March&eacute;s
-        </div>
-
-        {/* Title */}
         <h1 style={{
-          fontSize: 72, fontWeight: 800, letterSpacing: '-.04em', lineHeight: 1,
-          marginBottom: 12, textAlign: 'center',
-          background: 'linear-gradient(135deg, #FFFFFF 0%, #E8501A 50%, #FF6B35 100%)',
+          fontSize: 88, fontWeight: 800, letterSpacing: '-.05em', lineHeight: .95,
+          textAlign: 'center', marginBottom: 0,
+          background: 'linear-gradient(180deg, #FFFFFF 30%, rgba(255,255,255,.4) 100%)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+          position: 'relative', zIndex: 1,
         }}>
           PRISM
         </h1>
 
-        {/* Gestion des projets */}
-        <h2 style={{
-          fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,.7)',
-          letterSpacing: '-.01em', marginBottom: 16, textAlign: 'center',
+        <p style={{
+          fontSize: 18, fontWeight: 500, color: '#E8501A', letterSpacing: '.08em',
+          textTransform: 'uppercase', marginTop: 16, marginBottom: 32,
+          textAlign: 'center',
         }}>
           Gestion des projets
-        </h2>
-
-        {/* Subtitle */}
-        <p style={{
-          fontSize: 15, color: 'rgba(255,255,255,.4)', lineHeight: 1.7, textAlign: 'center',
-          maxWidth: 540, marginBottom: 40,
-        }}>
-          Suivez, analysez et pilotez l'ensemble de vos appels d'offres en temps r&eacute;el.
-          G&eacute;rez vos contacts, anticipez les &eacute;ch&eacute;ances et centralisez
-          le pilotage de vos march&eacute;s publics &mdash; au service des centrales d'achat UNICANCER.
         </p>
 
-        {/* Stats */}
-        <div style={{
-          display: 'flex', gap: 0, marginBottom: 48,
-          background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)',
-          borderRadius: 16, overflow: 'hidden', backdropFilter: 'blur(12px)',
+        <p style={{
+          fontSize: 20, color: 'rgba(255,255,255,.45)', lineHeight: 1.6,
+          textAlign: 'center', maxWidth: 580, marginBottom: 48,
+          fontWeight: 400,
         }}>
-          {[
-            { value: totalMarches, label: 'march\u00e9s', color: '#E8501A' },
-            { value: actifs, label: 'actifs', color: '#16A34A' },
-            { value: totalFormations, label: 'formations', color: '#2D5F8A' },
-            { value: 19, label: 'CLCC', color: '#8B5CF6' },
-          ].map((s, i) => (
-            <div key={i} style={{
-              padding: '20px 32px', textAlign: 'center',
-              borderRight: i < 3 ? '1px solid rgba(255,255,255,.06)' : 'none',
-            }}>
-              <div style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: 28, fontWeight: 700, color: s.color,
-                lineHeight: 1, marginBottom: 6,
-              }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
+          {'Pilotez vos march\u00e9s publics, centralisez vos contacts et anticipez chaque \u00e9ch\u00e9ance \u2014 la plateforme de r\u00e9f\u00e9rencement au service des centrales d\u2019achat UNICANCER.'}
+        </p>
 
-        {/* Section cards */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 14, width: '100%', maxWidth: 900,
+        {/* CTA */}
+        <button
+          onClick={() => navigate('/marches')}
+          style={{
+            padding: '14px 40px', borderRadius: 10,
+            background: 'linear-gradient(135deg, #E8501A 0%, #FF6B35 100%)',
+            border: 'none', color: '#fff', fontSize: 15, fontWeight: 600,
+            cursor: 'pointer', transition: 'transform .2s, box-shadow .2s',
+            boxShadow: '0 4px 24px rgba(232,80,26,.3)',
+            position: 'relative', zIndex: 1,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(232,80,26,.4)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 24px rgba(232,80,26,.3)'; }}
+        >
+          {'Commencer \u2192'}
+        </button>
+      </div>
+
+      {/* ── Stats ───────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: 64, padding: '40px 32px 60px',
+      }}>
+        {[
+          { value: total, label: 'Marchés suivis', color: '#E8501A' },
+          { value: actifs, label: 'Marchés actifs', color: '#16A34A' },
+          { value: formations.length, label: 'Formations', color: '#3B82F6' },
+          { value: 19, label: 'Centres CLCC', color: '#A78BFA' },
+          { value: 491, label: 'Contacts', color: '#FBBF24' },
+        ].map((s, i) => (
+          <div key={i} style={{ textAlign: 'center' }}>
+            <div style={{
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 36, fontWeight: 700,
+              color: s.color, lineHeight: 1, marginBottom: 8,
+            }}>{s.value}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,.3)', fontWeight: 500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Divider ─────────────────────────────────────── */}
+      <div style={{
+        width: 120, height: 1, margin: '0 auto 60px',
+        background: 'linear-gradient(90deg, transparent, rgba(232,80,26,.3), transparent)',
+      }} />
+
+      {/* ── Sections ────────────────────────────────────── */}
+      <div style={{ padding: '0 48px 80px', maxWidth: 1000, margin: '0 auto' }}>
+        <p style={{
+          fontSize: 13, fontWeight: 600, color: '#E8501A', textTransform: 'uppercase',
+          letterSpacing: '.1em', marginBottom: 12, textAlign: 'center',
         }}>
-          {SECTIONS.map(s => (
+          {'Acc\u00e8s rapide'}
+        </p>
+        <h2 style={{
+          fontSize: 32, fontWeight: 700, color: '#fff', textAlign: 'center',
+          letterSpacing: '-.02em', marginBottom: 48,
+        }}>
+          Tout votre pilotage en un seul endroit
+        </h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1 }}>
+          {NAV.map((item, i) => (
             <div
-              key={s.href}
-              onClick={() => navigate(s.href)}
+              key={item.href}
+              onClick={() => navigate(item.href)}
               style={{
-                background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)',
-                borderRadius: 14, padding: '24px 18px', cursor: 'pointer',
-                transition: 'all .25s cubic-bezier(.22,1,.36,1)',
-                textAlign: 'center', backdropFilter: 'blur(8px)',
+                padding: '32px 20px', cursor: 'pointer',
+                borderTop: '1px solid rgba(255,255,255,.06)',
+                transition: 'background .2s',
+                textAlign: 'center',
               }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(255,255,255,.08)';
-                e.currentTarget.style.borderColor = s.color + '40';
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,.2), 0 0 0 1px ' + s.color + '20';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(255,255,255,.04)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,.08)';
-                e.currentTarget.style.transform = '';
-                e.currentTarget.style.boxShadow = '';
-              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,.03)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, background: s.gradient,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 14, boxShadow: '0 4px 12px ' + s.color + '30',
-              }}>
-                {s.icon}
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 6 }}>
+                {item.label}
               </div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: '#FFFFFF', marginBottom: 4 }}>{s.label}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', lineHeight: 1.5 }}>{s.sub}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)' }}>
+                {'\u2192'}
+              </div>
             </div>
           ))}
         </div>
@@ -210,11 +173,15 @@ export default function Accueil() {
 
       {/* ── Footer ──────────────────────────────────────── */}
       <div style={{
-        padding: '20px 40px', textAlign: 'center',
-        borderTop: '1px solid rgba(255,255,255,.05)',
-        fontSize: 11, color: 'rgba(255,255,255,.2)',
+        padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        borderTop: '1px solid rgba(255,255,255,.04)',
       }}>
-        PRISM &mdash; UNICANCER &middot; 2026
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,.15)' }}>
+          {'PRISM \u2014 UNICANCER \u00b7 2026'}
+        </span>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,.15)' }}>
+          {'Plateforme de R\u00e9f\u00e9rencement et d\u2019Intelligence des Services et March\u00e9s'}
+        </span>
       </div>
     </div>
   );
