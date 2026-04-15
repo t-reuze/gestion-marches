@@ -8,7 +8,7 @@ import { useNewFormations } from '../../context/NewFormationsContext';
 
 /* ── Helpers ───────────────────────────────────────────────── */
 function formatDateFormation(d) {
-  if (!d) return '\u2014';
+  if (!d) return '—';
   if (!d.includes('-')) return d;
   const [y, m, day] = d.split('-');
   if (!day) return d;
@@ -25,11 +25,11 @@ function isUrgent(dateStr) {
 
 /* ── Status config ─────────────────────────────────────────── */
 const STATUTS_F = {
-  planifie:      { label: 'Planifi\u00e9',              color: '#64748B' },
+  planifie:      { label: 'Planifié',              color: '#64748B' },
   inscriptions:  { label: 'Inscriptions ouvertes', color: '#16A34A' },
   en_cours:      { label: 'En cours',              color: '#D97706' },
-  termine:       { label: 'Termin\u00e9',               color: '#8B5CF6' },
-  annule:        { label: 'Annul\u00e9',                color: '#EF4444' },
+  termine:       { label: 'Terminé',               color: '#8B5CF6' },
+  annule:        { label: 'Annulé',                color: '#EF4444' },
 };
 
 /* ── KPI Icons ─────────────────────────────────────────────── */
@@ -75,12 +75,12 @@ function StatusBadge({ statut }) {
 /* ── Filter definitions ────────────────────────────────────── */
 const FILTRES = [
   { value: 'tous',         label: 'Toutes' },
-  { value: 'renouveler',   label: '\u00c0 renouveler' },
-  { value: 'planifie',     label: 'Planifi\u00e9' },
+  { value: 'renouveler',   label: 'À renouveler' },
+  { value: 'planifie',     label: 'Planifié' },
   { value: 'inscriptions', label: 'Inscriptions' },
   { value: 'en_cours',     label: 'En cours' },
-  { value: 'termine',      label: 'Termin\u00e9' },
-  { value: 'annule',       label: 'Annul\u00e9' },
+  { value: 'termine',      label: 'Terminé' },
+  { value: 'annule',       label: 'Annulé' },
 ];
 
 /* ── Main component ────────────────────────────────────────── */
@@ -120,50 +120,50 @@ export default function Formations() {
   return (
     <Layout title="Formations" sub="Suivi des formations scientifiques">
 
-      {/* ── Hero Banner (m\u00eame DA que Dashboard) ──────────────── */}
+      {/* Hero Banner */}
       <div className="hero-banner">
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div className="hero-eyebrow">Unicancer \u00b7 Formation</div>
+          <div className="hero-eyebrow">{'Unicancer \u00b7 Formation'}</div>
           <div className="hero-title">Formations scientifiques</div>
           <div className="hero-subtitle">
-            Suivez les formations \u00e0 renouveler, les inscriptions et les mod\u00e8les \u00e9conomiques.
+            {'Suivez les formations \u00e0 renouveler, les inscriptions et les mod\u00e8les \u00e9conomiques.'}
           </div>
           <div className="hero-stats">
             <span className="hero-stat">
               <span className="hero-stat-dot" style={{ background: '#16A34A' }} />
-              {aRenouveler} \u00e0 renouveler
+              {aRenouveler + ' \u00e0 renouveler'}
             </span>
             <span className="hero-stat">
               <span className="hero-stat-dot" style={{ background: '#D97706' }} />
-              {enCours} en cours
+              {enCours + ' en cours'}
             </span>
             {urgentes > 0 && (
               <span className="hero-stat">
                 <span className="hero-stat-dot" style={{ background: '#EF4444' }} />
-                {urgentes} \u00e9ch\u00e9ance{urgentes > 1 ? 's' : ''} proche{urgentes > 1 ? 's' : ''}
+                {urgentes + ' \u00e9ch\u00e9ance' + (urgentes > 1 ? 's' : '') + ' proche' + (urgentes > 1 ? 's' : '')}
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── KPI Grid ─────────────────────────────────────────── */}
+      {/* KPI Grid */}
       <div className="kpi-grid">
         <KpiCard label="Total formations" value={total} color="#E8501A" icon={<IconGrad />}
           sub={aRenouveler + ' \u00e0 renouveler'} />
-        <KpiCard label="\u00c0 renouveler" value={aRenouveler} color="#16A34A" icon={<IconRefresh />}
+        <KpiCard label={'\u00c0 renouveler'} value={aRenouveler} color="#16A34A" icon={<IconRefresh />}
           sub={'sur ' + total + ' formations'} />
         <KpiCard label="En cours / Inscriptions" value={enCours} color="#D97706" icon={<IconClock />}
           sub={'formation' + (enCours > 1 ? 's' : '') + ' active' + (enCours > 1 ? 's' : '')} />
-        <KpiCard label="\u00c9ch\u00e9ances proches" value={urgentes} color="#EF4444" icon={<IconAlert />}
+        <KpiCard label={'\u00c9ch\u00e9ances proches'} value={urgentes} color="#EF4444" icon={<IconAlert />}
           sub="dans les 6 prochains mois" />
       </div>
 
-      {/* ── Filters ──────────────────────────────────────────── */}
+      {/* Filters */}
       <div className="filters-row">
         <input
           className="filter-input"
-          placeholder="Rechercher une formation\u2026"
+          placeholder="Rechercher une formation..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           style={{ width: 240 }}
@@ -181,20 +181,20 @@ export default function Formations() {
         </div>
       </div>
 
-      {/* ── Section Heading ──────────────────────────────────── */}
+      {/* Section Heading */}
       <div className="section-heading">
         <span className="section-heading-label">Formations</span>
         <span className="section-heading-line" />
         <span className="section-heading-count">
-          {filtered.length} r\u00e9sultat{filtered.length > 1 ? 's' : ''}
+          {filtered.length + ' r\u00e9sultat' + (filtered.length > 1 ? 's' : '')}
         </span>
       </div>
 
-      {/* ── Cards ────────────────────────────────────────────── */}
+      {/* Cards */}
       {filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-title">Aucune formation trouv\u00e9e</div>
-          <div className="empty-sub">Modifiez vos crit\u00e8res de recherche.</div>
+          <div className="empty-title">Aucune formation trouv&eacute;e</div>
+          <div className="empty-sub">Modifiez vos crit&egrave;res de recherche.</div>
         </div>
       ) : (
         <div className="marche-grid">
@@ -211,7 +211,7 @@ export default function Formations() {
                 <div className="marche-card-header">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                     <span className="marche-ref" style={{ color: urgent ? '#EF4444' : 'var(--orange)' }}>
-                      \u00c9ch\u00e9ance : {formatDateFormation(f.dateEcheance)}
+                      {'\u00c9ch\u00e9ance : ' + formatDateFormation(f.dateEcheance)}
                     </span>
                     <StatusBadge statut={meta.statut} />
                   </div>
@@ -222,21 +222,21 @@ export default function Formations() {
                 <div className="marche-card-body">
                   <div className="marche-meta">
                     {f.responsablePedagogique && (
-                      <span className="marche-meta-item">Resp. : {f.responsablePedagogique}</span>
+                      <span className="marche-meta-item">{'Resp. : ' + f.responsablePedagogique}</span>
                     )}
                     {f.contact && (
-                      <span className="marche-meta-item">Contact : {f.contact}</span>
+                      <span className="marche-meta-item">{'Contact : ' + f.contact}</span>
                     )}
                   </div>
                   <div className="marche-tags">
                     {f.renouvellement && (
                       <span className="tag" style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0' }}>
-                        \u00c0 renouveler
+                        {'\u00c0 renouveler'}
                       </span>
                     )}
                     {urgent && (
                       <span className="tag" style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
-                        \u00c9ch\u00e9ance proche
+                        {'\u00c9ch\u00e9ance proche'}
                       </span>
                     )}
                   </div>
@@ -247,7 +247,7 @@ export default function Formations() {
                     className="btn btn-primary btn-sm"
                     onClick={e => { e.stopPropagation(); navigate('/formations/' + f.id); }}
                   >
-                    D\u00e9tails
+                    {'D\u00e9tails'}
                   </button>
                 </div>
               </div>

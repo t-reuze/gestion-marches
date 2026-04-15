@@ -5,19 +5,9 @@ import Sidebar    from './shared/Sidebar';
 import Breadcrumb from './shared/Breadcrumb';
 import CopilotWidget from './CopilotWidget';
 
-const SIDEBAR_ORANGE = {
-  '--sb-bg': '#C2410C',
-  '--sb-text': 'rgba(255,255,255,.55)',
-  '--sb-hover': 'rgba(255,255,255,.1)',
-  '--sb-active-bg': 'rgba(255,255,255,.18)',
-  '--sb-active-glow': 'rgba(255,255,255,.25)',
-  '--sb-border': 'rgba(255,255,255,.15)',
-};
-
 export default function Layout({ children, title, sub, actions }) {
   const { pathname } = useLocation();
   const hasSidebar    = pathname === '/' || pathname.startsWith('/marche') || pathname.startsWith('/formations');
-  const isFormations  = pathname.startsWith('/formations');
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const saved = localStorage.getItem('gm-sidebar-open');
@@ -26,13 +16,12 @@ export default function Layout({ children, title, sub, actions }) {
   useEffect(() => { localStorage.setItem('gm-sidebar-open', JSON.stringify(sidebarOpen)); }, [sidebarOpen]);
 
   return (
-    <div className={'app-shell' + (isFormations ? ' theme-formations' : '')}>
+    <div className="app-shell">
       <Navbar />
       <div className="app-body">
         {hasSidebar && (
           <div
-            className={'sidebar-wrapper' + (sidebarOpen ? '' : ' sidebar-wrapper--collapsed') + (isFormations ? ' sidebar-wrapper--orange' : '')}
-            style={isFormations ? SIDEBAR_ORANGE : undefined}
+            className={'sidebar-wrapper' + (sidebarOpen ? '' : ' sidebar-wrapper--collapsed')}
           >
             <Sidebar />
             <button
