@@ -7,7 +7,7 @@ import CopilotWidget from './CopilotWidget';
 
 export default function Layout({ children, title, sub, actions }) {
   const { pathname } = useLocation();
-  const hasSidebar    = pathname === '/' || pathname.startsWith('/marche') || pathname.startsWith('/formations');
+  const hasSidebar    = pathname === '/marches' || pathname.startsWith('/marche/') || pathname.startsWith('/formations');
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const saved = localStorage.getItem('gm-sidebar-open');

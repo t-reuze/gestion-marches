@@ -13,6 +13,7 @@ import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
 import MarcheSourcing       from './features/sourcing/MarcheSourcing';
 import ErpKpi               from './features/erp/ErpKpi';
 import Calendrier           from './pages/Calendrier';
+import Accueil              from './pages/Accueil';
 import Fournisseurs         from './pages/Fournisseurs';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider }            from './context/MarcheMetaContext';
@@ -34,7 +35,8 @@ function MarcheRedirect() {
 }
 
 const router = createHashRouter([
-  { path: '/',                              element: <Dashboard /> },
+  { path: '/',                              element: <Accueil /> },
+  { path: '/marches',                       element: <Dashboard /> },
   { path: '/reporting',                     element: <Reporting /> },
   { path: '/formations',                    element: <Formations /> },
   { path: '/formations/:id',               element: <FormationDetail /> },

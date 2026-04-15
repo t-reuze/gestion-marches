@@ -4,8 +4,8 @@ import NotificationsBell from '../NotificationsBell';
 const TABS = [
   {
     label: 'Marchés',
-    href: '/',
-    match: (p) => p === '/' || p.startsWith('/marche'),
+    href: '/marches',
+    match: (p) => p === '/marches' || p.startsWith('/marche/'),
   },
   {
     label: 'Formations',
@@ -32,12 +32,15 @@ const TABS = [
 export default function Navbar() {
   const { pathname } = useLocation();
 
+  // Don't show navbar on the landing page
+  if (pathname === '/') return null;
+
   return (
     <nav className="navbar">
-      <div className="navbar-logo" style={{ cursor: 'default' }}>
+      <Link to="/" className="navbar-logo" title="Accueil PRISM">
         <img src="/unicancer-logo.svg" alt="Unicancer" className="navbar-logo-img" />
-        <span className="navbar-tagline">Gestion des projets</span>
-      </div>
+        <span className="navbar-tagline">PRISM</span>
+      </Link>
 
       <div className="navbar-tabs">
         {TABS.map((tab) => (
