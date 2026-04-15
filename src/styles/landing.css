@@ -1,12 +1,14 @@
 /* ================================================================
-   LANDING PAGE UI — Hero Banner · Stats · Glass · Section Headings
-   Inspiré de : Free Landing Page for Design Subscription (Figma)
+   LANDING PAGE UI — Hero Banner · Stats · Section Headings
+   DA Unicancer : blanc / orange
 ================================================================ */
 
 /* ── Hero Banner ──────────────────────────────────────────────── */
 .hero-banner {
   position: relative;
-  background: var(--grad-navy);
+  background: linear-gradient(135deg, #FFF3EE 0%, #FFFFFF 50%, #EBF3FA 100%);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--orange);
   border-radius: var(--r-md);
   padding: 36px 40px 32px;
   margin-bottom: 28px;
@@ -14,24 +16,6 @@
   display: flex;
   align-items: center;
   gap: 24px;
-}
-.hero-banner::before {
-  content: '';
-  position: absolute;
-  top: -80px; right: -80px;
-  width: 320px; height: 320px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(232,80,26,.22) 0%, transparent 70%);
-  pointer-events: none;
-}
-.hero-banner::after {
-  content: '';
-  position: absolute;
-  bottom: -100px; left: 25%;
-  width: 240px; height: 240px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,.18) 0%, transparent 70%);
-  pointer-events: none;
 }
 .hero-eyebrow {
   font-size: 10px;
@@ -44,7 +28,7 @@
 .hero-title {
   font-size: 26px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text);
   letter-spacing: -.025em;
   line-height: 1.25;
   margin-bottom: 8px;
@@ -52,7 +36,7 @@
 }
 .hero-subtitle {
   font-size: 13px;
-  color: rgba(255,255,255,.48);
+  color: var(--text-3);
   line-height: 1.65;
   max-width: 480px;
 }
@@ -66,20 +50,18 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.1);
+  background: #FFFFFF;
+  border: 1px solid var(--border);
   border-radius: var(--r-full);
   padding: 5px 13px;
   font-size: 11.5px;
   font-weight: 500;
-  color: rgba(255,255,255,.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-2);
   transition: background var(--fast), border-color var(--fast);
 }
 .hero-stat:hover {
-  background: rgba(255,255,255,.11);
-  border-color: rgba(255,255,255,.18);
+  background: var(--orange-soft);
+  border-color: var(--orange-border);
 }
 .hero-stat-dot {
   width: 6px;
@@ -130,17 +112,6 @@
   border: 1px solid var(--border);
   padding: 2px 9px;
   border-radius: var(--r-full);
-  font-weight: 600;
-}
-
-/* ── Glass card ──────────────────────────────────────────────── */
-.glass-card {
-  background: rgba(255,255,255,.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,.8);
-  border-radius: var(--r-xl);
-  box-shadow: var(--e-3);
 }
 
 /* ── Marché card — glow hover ────────────────────────────────── */
@@ -148,7 +119,7 @@
   box-shadow: var(--e-3), 0 0 0 1px rgba(232,80,26,.12);
 }
 
-/* ── Navbar — gradient underline ────────────────────────────── */
+/* ── Navbar — active underline ───────────────────────────────── */
 .navbar-tab.active::after {
   content: '';
   position: absolute;
@@ -159,12 +130,12 @@
 }
 .navbar-tab { position: relative; }
 
-/* ── Topbar title — larger on dashboard ─────────────────────── */
+/* ── Topbar title ────────────────────────────────────────────── */
 .topbar-title {
   letter-spacing: -.025em;
 }
 
-/* ── Sidebar footer — subtle glow ────────────────────────────── */
+/* ── Sidebar footer — subtle glow ───────────────────────────── */
 .sidebar-footer {
-  background: linear-gradient(0deg, rgba(232,80,26,.04) 0%, transparent 100%);
+  background: linear-gradient(0deg, rgba(232,80,26,.03) 0%, transparent 100%);
 }
