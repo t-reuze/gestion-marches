@@ -14,6 +14,35 @@ function initials(nom) {
   return nom.split(/\s+/).filter(Boolean).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?';
 }
 
+function ClccLogo({ clccId, nom, size = 48 }) {
+  const [imgError, setImgError] = useState(false);
+  const logoUrl = '/logos/' + clccId + '.png';
+
+  if (imgError) {
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: '50%', background: NAVY,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', fontWeight: 800, fontSize: size * 0.3, flexShrink: 0,
+      }}>
+        {initials(nom)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={logoUrl}
+      alt={nom}
+      onError={() => setImgError(true)}
+      style={{
+        width: size, height: size, borderRadius: '50%', objectFit: 'contain',
+        background: '#fff', border: '1px solid rgba(15,23,42,.08)', flexShrink: 0,
+      }}
+    />
+  );
+}
+
 function fonctionColor() {
   return NAVY;
 }
@@ -249,13 +278,7 @@ export default function ContactsAnnuaire() {
         {/* CLCC header card */}
         <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid var(--blue)' }}>
           <div className="card-body" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: '50%',
-              background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontWeight: 800, fontSize: 18, flexShrink: 0,
-            }}>
-              {initials(clcc.nom)}
-            </div>
+            <ClccLogo clccId={clcc.id} nom={clcc.nom} size={56} />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>{clcc.nom}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -672,13 +695,7 @@ export default function ContactsAnnuaire() {
                 onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
               >
                 <div className="card-body" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <div style={{
-                    width: 48, height: 48, borderRadius: '50%', background: color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0,
-                  }}>
-                    {initials(c.nom)}
-                  </div>
+                  <ClccLogo clccId={c.id} nom={c.nom} size={48} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{c.nom}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
