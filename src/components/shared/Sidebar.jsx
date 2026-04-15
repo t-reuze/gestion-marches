@@ -5,6 +5,7 @@ import { useNotation } from '../../context/NotationContext';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { useFormationsMeta } from '../../context/FormationsMetaContext';
 import { useNewFormations } from '../../context/NewFormationsContext';
+import { useNewMarches } from '../../context/NewMarchesContext';
 import AddMarcheModal from '../AddMarcheModal';
 import AddFormationModal from '../AddFormationModal';
 
@@ -34,12 +35,17 @@ const IconSearch = () => (
 
 /* ── Status dot colors ──────────────────────────────────────── */
 const STATUT_DOT = {
+  sourcing:    '#0EA5E9',
   ouvert:      '#3B82F6',
   analyse:     '#F59E0B',
   attribution: '#8B5CF6',
-  cloture:     '#10B981',
   reporting:   '#64748B',
+  cloture:     '#9CA3AF',
 };
+
+// Ordre d'avancement — clôturés en fin de liste
+const STATUT_ORDER = { sourcing: 0, ouvert: 1, analyse: 2, attribution: 3, reporting: 4, cloture: 5 };
+function statutRank(s) { return STATUT_ORDER[s] ?? 99; }
 
 const STATUT_DOT_F = {
   planifie:     '#64748B',
@@ -61,6 +67,7 @@ export default function Sidebar() {
   const { getMeta }     = useMarcheMeta();
   const { getMeta: getFormMeta } = useFormationsMeta();
   const { newFormations } = useNewFormations();
+  const { newMarches }    = useNewMarches();
 
   const [search,    setSearch]    = useState('');
   const [showAdd,   setShowAdd]   = useState(false);
@@ -105,9 +112,17 @@ export default function Sidebar() {
           {/* Secteurs + marchés */}
           <nav className="sidebar-nav">
             {Object.entries(SECTEURS).map(([key, secteur]) => {
-              const marches = getMarchesBySecteur(key).filter((m) =>
-                !search || m.nom.toLowerCase().includes(search.toLowerCase())
-              );
+              const staticMarches = getMarchesBySecteur(key);
+              const userMarches = newMarches.filter(m => m.secteur === key);
+              const marches = [...staticMarches, ...userMarches]
+                .filter((m) => !search || m.nom.toLowerCase().includes(search.toLowerCase()))
+                .map(m => ({ ...m, _statut: getMeta(m.id).statut || m.statut }))
+                .sort((a, b) => {
+                  const ra = statutRank(a._statut);
+                  const rb = statutRank(b._statut);
+                  if (ra !== rb) return ra - rb;
+                  return a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' });
+                });
 
               // Hide empty secteurs when searching
               if (search && !marches.length) return null;
@@ -134,24 +149,28 @@ export default function Sidebar() {
                   {isOpen && marches.length > 0 && (
                     <div className="sidebar-secteur-items">
                       {marches.map((m) => {
-                        const meta      = getMeta(m.id);
-                        const statut    = meta.statut || m.statut;
+                        const statut    = m._statut;
                         const hasSession = !!getSession(m.id);
                         const isActive  = activeId === m.id;
+                        const isCloture = statut === 'cloture';
 
                         return (
                           <NavLink
                             key={m.id}
                             to={'/marche/' + m.id + '/notation'}
                             className={() =>
-                              'nav-item nav-marche-item' + (isActive ? ' active' : '')
+                              'nav-item nav-marche-item' + (isActive ? ' active' : '') + (isCloture ? ' is-cloture' : '')
                             }
+                            style={isCloture ? { opacity: 0.6 } : undefined}
+                            title={isCloture ? m.nom + ' (clôturé)' : m.nom}
                           >
                             <span
                               className="nm-dot"
                               style={{ background: STATUT_DOT[statut] || '#94A3B8' }}
                             />
-                            <span className="nm-nom">{m.nom}</span>
+                            <span className="nm-nom" style={isCloture ? { textDecoration: 'line-through', color: 'var(--text-muted)' } : undefined}>
+                              {m.nom}
+                            </span>
                             {hasSession && (
                               <span className="nm-session" title="Session active">
                                 <IconPen />

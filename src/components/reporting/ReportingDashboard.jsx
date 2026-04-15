@@ -14,10 +14,16 @@ export default function ReportingDashboard({ marcheId }) {
   const [filters, setFilters] = useState(null);
 
   // Au premier rendu avec données, initialiser les filtres
+  // Pré-sélection du marché courant si on vient d'une page marché
+  const defaultMarcheFilter = useMemo(() => {
+    if (!marcheId) return [];
+    return APP_ID_TO_MARCHE[marcheId] || [];
+  }, [marcheId]);
+
   const activeFilters = useMemo(() => {
     if (filters) return filters;
-    return { annees: [...allYears], clcc: [], marche: [], fournisseur: [], typeEquipement: [] };
-  }, [filters, allYears]);
+    return { annees: [...allYears], clcc: [], marche: [...defaultMarcheFilter], fournisseur: [], typeEquipement: [] };
+  }, [filters, allYears, defaultMarcheFilter]);
 
   // Reset les filtres quand les données changent (nouveau fichier uploadé)
   function handleFiltersChange(newFilters) {

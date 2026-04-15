@@ -1,6 +1,7 @@
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useNotation } from '../context/NotationContext';
 import { marches } from '../data/mockData';
+import { APP_ID_TO_MARCHE } from '../data/reportingConstants';
 
 export default function MarcheNavTabs() {
   const { id } = useParams();
@@ -9,6 +10,8 @@ export default function MarcheNavTabs() {
   const { getSession } = useNotation();
   const marche = marches.find(m => m.id === id);
   if (!marche) return null;
+
+  const hasReportingData = Array.isArray(APP_ID_TO_MARCHE[id]) && APP_ID_TO_MARCHE[id].length > 0;
 
   const path = location.pathname;
   const active = path.includes('/reponses')       ? 'reponses'
@@ -27,7 +30,7 @@ export default function MarcheNavTabs() {
     { key: 'notation',       label: 'Notation',              path: '/marche/' + id + '/notation',       show: true },
     { key: 'reponses',       label: 'Réponses fournisseurs', path: '/marche/' + id + '/reponses',       show: !!getSession(id) },
     { key: 'infos',          label: 'Informations',          path: '/marche/' + id + '/infos',          show: true },
-    { key: 'reporting',      label: 'Reporting',             path: '/marche/' + id + '/reporting',      show: marche.hasReporting },
+    { key: 'reporting',      label: 'Reporting',             path: '/marche/' + id + '/reporting',      show: hasReportingData },
     { key: 'interlocuteurs', label: 'Interlocuteurs',        path: '/marche/' + id + '/interlocuteurs', show: true },
     { key: 'erp',            label: 'ERP · KPI',             path: '/marche/' + id + '/erp',            show: true },
   ].filter(t => t.show);

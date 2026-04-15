@@ -46,7 +46,7 @@ export default function Dashboard() {
   const [showAdd, setShowAdd] = useState(false);
   const navigate = useNavigate();
   const { getMeta } = useMarcheMeta();
-  const { newMarches } = useNewMarches();
+  const { newMarches, removeMarche } = useNewMarches();
 
   function mergeMarche(m) {
     const meta = getMeta(m.id);
@@ -221,11 +221,34 @@ export default function Dashboard() {
           {marchesFiltres.map(m => {
             const cfg = STATUT_CONFIG[m.statut] || {};
             return (
-              <div key={m.id} className="marche-card fade-in">
+              <div
+                key={m.id}
+                className="marche-card fade-in"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate('/marche/' + m.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/marche/' + m.id); } }}
+              >
                 <div className="marche-card-header">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, gap: 8 }}>
                     <span className="marche-ref">{m.reference}</span>
-                    <StatusBadge statut={m.statut} />
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <StatusBadge statut={m.statut} />
+                      {m.__userAdded && (
+                        <button
+                          title="Supprimer ce marché"
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (window.confirm('Supprimer définitivement « ' + m.nom + ' » ?')) removeMarche(m.id);
+                          }}
+                          style={{
+                            border: '1px solid #EF4444', background: '#fff', color: '#EF4444',
+                            borderRadius: 4, padding: '2px 6px', fontSize: 11, cursor: 'pointer', lineHeight: 1,
+                          }}
+                        >✕</button>
+                      )}
+                    </div>
                   </div>
                   <div className="marche-nom">{m.nom}</div>
                   <div className="marche-desc">{m.description}</div>
@@ -261,14 +284,12 @@ export default function Dashboard() {
                 </div>
 
                 <div className="marche-card-footer">
-                  <button className="btn btn-primary btn-sm" onClick={() => navigate('/marche/' + m.id + '/notation')}>
-                    Notation
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={e => { e.stopPropagation(); navigate('/marche/' + m.id); }}
+                  >
+                    Ouvrir
                   </button>
-                  {m.hasReporting && (
-                    <button className="btn btn-outline btn-sm" onClick={() => navigate('/marche/' + m.id + '/reporting')}>
-                      Reporting
-                    </button>
-                  )}
                 </div>
               </div>
             );

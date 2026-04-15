@@ -23,6 +23,7 @@ import { ReportingDataProvider }         from './context/ReportingDataContext';
 import { NewFormationsProvider }         from './context/NewFormationsContext';
 import { SourcingTemplatesProvider }     from './context/SourcingTemplatesContext';
 import { marches }          from './data/mockData';
+import { APP_ID_TO_MARCHE } from './data/reportingConstants';
 
 function MarcheRedirect() {
   const { id } = useParams();
@@ -30,7 +31,7 @@ function MarcheRedirect() {
   const m = marches.find(x => x.id === id);
   if (!m) return <Navigate to="/" replace />;
   if (getSession(id))  return <Navigate to={'/marche/' + id + '/notation'}  replace />;
-  if (m.hasReporting)  return <Navigate to={'/marche/' + id + '/reporting'} replace />;
+  if (APP_ID_TO_MARCHE[id]?.length)  return <Navigate to={'/marche/' + id + '/reporting'} replace />;
   return <Navigate to={'/marche/' + id + '/notation'} replace />;
 }
 
