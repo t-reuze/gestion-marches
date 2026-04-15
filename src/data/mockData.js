@@ -852,3 +852,30 @@ export const clccs = [
     contacts: [],
   },
 ];
+
+// ══════════════════════════════════════════════════════════════
+// ÉTABLISSEMENTS AFFILIÉS — CHU, Cliniques, CH partenaires
+// ══════════════════════════════════════════════════════════════
+
+export const etablissementsAffilies = [
+  { id: 'chu-lyon', nom: 'CHU de Lyon (HCL)', ville: 'Lyon', type: 'CHU', region: 'Auvergne-Rhône-Alpes' },
+  { id: 'chu-bordeaux', nom: 'CHU de Bordeaux', ville: 'Bordeaux', type: 'CHU', region: 'Nouvelle-Aquitaine' },
+  { id: 'chu-toulouse', nom: 'CHU de Toulouse', ville: 'Toulouse', type: 'CHU', region: 'Occitanie' },
+  { id: 'chu-montpellier', nom: 'CHU de Montpellier', ville: 'Montpellier', type: 'CHU', region: 'Occitanie' },
+  { id: 'chu-lille', nom: 'CHU de Lille', ville: 'Lille', type: 'CHU', region: 'Hauts-de-France' },
+  { id: 'chu-nantes', nom: 'CHU de Nantes', ville: 'Nantes', type: 'CHU', region: 'Pays de la Loire' },
+  { id: 'chu-strasbourg', nom: 'CHRU de Strasbourg', ville: 'Strasbourg', type: 'CHRU', region: 'Grand Est' },
+  { id: 'chu-rennes', nom: 'CHU de Rennes', ville: 'Rennes', type: 'CHU', region: 'Bretagne' },
+  { id: 'chu-rouen', nom: 'CHU de Rouen', ville: 'Rouen', type: 'CHU', region: 'Normandie' },
+  { id: 'chu-caen', nom: 'CHU de Caen', ville: 'Caen', type: 'CHU', region: 'Normandie' },
+  { id: 'chu-nancy', nom: 'CHRU de Nancy', ville: 'Nancy', type: 'CHRU', region: 'Grand Est' },
+  { id: 'chu-reims', nom: 'CHU de Reims', ville: 'Reims', type: 'CHU', region: 'Grand Est' },
+  { id: 'chu-dijon', nom: 'CHU Dijon Bourgogne', ville: 'Dijon', type: 'CHU', region: 'Bourgogne-Franche-Comté' },
+  { id: 'chu-clermont', nom: 'CHU de Clermont-Ferrand', ville: 'Clermont-Ferrand', type: 'CHU', region: 'Auvergne-Rhône-Alpes' },
+  { id: 'chu-nice', nom: 'CHU de Nice', ville: 'Nice', type: 'CHU', region: "Provence-Alpes-Côte d'Azur" },
+  { id: 'aphp', nom: 'AP-HP (Assistance Publique)', ville: 'Paris', type: 'CHU', region: 'Île-de-France' },
+  { id: 'aphm', nom: 'AP-HM (Assistance Publique Marseille)', ville: 'Marseille', type: 'CHU', region: "Provence-Alpes-Côte d'Azur" },
+  { id: 'chu-grenoble', nom: 'CHU Grenoble Alpes', ville: 'Grenoble', type: 'CHU', region: 'Auvergne-Rhône-Alpes' },
+  { id: 'chu-angers', nom: 'CHU d\'Angers', ville: 'Angers', type: 'CHU', region: 'Pays de la Loire' },
+  { id: 'chu-poitiers', nom: 'CHU de Poitiers', ville: 'Poitiers', type: 'CHU', region: 'Nouvelle-Aquitaine' },
+];

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Layout from '../../components/Layout';
-import { clccs, marches } from '../../data/mockData';
+import { clccs, marches, etablissementsAffilies } from '../../data/mockData';
 import { clccContacts as CLCC_CONTACTS_DATA, FONCTIONS_IMPORT } from '../../data/clccContacts';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { isConfigured, loginMicrosoft, getAccount, logoutMicrosoft, initMsal } from '../../utils/msalConfig';
@@ -49,8 +49,9 @@ function fonctionColor() {
 
 function SectionTabs({ section, setSection }) {
   const tabs = [
-    { id: 'unicancer', label: 'Contacts Unicancer' },
-    { id: 'fournisseurs', label: 'Contacts Fournisseurs' },
+    { id: 'unicancer', label: 'CLCC Unicancer' },
+    { id: 'affilies', label: '\u00c9tablissements Affili\u00e9s' },
+    { id: 'fournisseurs', label: 'Fournisseurs' },
   ];
   return (
     <div style={{ display: 'flex', gap: 6, marginBottom: 18, borderBottom: '1px solid #e5e7eb' }}>
@@ -125,19 +126,35 @@ export default function ContactsAnnuaire() {
   const enrichedClccs = useMemo(() => {
     return clccs.map(c => {
       // 1. Contacts importés depuis le fichier Excel (statiques)
+      // Dédupliqués : même personne (nom+prenom) → une seule fiche avec fonctions groupées
       const imported = CLCC_CONTACTS_DATA[c.id] || {};
-      const staticContacts = Object.entries(imported).flatMap(([fonction, list]) =>
-        list.map(ct => ({
-          id: 'import-' + c.id + '-' + fonction + '-' + (ct.nom || '') + (ct.prenom || ''),
-          nom: [ct.prenom, ct.nom].filter(Boolean).join(' ') || ct.nom,
-          fonction,
-          service: '',
-          email: ct.email || '',
-          telephone: ct.telephone || '',
-          source: 'import',
-          ...(ct.commentaire ? { commentaire: ct.commentaire } : {}),
-        }))
-      );
+      const dedup = new Map();
+      Object.entries(imported).forEach(([fonction, list]) => {
+        list.forEach(ct => {
+          const key = ((ct.prenom || '') + ' ' + (ct.nom || '')).trim().toLowerCase();
+          if (!key) return;
+          if (dedup.has(key)) {
+            const existing = dedup.get(key);
+            if (!existing.fonction.includes(fonction)) {
+              existing.fonction = existing.fonction + ', ' + fonction;
+            }
+            if (!existing.email && ct.email) existing.email = ct.email;
+            if (!existing.telephone && ct.telephone) existing.telephone = ct.telephone;
+          } else {
+            dedup.set(key, {
+              id: 'import-' + c.id + '-' + key,
+              nom: [ct.prenom, ct.nom].filter(Boolean).join(' ') || ct.nom,
+              fonction,
+              service: '',
+              email: ct.email || '',
+              telephone: ct.telephone || '',
+              source: 'import',
+              ...(ct.commentaire ? { commentaire: ct.commentaire } : {}),
+            });
+          }
+        });
+      });
+      const staticContacts = [...dedup.values()];
 
       // 2. Contacts ajoutés manuellement (localStorage)
       const meta = allMeta['clcc-' + c.id] || {};
@@ -553,6 +570,77 @@ export default function ContactsAnnuaire() {
                       </div>
                     </div>
                   )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Layout>
+    );
+  }
+
+  // ── Vue Établissements Affiliés ──────────────────────
+  if (section === 'affilies') {
+    const q = search.toLowerCase();
+    const filteredEtab = etablissementsAffilies.filter(e =>
+      !q || e.nom.toLowerCase().includes(q) || e.ville.toLowerCase().includes(q) || e.type.toLowerCase().includes(q)
+    );
+    return (
+      <Layout title="Contacts" sub={'\u2014 \u00c9tablissements Affili\u00e9s'}>
+        <SectionTabs section={section} setSection={setSection} />
+
+        <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <input
+            type="text" className="filter-input"
+            placeholder="Rechercher un \u00e9tablissement..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ flex: 1, maxWidth: 360 }}
+          />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {filteredEtab.length + ' \u00e9tablissement' + (filteredEtab.length > 1 ? 's' : '')}
+          </span>
+        </div>
+
+        {filteredEtab.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-title">{'Aucun \u00e9tablissement trouv\u00e9'}</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+            {filteredEtab.map(e => {
+              const metaKey = 'etab-' + e.id;
+              const meta = allMeta[metaKey] || {};
+              const contacts = meta.contacts || [];
+              return (
+                <div key={e.id} className="card"
+                  style={{ borderLeft: '4px solid #D97706', cursor: 'pointer', transition: 'box-shadow 200ms, transform 200ms' }}
+                  onClick={() => navigate('/contacts')}
+                  onMouseEnter={ev => { ev.currentTarget.style.transform = 'translateY(-2px)'; ev.currentTarget.style.boxShadow = 'var(--e-3)'; }}
+                  onMouseLeave={ev => { ev.currentTarget.style.transform = ''; ev.currentTarget.style.boxShadow = ''; }}
+                >
+                  <div className="card-body" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: '50%', background: '#D97706',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontWeight: 800, fontSize: 13, flexShrink: 0,
+                    }}>
+                      {e.type}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{e.nom}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        {e.ville + ' \u00b7 ' + e.region}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: contacts.length > 0 ? '#D97706' : 'var(--text-muted)' }}>
+                        {contacts.length}
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                        {'contact' + (contacts.length > 1 ? 's' : '')}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })}

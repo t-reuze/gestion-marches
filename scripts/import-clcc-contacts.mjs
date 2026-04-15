@@ -157,14 +157,43 @@ function clean(v) {
   return String(v).trim();
 }
 
+function cleanEmail(email) {
+  if (!email) return '';
+  return email
+    .trim()
+    .replace(/[;>]+$/, '')       // trailing ; or >
+    .replace(/\.$/, '')          // trailing .
+    .replace(',fr', '.fr')       // comma instead of dot
+    .replace('hustaveroussy', 'gustaveroussy')  // typo
+    .replace('institut-stauss', 'institut-strauss')  // typo
+    .toLowerCase();
+}
+
 function isValidContact(nom, prenom) {
-  const n = (nom || '').trim();
+  const n = (nom || '').trim().toLowerCase();
   const p = (prenom || '').trim();
   if (!n && !p) return false;
   // Skip header-like rows
   const skip = ['nom', 'centre', 'clcc', 'prenom', 'contact', 'fonction', 'date'];
-  if (skip.includes(n.toLowerCase())) return false;
+  if (skip.includes(n)) return false;
+  // Skip placeholder entries
+  const placeholders = ['pas de ', 'en cours de ', 'pas d\'', 'formation '];
+  if (placeholders.some(ph => n.startsWith(ph))) return false;
   return true;
+}
+
+function cleanNom(nom) {
+  if (!nom) return '';
+  // Remove appended notes like "\narrêt longue durée (15/06/25)"
+  return nom.split('\n')[0].trim();
+}
+
+function cleanTelephone(tel) {
+  if (!tel) return '';
+  const t = tel.trim();
+  // Skip non-phone data
+  if (t === '/' || t.length < 8 || /^[a-zA-Z]/.test(t)) return '';
+  return t;
 }
 
 // ── Main ─────────────────────────────────────────────────────────
@@ -259,10 +288,10 @@ for (const sheetName of wb.SheetNames) {
     }
 
     const clccId = centreRaw ? normalizeCentre(centreRaw) : currentCentre;
-    const nom = colMap.nom >= 0 ? clean(row[colMap.nom]) : '';
+    const nom = cleanNom(colMap.nom >= 0 ? clean(row[colMap.nom]) : '');
     const prenom = colMap.prenom >= 0 ? clean(row[colMap.prenom]) : '';
-    const email = colMap.email >= 0 ? clean(row[colMap.email]) : '';
-    const tel = colMap.tel >= 0 ? clean(row[colMap.tel]) : '';
+    const email = cleanEmail(colMap.email >= 0 ? clean(row[colMap.email]) : '');
+    const tel = cleanTelephone(colMap.tel >= 0 ? clean(row[colMap.tel]) : '');
     const commentaire = colMap.commentaire >= 0 ? clean(row[colMap.commentaire]) : '';
 
     if (!isValidContact(nom, prenom)) continue;

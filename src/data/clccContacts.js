@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════════════════════
 // Contacts CLCC — Généré automatiquement depuis :
 // 00-Listing_Diffusion_CLCC_MAJ_31MAR2026.xlsx
-// Dernière import : 2026-04-08
+// Dernière import : 2026-04-15
 // NE PAS ÉDITER MANUELLEMENT — relancer scripts/import-clcc-contacts.mjs
 // ══════════════════════════════════════════════════════════════
 
@@ -32,14 +32,6 @@ export const clccContacts = {
         "nom": "MEGE",
         "prenom": "Alice",
         "email": "a.mege@isc84.org",
-        "telephone": ""
-      }
-    ],
-    "Chef de service Bloc opératoire": [
-      {
-        "nom": "Pas de chirurgie à Avignon",
-        "prenom": "",
-        "email": "",
         "telephone": ""
       }
     ],
@@ -227,7 +219,7 @@ export const clccContacts = {
       {
         "nom": "CARON",
         "prenom": "Jérôme",
-        "email": "J.Caron@bordeaux.unicancer.fr",
+        "email": "j.caron@bordeaux.unicancer.fr",
         "telephone": "05 56 33 32 75"
       }
     ],
@@ -276,7 +268,7 @@ export const clccContacts = {
       {
         "nom": "RICH",
         "prenom": "Emilie",
-        "email": "E.Rich@bordeaux.unicancer.fr",
+        "email": "e.rich@bordeaux.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -344,7 +336,7 @@ export const clccContacts = {
       {
         "nom": "LALET",
         "prenom": "Caroline",
-        "email": "C.Lalet@bordeaux.unicancer.fr",
+        "email": "c.lalet@bordeaux.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable d’Etudes Cliniques (REC) Promotion"
       },
@@ -358,7 +350,7 @@ export const clccContacts = {
       {
         "nom": "LOUCHET",
         "prenom": "Stéphanie",
-        "email": "S.Louchet@bordeaux.unicancer.fr",
+        "email": "s.louchet@bordeaux.unicancer.fr",
         "telephone": "",
         "commentaire": "Coordinatrice Pôle Investigation - Unité de gestion de la RC - DRCI"
       },
@@ -372,7 +364,7 @@ export const clccContacts = {
       {
         "nom": "MATHOULIN-PELISSIER",
         "prenom": "Simone",
-        "email": "S.Mathoulin@bordeaux.unicancer.fr",
+        "email": "s.mathoulin@bordeaux.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable de l’Unité de Recherche Épidémiologique et Clinique (UREC) et Directeur médical de la DRCI"
       },
@@ -413,7 +405,7 @@ export const clccContacts = {
       {
         "nom": "MICAUD",
         "prenom": "Magali",
-        "email": "M.MICAUD@baclesse.unicancer.fr",
+        "email": "m.micaud@baclesse.unicancer.fr",
         "telephone": "02 31 45 50 20"
       }
     ],
@@ -552,7 +544,7 @@ export const clccContacts = {
       {
         "nom": "JAUDET",
         "prenom": "Cyril",
-        "email": "c.jaudet@Baclesse.unicancer.fr;",
+        "email": "c.jaudet@baclesse.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -590,7 +582,7 @@ export const clccContacts = {
       {
         "nom": "GRIFFON",
         "prenom": "Bénédicte",
-        "email": "B.GRIFFON@baclesse.unicancer.fr",
+        "email": "b.griffon@baclesse.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable Recherche clinique"
       },
@@ -608,7 +600,7 @@ export const clccContacts = {
       {
         "nom": "PERRIER-GUSTIN",
         "prenom": "Frédéric",
-        "email": "Frederic.PERRIER-GUSTIN@clermont.unicancer.fr",
+        "email": "frederic.perrier-gustin@clermont.unicancer.fr",
         "telephone": "04.73.27.83.31",
         "commentaire": "Directeur achats, logistique et investissements"
       }
@@ -617,7 +609,7 @@ export const clccContacts = {
       {
         "nom": "MERABTI",
         "prenom": "Barka",
-        "email": "Barka.MERABTI@clermont.unicancer.fr",
+        "email": "barka.merabti@clermont.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -690,7 +682,7 @@ export const clccContacts = {
       {
         "nom": "CHAMPAGNAC",
         "prenom": "Stéphane",
-        "email": "Stephane.Champagnac@clermont.unicancer.fr",
+        "email": "stephane.champagnac@clermont.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -698,7 +690,7 @@ export const clccContacts = {
       {
         "nom": "DEDIEU",
         "prenom": "Veronique",
-        "email": "Veronique.DEDIEU@clermont.unicancer.fr",
+        "email": "veronique.dedieu@clermont.unicancer.fr",
         "telephone": "04 73 27 81 42"
       }
     ],
@@ -706,7 +698,7 @@ export const clccContacts = {
       {
         "nom": "BILLOUX",
         "prenom": "Tommy",
-        "email": "Tommy.BILLOUX@clermont.unicancer.fr",
+        "email": "tommy.billoux@clermont.unicancer.fr",
         "telephone": "04 73 27 84 83"
       }
     ],
@@ -722,7 +714,7 @@ export const clccContacts = {
       {
         "nom": "IRIBARNE",
         "prenom": "Simon",
-        "email": "Simon.IRIBARNE-LEFEBVRE@clermont.unicancer.fr",
+        "email": "simon.iribarne-lefebvre@clermont.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -746,8 +738,8 @@ export const clccContacts = {
       {
         "nom": "BILLOUX",
         "prenom": "Tommy",
-        "email": "tommy.billoux@clermont.unicancer.fr;",
-        "telephone": "RT ?"
+        "email": "tommy.billoux@clermont.unicancer.fr",
+        "telephone": ""
       }
     ],
     "Radiopharmacien": [
@@ -762,7 +754,7 @@ export const clccContacts = {
       {
         "nom": "PAGEOT",
         "prenom": "Christèle",
-        "email": "Christele.Pageot@cjp.fr",
+        "email": "christele.pageot@cjp.fr",
         "telephone": ""
       }
     ],
@@ -770,7 +762,7 @@ export const clccContacts = {
       {
         "nom": "DEDIEU",
         "prenom": "Veronique",
-        "email": "Veronique.DEDIEU@clermont.unicancer.fr",
+        "email": "veronique.dedieu@clermont.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -778,7 +770,7 @@ export const clccContacts = {
       {
         "nom": "ABRIAL",
         "prenom": "Catherine",
-        "email": "Catherine.ABRIAL@clermont.unicancer.fr",
+        "email": "catherine.abrial@clermont.unicancer.fr",
         "telephone": "",
         "commentaire": "Chef de Projets / Responsable Qualité\r\nDPO"
       },
@@ -792,7 +784,7 @@ export const clccContacts = {
       {
         "nom": "THIVAT",
         "prenom": "Emilie",
-        "email": "Emilie.THIVAT@cjp.fr",
+        "email": "emilie.thivat@cjp.fr",
         "telephone": "",
         "commentaire": "Chef de Projets, Division Recheche Clinique"
       },
@@ -888,7 +880,7 @@ export const clccContacts = {
         "nom": "BRISSE",
         "prenom": "Hervé",
         "email": "herve.brisse@curie.fr",
-        "telephone": "Chef du département"
+        "telephone": ""
       },
       {
         "nom": "JEHANNO",
@@ -1027,7 +1019,7 @@ export const clccContacts = {
       {
         "nom": "FERRAND",
         "prenom": "Regis",
-        "email": "Regis.Ferrand@curie.fr",
+        "email": "regis.ferrand@curie.fr",
         "telephone": ""
       }
     ],
@@ -1049,7 +1041,7 @@ export const clccContacts = {
       {
         "nom": "PAOLETTI",
         "prenom": "Xavier",
-        "email": "Xavier.Paoletti@curie.fr",
+        "email": "xavier.paoletti@curie.fr",
         "telephone": "",
         "commentaire": "Directeur de la Recherche Clinique de l'ensemble Hospitalier"
       },
@@ -1132,7 +1124,7 @@ export const clccContacts = {
       {
         "nom": "CHAMBLIN",
         "prenom": "Patrice",
-        "email": "PCHAMBLIN@cgfl.fr",
+        "email": "pchamblin@cgfl.fr",
         "telephone": "03 80 73 77 36"
       }
     ],
@@ -1178,19 +1170,11 @@ export const clccContacts = {
         "commentaire": "Responsable Formation et GPEC"
       }
     ],
-    "Référent Formation Externe": [
-      {
-        "nom": "pas d'institut de formation",
-        "prenom": "",
-        "email": "",
-        "telephone": ""
-      }
-    ],
     "Ingénieur Biomédical": [
       {
         "nom": "BECARD",
         "prenom": "David",
-        "email": "DBecard@cgfl.fr",
+        "email": "dbecard@cgfl.fr",
         "telephone": ""
       }
     ],
@@ -1238,7 +1222,7 @@ export const clccContacts = {
       {
         "nom": "AUBIGNAC",
         "prenom": "Leone",
-        "email": "LAubignac@cgfl.fr",
+        "email": "laubignac@cgfl.fr",
         "telephone": "03 80 73 75 45"
       }
     ],
@@ -1260,14 +1244,14 @@ export const clccContacts = {
       {
         "nom": "REDERSTORFF",
         "prenom": "Emilie",
-        "email": "Erederstorff@cgfl.fr",
+        "email": "erederstorff@cgfl.fr",
         "telephone": "",
         "commentaire": "CRC - Responsable Promotion"
       },
       {
         "nom": "TIAGO",
         "prenom": "Sandrine",
-        "email": "STiago@cgfl.fr",
+        "email": "stiago@cgfl.fr",
         "telephone": "",
         "commentaire": "CRC - Responsable Administrative"
       }
@@ -1287,13 +1271,13 @@ export const clccContacts = {
       {
         "nom": "FOURRE",
         "prenom": "Jacques",
-        "email": "Jacques.Fourre@ico.unicancer.fr",
+        "email": "jacques.fourre@ico.unicancer.fr",
         "telephone": ""
       },
       {
         "nom": "BOYMOND",
         "prenom": "Cecile",
-        "email": "Cecile.Boymond@ico.unicancer.fr",
+        "email": "cecile.boymond@ico.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -1301,7 +1285,7 @@ export const clccContacts = {
       {
         "nom": "LEMARCHAND",
         "prenom": "Aline",
-        "email": "Aline.Lemarchand@ico.unicancer.fr",
+        "email": "aline.lemarchand@ico.unicancer.fr",
         "telephone": "02 41 35 37 43"
       }
     ],
@@ -1309,7 +1293,7 @@ export const clccContacts = {
       {
         "nom": "BILLOT-LEMAY",
         "prenom": "Linda",
-        "email": "Linda.Billot-Lemay@ico.unicancer.fr",
+        "email": "linda.billot-lemay@ico.unicancer.fr",
         "telephone": "02 41 35 37 44"
       }
     ],
@@ -1317,7 +1301,7 @@ export const clccContacts = {
       {
         "nom": "LEMARCHAND",
         "prenom": "Aline",
-        "email": "Aline.Lemarchand@ico.unicancer.fr",
+        "email": "aline.lemarchand@ico.unicancer.fr",
         "telephone": "02 41 35 37 43"
       }
     ],
@@ -1341,13 +1325,13 @@ export const clccContacts = {
       {
         "nom": "MOREL",
         "prenom": "Olivier",
-        "email": "Olivier.Morel@ico.unicancer.fr",
+        "email": "olivier.morel@ico.unicancer.fr",
         "telephone": ""
       },
       {
         "nom": "KRAEBER-BODERE",
         "prenom": "Françoise",
-        "email": "Francoise.Kraeberbodere@ico.unicancer.fr",
+        "email": "francoise.kraeberbodere@ico.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -1361,7 +1345,7 @@ export const clccContacts = {
       {
         "nom": "LABBE",
         "prenom": "Catherine",
-        "email": "Catherine.Labbe-Devilliers@ico.unicancer.fr",
+        "email": "catherine.labbe-devilliers@ico.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -1422,7 +1406,7 @@ export const clccContacts = {
       {
         "nom": "LISBONA",
         "prenom": "Albert",
-        "email": "Albert.Lisbona@ico.unicancer.fr",
+        "email": "albert.lisbona@ico.unicancer.fr",
         "telephone": "02 40 67 99 53"
       }
     ],
@@ -1455,7 +1439,7 @@ export const clccContacts = {
       {
         "nom": "ROUSSEAU",
         "prenom": "Caroline",
-        "email": "caroline.rousseau@ico.unicancer.fr;",
+        "email": "caroline.rousseau@ico.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -1469,7 +1453,7 @@ export const clccContacts = {
       {
         "nom": "VOYEAU-GAUTIER",
         "prenom": "Mathilde",
-        "email": "Mathilde.Voyeau-Gautier@ico.unicancer.fr",
+        "email": "mathilde.voyeau-gautier@ico.unicancer.fr",
         "telephone": "02.40.67.99.00"
       }
     ],
@@ -1477,7 +1461,7 @@ export const clccContacts = {
       {
         "nom": "GUILLERMINET",
         "prenom": "Camille",
-        "email": "camille.guillerminet@ico.unicancer.fr;",
+        "email": "camille.guillerminet@ico.unicancer.fr",
         "telephone": ""
       },
       {
@@ -1491,7 +1475,7 @@ export const clccContacts = {
       {
         "nom": "RAUSCHER",
         "prenom": "Aurore",
-        "email": "Aurore.Rauscher@ico.unicancer.fr",
+        "email": "aurore.rauscher@ico.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -1522,14 +1506,14 @@ export const clccContacts = {
       {
         "nom": "CHARRON-BIGHETTI",
         "prenom": "Raphaëlle",
-        "email": "Raphaelle.Charron-Bighetti@ico.unicancer.fr",
+        "email": "raphaelle.charron-bighetti@ico.unicancer.fr",
         "telephone": "",
         "commentaire": "Directrice du Département de la Recherche Clinique"
       },
       {
         "nom": "DUPUIS",
         "prenom": "Simon",
-        "email": "Simon.Dupuis@ico.unicancer.fr",
+        "email": "simon.dupuis@ico.unicancer.fr",
         "telephone": "",
         "commentaire": "responsable financier et administratif de la recherche clinique"
       },
@@ -1678,7 +1662,7 @@ export const clccContacts = {
       {
         "nom": "SZYMCZAK",
         "prenom": "Hervé",
-        "email": "H-Szymczak@o-lambret.fr",
+        "email": "h-szymczak@o-lambret.fr",
         "telephone": ""
       }
     ],
@@ -1711,7 +1695,7 @@ export const clccContacts = {
         "nom": "CAYEZ",
         "prenom": "Romain",
         "email": "r-cayez@o-lambret.fr",
-        "telephone": "/"
+        "telephone": ""
       }
     ],
     "Radiologue": [
@@ -1774,7 +1758,7 @@ export const clccContacts = {
       {
         "nom": "ABONDANCE",
         "prenom": "Véronique",
-        "email": "Veronique.ABONDANCE@lyon.unicancer.fr",
+        "email": "veronique.abondance@lyon.unicancer.fr",
         "telephone": "04.78.78.26.14",
         "commentaire": "Responsable achats"
       }
@@ -1863,7 +1847,7 @@ export const clccContacts = {
       {
         "nom": "CROCHET",
         "prenom": "Hugo",
-        "email": "Hugo.CROCHET@lyon.unicancer.fr",
+        "email": "hugo.crochet@lyon.unicancer.fr",
         "telephone": "04 78 78 51 58"
       }
     ],
@@ -1912,7 +1896,7 @@ export const clccContacts = {
       {
         "nom": "MOGNETTI",
         "prenom": "Thomas",
-        "email": "thomas.mognetti@lyon.unicancer.fr;",
+        "email": "thomas.mognetti@lyon.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -1928,7 +1912,7 @@ export const clccContacts = {
       {
         "nom": "BADEL",
         "prenom": "Jean-Noel",
-        "email": "JeanNoel.BADEL@lyon.unicancer.fr",
+        "email": "jeannoel.badel@lyon.unicancer.fr",
         "telephone": "04.26.55.67.19"
       }
     ],
@@ -1937,14 +1921,14 @@ export const clccContacts = {
         "nom": "SANDT",
         "prenom": "Magali",
         "email": "magali.sandt@lyon.unicancer.fr",
-        "telephone": "/"
+        "telephone": ""
       }
     ],
     "Radiopharmacien": [
       {
         "nom": "KRYZA",
         "prenom": "David",
-        "email": "David.KRYZA@lyon.unicancer.fr",
+        "email": "david.kryza@lyon.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2000,7 +1984,7 @@ export const clccContacts = {
       {
         "nom": "RIGAL",
         "prenom": "Marie",
-        "email": "RIGALM@ipc.unicancer.fr",
+        "email": "rigalm@ipc.unicancer.fr",
         "telephone": "04.91.22.36.96 / 07.60.26.74.10",
         "commentaire": "Directrice direction de la commande publique"
       }
@@ -2017,7 +2001,7 @@ export const clccContacts = {
       {
         "nom": "TRILLOU",
         "prenom": "Sophie",
-        "email": "TRILLOUS@ipc.unicancer.fr",
+        "email": "trillous@ipc.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2090,7 +2074,7 @@ export const clccContacts = {
       {
         "nom": "HENRY",
         "prenom": "Sandrine",
-        "email": "HENRYS@ipc.unicancer.fr",
+        "email": "henrys@ipc.unicancer.fr",
         "telephone": "",
         "commentaire": "Coordinatrice formation"
       }
@@ -2099,7 +2083,7 @@ export const clccContacts = {
       {
         "nom": "HENRY",
         "prenom": "Sandrine",
-        "email": "HENRYS@ipc.unicancer.fr",
+        "email": "henrys@ipc.unicancer.fr",
         "telephone": "04 91 22 35 07",
         "commentaire": "Coordinatrice Formation"
       }
@@ -2132,8 +2116,8 @@ export const clccContacts = {
       {
         "nom": "FAU",
         "prenom": "Pierre",
-        "email": "FAUP@ipc.unicancer.fr",
-        "telephone": "/"
+        "email": "faup@ipc.unicancer.fr",
+        "telephone": ""
       }
     ],
     "Radiopharmacien": [
@@ -2148,7 +2132,7 @@ export const clccContacts = {
       {
         "nom": "BOUYSSIÉ",
         "prenom": "Martine",
-        "email": "BOUYSSIEM@ipc.unicancer.fr",
+        "email": "bouyssiem@ipc.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2164,7 +2148,7 @@ export const clccContacts = {
       {
         "nom": "MITRY",
         "prenom": "Jean Emmanuel",
-        "email": "MITRYJE@ipc.unicancer.fr>",
+        "email": "mitryje@ipc.unicancer.fr",
         "telephone": "",
         "commentaire": "Professeur / Oncologue"
       },
@@ -2182,7 +2166,7 @@ export const clccContacts = {
       {
         "nom": "PIVETEAU",
         "prenom": "Delphine",
-        "email": "delphine.piveteau@icm.unicancer,fr",
+        "email": "delphine.piveteau@icm.unicancer.fr",
         "telephone": "04.67.61.31.41",
         "commentaire": "Directrice des Ressources Matérielles et Achats"
       }
@@ -2191,7 +2175,7 @@ export const clccContacts = {
       {
         "nom": "SANTINI",
         "prenom": "Jean-Jacques",
-        "email": "Jean-Jacques.Santini@icm.unicancer.fr",
+        "email": "jean-jacques.santini@icm.unicancer.fr",
         "telephone": "04 67 61 45 46"
       }
     ],
@@ -2199,7 +2183,7 @@ export const clccContacts = {
       {
         "nom": "LEPLAPOUS",
         "prenom": "Romuald",
-        "email": "Romuald.Leplapous@icm.unicancer.fr",
+        "email": "romuald.leplapous@icm.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2207,7 +2191,7 @@ export const clccContacts = {
       {
         "nom": "ZARIE",
         "prenom": "Rodolphe",
-        "email": "Rodolphe.Zarie@icm.unicancer.fr",
+        "email": "rodolphe.zarie@icm.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2255,7 +2239,7 @@ export const clccContacts = {
       {
         "nom": "RIEUSSET",
         "prenom": "Guilhem",
-        "email": "Guilhem.Rieusset@icm.unicancer.fr",
+        "email": "guilhem.rieusset@icm.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2263,7 +2247,7 @@ export const clccContacts = {
       {
         "nom": "MACKOWIAK",
         "prenom": "Julien",
-        "email": "Julien.Mackowiak@icm.unicancer.fr",
+        "email": "julien.mackowiak@icm.unicancer.fr",
         "telephone": "04 67 61 23 07"
       }
     ],
@@ -2288,7 +2272,7 @@ export const clccContacts = {
       {
         "nom": "BONNABEL",
         "prenom": "Laurence",
-        "email": "Laurence.Bonnabel@icm.unicancer.fr",
+        "email": "laurence.bonnabel@icm.unicancer.fr",
         "telephone": "04 67 61 23 28",
         "commentaire": "Directrice Exécutive Ecole du Cancer"
       }
@@ -2297,7 +2281,7 @@ export const clccContacts = {
       {
         "nom": "DERRIEN",
         "prenom": "Jérôme",
-        "email": "Jerome.Derrien@icm.unicancer.fr",
+        "email": "jerome.derrien@icm.unicancer.fr",
         "telephone": "04 67 61 85 60"
       }
     ],
@@ -2305,7 +2289,7 @@ export const clccContacts = {
       {
         "nom": "KOTZKI",
         "prenom": "Pierre-Olivier",
-        "email": "pierre-olivier.kotzki@icm.unicancer.fr;",
+        "email": "pierre-olivier.kotzki@icm.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2321,7 +2305,7 @@ export const clccContacts = {
       {
         "nom": "NOUGARET",
         "prenom": "Stéphanie",
-        "email": "Stephanie.Nougaret@icm.unicancer.fr",
+        "email": "stephanie.nougaret@icm.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2337,7 +2321,7 @@ export const clccContacts = {
       {
         "nom": "LUONG-PONTIC",
         "prenom": "Hien",
-        "email": "Hien.Luong-Pontic@icm.unicancer.fr",
+        "email": "hien.luong-pontic@icm.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2353,14 +2337,14 @@ export const clccContacts = {
       {
         "nom": "GESTIN-BOYER",
         "prenom": "Christine",
-        "email": "Christine.Gestin-Boyer@icm.unicancer.fr",
+        "email": "christine.gestin-boyer@icm.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable Centre de Recherche Clinique"
       },
       {
         "nom": "MOUSSION",
         "prenom": "Aurore",
-        "email": "Aurore.Moussion@icm.unicancer.fr",
+        "email": "aurore.moussion@icm.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable de l'Unité promotion (DRCI)"
       }
@@ -2525,7 +2509,7 @@ export const clccContacts = {
     ],
     "Responsable Recherche Clinique (BEC)": [
       {
-        "nom": "BOUJEDAINI\r\narrêt longue durée (15/06/25)",
+        "nom": "BOUJEDAINI",
         "prenom": "Naoual",
         "email": "n.boujedaini@nancy.unicancer.fr",
         "telephone": "",
@@ -2573,7 +2557,7 @@ export const clccContacts = {
       {
         "nom": "MAURY",
         "prenom": "Valérie",
-        "email": "Valerie.MAURY@nice.unicancer.fr",
+        "email": "valerie.maury@nice.unicancer.fr",
         "telephone": "04.92.03.15.16",
         "commentaire": "Directrice des ressources économiques et financières"
       }
@@ -2646,7 +2630,7 @@ export const clccContacts = {
       {
         "nom": "METGE",
         "prenom": "Céline",
-        "email": "Celine.METGE@nice.unicancer.fr",
+        "email": "celine.metge@nice.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2697,7 +2681,7 @@ export const clccContacts = {
       {
         "nom": "DEFLEUR",
         "prenom": "Damien",
-        "email": "Damien.DEFLEUR@nice.unicancer.fr",
+        "email": "damien.defleur@nice.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2801,19 +2785,11 @@ export const clccContacts = {
         "telephone": ""
       }
     ],
-    "Chef de service Bloc opératoire": [
-      {
-        "nom": "En cours de nomination",
-        "prenom": "",
-        "email": "Info de David ROGER le 01/10/21",
-        "telephone": ""
-      }
-    ],
     "Chef de service Médecine Nucléaire": [
       {
         "nom": "PAPATHANASSIOU",
         "prenom": "Dimitri",
-        "email": "dimitri.PAPATHANASSIOU@reims.unicancer.fr",
+        "email": "dimitri.papathanassiou@reims.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2895,7 +2871,7 @@ export const clccContacts = {
       {
         "nom": "PAPATHANASSIOU",
         "prenom": "Dimitri",
-        "email": "d.papathanassiou@reims.unicancer.fr;",
+        "email": "d.papathanassiou@reims.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2903,7 +2879,7 @@ export const clccContacts = {
       {
         "nom": "HOOG",
         "prenom": "Christopher",
-        "email": "Christopher.HOOG@reims.unicancer.fr",
+        "email": "christopher.hoog@reims.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -2942,7 +2918,7 @@ export const clccContacts = {
       {
         "nom": "EYMARD",
         "prenom": "Jean-Christophe",
-        "email": "JeanChristophe.eymard@reims.unicancer.fr",
+        "email": "jeanchristophe.eymard@reims.unicancer.fr",
         "telephone": "",
         "commentaire": "Directeur de la recherche clinique"
       },
@@ -2956,7 +2932,7 @@ export const clccContacts = {
       {
         "nom": "VIGNOT",
         "prenom": "Stéphane",
-        "email": "Stephane.VIGNOT@reims.unicancer.fr",
+        "email": "stephane.vignot@reims.unicancer.fr",
         "telephone": "",
         "commentaire": "Responsable Dpt Enseignement Recherche"
       }
@@ -3106,7 +3082,7 @@ export const clccContacts = {
       {
         "nom": "GIRARD",
         "prenom": "Antoine",
-        "email": "a.girard@rennes.unicancer.fr;",
+        "email": "a.girard@rennes.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -3331,7 +3307,7 @@ export const clccContacts = {
       {
         "nom": "HAPDEY",
         "prenom": "Sebastien",
-        "email": "sebastien.hapdey@chb.unicancer.fr;",
+        "email": "sebastien.hapdey@chb.unicancer.fr",
         "telephone": ""
       }
     ],
@@ -3491,15 +3467,6 @@ export const clccContacts = {
         "telephone": ""
       }
     ],
-    "Référent Formation Externe": [
-      {
-        "nom": "Formation Strasbourg",
-        "prenom": "",
-        "email": "formation@institut-strauss.fr",
-        "telephone": "",
-        "commentaire": "Chargée de recrutement et formation"
-      }
-    ],
     "Ingénieur Biomédical": [
       {
         "nom": "MORGADO",
@@ -3528,7 +3495,7 @@ export const clccContacts = {
       {
         "nom": "MEYER",
         "prenom": "Philippe",
-        "email": "p.meyer@institut-stauss.fr",
+        "email": "p.meyer@institut-strauss.fr",
         "telephone": ""
       }
     ],
@@ -3585,7 +3552,7 @@ export const clccContacts = {
       {
         "nom": "POULICHET",
         "prenom": "Florian",
-        "email": "poulichet.florian@iuct-oncopole.fr.",
+        "email": "poulichet.florian@iuct-oncopole.fr",
         "telephone": "05 31 15 56 55"
       }
     ],
@@ -3609,7 +3576,7 @@ export const clccContacts = {
       {
         "nom": "MOYAL",
         "prenom": "Elizabeth",
-        "email": "Moyal.Elizabeth@iuct-oncopole.fr",
+        "email": "moyal.elizabeth@iuct-oncopole.fr",
         "telephone": "05 31 15 54 27"
       }
     ],
@@ -3658,7 +3625,7 @@ export const clccContacts = {
       {
         "nom": "JEANNELLE",
         "prenom": "Denis",
-        "email": "Jeannelle.denis@iuct-oncopole.fr",
+        "email": "jeannelle.denis@iuct-oncopole.fr",
         "telephone": ""
       }
     ],
@@ -3666,7 +3633,7 @@ export const clccContacts = {
       {
         "nom": "DELPUECH",
         "prenom": "Bertrand",
-        "email": "Delpuech.Bertrand@iuct-oncopole.fr",
+        "email": "delpuech.bertrand@iuct-oncopole.fr",
         "telephone": "05 31 15 54 83"
       }
     ],
@@ -3699,7 +3666,7 @@ export const clccContacts = {
       {
         "nom": "PANASSIE",
         "prenom": "Luce",
-        "email": "Panassie.Luce@iuct-oncopole.fr",
+        "email": "panassie.luce@iuct-oncopole.fr",
         "telephone": ""
       }
     ],
@@ -3707,7 +3674,7 @@ export const clccContacts = {
       {
         "nom": "CASELLES",
         "prenom": "Olivier",
-        "email": "caselles.olivier@iuct-oncopole.fr;",
+        "email": "caselles.olivier@iuct-oncopole.fr",
         "telephone": ""
       }
     ],
@@ -3739,14 +3706,14 @@ export const clccContacts = {
       {
         "nom": "MOUNIER",
         "prenom": "Muriel",
-        "email": "Mounier.Muriel@iuct-oncopole.fr",
+        "email": "mounier.muriel@iuct-oncopole.fr",
         "telephone": "",
         "commentaire": "Responsable Affaire Règlementaires et Opérations Cliniques"
       },
       {
         "nom": "POUBLANC",
         "prenom": "Muriel",
-        "email": "Poublanc.Muriel@iuct-oncopole.fr",
+        "email": "poublanc.muriel@iuct-oncopole.fr",
         "telephone": "",
         "commentaire": "Responsable Bureau des Essais Cliniques"
       }
@@ -3766,7 +3733,7 @@ export const clccContacts = {
       {
         "nom": "MOTTO",
         "prenom": "Didier",
-        "email": "Didier.MOTTO@gustaveroussy.fr",
+        "email": "didier.motto@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3774,7 +3741,7 @@ export const clccContacts = {
       {
         "nom": "HELIES",
         "prenom": "Sylvie",
-        "email": "Sylvie.HELIES@gustaveroussy.fr",
+        "email": "sylvie.helies@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3798,7 +3765,7 @@ export const clccContacts = {
       {
         "nom": "BALLEYGUIER",
         "prenom": "Corinne",
-        "email": "Corinne.BALLEYGUIER@gustaveroussy.fr",
+        "email": "corinne.balleyguier@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3806,7 +3773,7 @@ export const clccContacts = {
       {
         "nom": "BALLEYGUIER",
         "prenom": "Corinne",
-        "email": "Corinne.BALLEYGUIER@gustaveroussy.fr",
+        "email": "corinne.balleyguier@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3826,7 +3793,7 @@ export const clccContacts = {
       {
         "nom": "JANMOT",
         "prenom": "Valérie",
-        "email": "Valerie.JANMOT@gustaveroussy.fr",
+        "email": "valerie.janmot@gustaveroussy.fr",
         "telephone": "01 42 11 49 27"
       }
     ],
@@ -3834,7 +3801,7 @@ export const clccContacts = {
       {
         "nom": "BRUSADIN",
         "prenom": "Gianfranco",
-        "email": "GIANFRANCO.BRUSADIN@gustaveroussy.fr",
+        "email": "gianfranco.brusadin@gustaveroussy.fr",
         "telephone": "01 42 11 49 93"
       }
     ],
@@ -3842,7 +3809,7 @@ export const clccContacts = {
       {
         "nom": "COSSE",
         "prenom": "Alexis",
-        "email": "Alexis.COSSE@gustaveroussy.fr",
+        "email": "alexis.cosse@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3876,7 +3843,7 @@ export const clccContacts = {
       {
         "nom": "MOUSSIER",
         "prenom": "Aurélie",
-        "email": "Aurelie.MOUSSIER@gustaveroussy.fr",
+        "email": "aurelie.moussier@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3884,7 +3851,7 @@ export const clccContacts = {
       {
         "nom": "LEYGNAC",
         "prenom": "Sébastien",
-        "email": "Sebastien.LEYGNAC@gustaveroussy.fr",
+        "email": "sebastien.leygnac@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3892,7 +3859,7 @@ export const clccContacts = {
       {
         "nom": "FERREOL",
         "prenom": "Lison",
-        "email": "LISON.FERREOL@hustaveroussy.fr",
+        "email": "lison.ferreol@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3900,7 +3867,7 @@ export const clccContacts = {
       {
         "nom": "DE JESUS",
         "prenom": "Anne",
-        "email": "ANNE.DE-JESUS@gustaveroussy.fr",
+        "email": "anne.de-jesus@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3908,7 +3875,7 @@ export const clccContacts = {
       {
         "nom": "BEAUDRE",
         "prenom": "Anne",
-        "email": "Anne.BEAUDRE@gustaveroussy.fr",
+        "email": "anne.beaudre@gustaveroussy.fr",
         "telephone": ""
       }
     ],
@@ -3923,21 +3890,21 @@ export const clccContacts = {
       {
         "nom": "CHARTIER",
         "prenom": "Guylène",
-        "email": "GUYLENE.CHARTIER@gustaveroussy.fr>",
+        "email": "guylene.chartier@gustaveroussy.fr",
         "telephone": "",
         "commentaire": "Chef du Bureau Projets & Promotion /D° de la Recherche Clinique"
       },
       {
         "nom": "DEJEAN",
         "prenom": "Valérie",
-        "email": "VALERIE.DEJEAN@gustaveroussy.fr",
+        "email": "valerie.dejean@gustaveroussy.fr",
         "telephone": "",
         "commentaire": "Chef du Bureau Opérations Cliniques/D° de la Recherche Clinique"
       },
       {
         "nom": "MERCIER",
         "prenom": "Sandrine",
-        "email": "Sandrine.MERCIER@gustaveroussy.fr",
+        "email": "sandrine.mercier@gustaveroussy.fr",
         "telephone": "",
         "commentaire": "Chef de projet Metrics/Assistante du Professeur BESSE"
       },
@@ -3951,7 +3918,7 @@ export const clccContacts = {
       {
         "nom": "VUILLIER -  LE GOFF",
         "prenom": "Delphine",
-        "email": "Delphine.VUILLIER@gustaveroussy.fr",
+        "email": "delphine.vuillier@gustaveroussy.fr",
         "telephone": "",
         "commentaire": "Chef du Bureau Qualité/D° de la Recherche Clinique"
       }
