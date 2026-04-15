@@ -27,9 +27,6 @@ export default function Accueil() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="/unicancer-logo.svg" alt="" style={{ height: 28, filter: 'brightness(0) invert(1)', opacity: .6 }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,.4)', letterSpacing: '.02em' }}>
-            UNICANCER
-          </span>
         </div>
         <button
           onClick={() => navigate('/marches')}
@@ -72,10 +69,17 @@ export default function Accueil() {
 
         <p style={{
           fontSize: 18, fontWeight: 500, color: '#E8501A', letterSpacing: '.08em',
-          textTransform: 'uppercase', marginTop: 16, marginBottom: 32,
+          textTransform: 'uppercase', marginTop: 16, marginBottom: 12,
           textAlign: 'center',
         }}>
           Gestion des projets
+        </p>
+
+        <p style={{
+          fontSize: 13, color: 'rgba(255,255,255,.3)', letterSpacing: '.04em',
+          textAlign: 'center', marginBottom: 32,
+        }}>
+          {'Plateforme de R\u00e9f\u00e9rencement et d\u2019Intelligence des Services et March\u00e9s'}
         </p>
 
         <p style={{
