@@ -203,8 +203,12 @@ export default function ReportingCharts({ rows }) {
 
       {/* Barres horizontales : Équipements par type */}
       <div className="card">
-        <div className="card-header">
+        <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span className="card-title">Équipements par type</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500, color: 'var(--text-3)', cursor: 'pointer', marginLeft: 8 }}>
+            <input type="checkbox" checked={equipLourdsOnly} onChange={() => setEquipLourdsOnly(v => !v)} />
+            Équipements lourds uniquement
+          </label>
           <ChartExportButton title="Équipements par type" data={quantiteByType} chartType="bar" labelCol="Type d'équipement" valueCol="Quantité" chartRef={refTypeQte} />
         </div>
         <div className="card-body" ref={refTypeQte} style={{ height: Math.max(300, quantiteByType.length * 30 + 40) }}>
