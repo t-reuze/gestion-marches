@@ -73,7 +73,7 @@ export default function ReportingCharts({ rows }) {
   }, [rows]);
 
   // Quantité par type d'équipement
-  const quantiteByType = useMemo(() => aggregateBy(rows, 'typeEquipement', { topN: 12, valueKey: 'quantite' }), [rows]);
+  const quantiteByType = useMemo(() => aggregateBy(quantiteRows, 'typeEquipement', { topN: 12, valueKey: 'quantite' }), [quantiteRows]);
 
   // Gains achats cumulés par année (agrégat de plusieurs colonnes gain)
   const gainsByAnnee = useMemo(() => {
