@@ -7,6 +7,7 @@ import Layout from '../../components/Layout';
 import { marches } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
+import WorkflowStepToggle from '../../components/WorkflowStepToggle';
 import SmartExcelImport from './SmartExcelImport';
 
 const VENDOR_COLORS = ['#B91C1C','#1A6B3A','#7C3AED','#1A4FA8','#0F7285','#9D3FAF'];
@@ -230,6 +231,9 @@ export default function Notation() {
       }
     >
       <MarcheNavTabs />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <WorkflowStepToggle marcheId={id} stepKey="notation" />
+      </div>
       <div className="notation-summary-bar">
         {vendors.map(v => {
           const a = avg(v);

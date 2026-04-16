@@ -19,6 +19,7 @@ import {
 
 import Layout from "../../components/Layout";
 import MarcheNavTabs from "../../components/MarcheNavTabs";
+import WorkflowStepToggle from "../../components/WorkflowStepToggle";
 import { marches, getAnalyseConfig } from "../../data/mockData";
 import {
   scanAnnuaire, compileQT, compileRSE, compileBPU, compileChiffrage, download,
@@ -1549,6 +1550,10 @@ export default function AnalyseMarche() {
   return (
     <Layout title={layoutTitle} sub={"\u2014 Analyse des offres"}>
       <MarcheNavTabs />
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <WorkflowStepToggle marcheId={id} stepKey="analyse" />
+      </div>
 
       <FolderPickerZone
         onScan={handleFolderAction}

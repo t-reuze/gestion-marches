@@ -133,14 +133,14 @@ export function normalizeFournisseur(fournisseur, rows) {
  * @param {string} key - clé de groupement ('fournisseur', 'annee', 'marcheGroupe')
  * @param {Object} options - { topN, sortDir, caseInsensitive }
  */
-export function aggregateBy(rows, key, { topN = 0, sortDir = 'desc', caseInsensitive = false } = {}) {
+export function aggregateBy(rows, key, { topN = 0, sortDir = 'desc', caseInsensitive = false, valueKey = 'caTtc' } = {}) {
   const map = {};
   for (const row of rows) {
     let val = row[key];
     if (val === '' || val === null || val === undefined) continue;
     if (caseInsensitive) val = String(val).toUpperCase();
     const label = caseInsensitive ? String(val) : String(val);
-    map[label] = (map[label] || 0) + (row.caTtc || 0);
+    map[label] = (map[label] || 0) + (Number(row[valueKey]) || 0);
   }
 
   let entries = Object.entries(map).map(([name, value]) => ({ name, value }));

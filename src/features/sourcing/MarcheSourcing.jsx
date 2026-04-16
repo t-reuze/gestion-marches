@@ -9,6 +9,7 @@ import { useSourcingTemplates } from '../../context/SourcingTemplatesContext';
 import SourcingTemplatePicker from './SourcingTemplatePicker';
 import SourcingCriteresEditor from './SourcingCriteresEditor';
 import SourcingFournisseurCR from './SourcingFournisseurCR';
+import WorkflowStepToggle from '../../components/WorkflowStepToggle';
 
 const STATUTS_SHORTLIST = [
   { key: 'a-contacter', label: 'À contacter',    color: '#64748B' },
@@ -268,6 +269,7 @@ export default function MarcheSourcing() {
               color: statutBadge.color, background: statutBadge.bg,
             }}>{statutBadge.label}</span>
           )}
+          <WorkflowStepToggle marcheId={id} stepKey="sourcing" />
         </div>
       </div>
 

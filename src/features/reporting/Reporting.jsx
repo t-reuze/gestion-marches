@@ -103,9 +103,9 @@ export default function Reporting() {
         </div>
       )}
 
-      <div className="tabs" style={{ marginBottom: 20 }}>
-        <div className={'tab' + (activeTab === 'ca' ? ' active' : '')} onClick={() => setActiveTab('ca')}>CA</div>
-        <div className={'tab' + (activeTab === 'maintenance' ? ' active' : '')} onClick={() => setActiveTab('maintenance')}>Maintenance et Équipement</div>
+      <div className="sub-tabs">
+        <div className={'sub-tab' + (activeTab === 'ca' ? ' active' : '')} onClick={() => setActiveTab('ca')}>CA</div>
+        <div className={'sub-tab' + (activeTab === 'maintenance' ? ' active' : '')} onClick={() => setActiveTab('maintenance')}>Maintenance et Équipement</div>
       </div>
 
       {activeTab === 'ca' && (
