@@ -88,8 +88,20 @@ export default function Reporting() {
   const sub   = marche ? '— Suivi et bilan' : '— Synthèse de tous les marchés';
 
   return (
-    <Layout title={title} sub={sub}>
+    <Layout title={title}>
       <MarcheNavTabs />
+
+      {isGlobal && (
+        <div className="hero-banner">
+          <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+            <div className="hero-eyebrow">{'Unicancer \u00b7 Reporting'}</div>
+            <div className="hero-title">Reporting global</div>
+            <div className="hero-subtitle">
+              {'Synth\u00e8se de tous les march\u00e9s \u2014 suivi CA et maintenance.'}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="tabs" style={{ marginBottom: 20 }}>
         <div className={'tab' + (activeTab === 'ca' ? ' active' : '')} onClick={() => setActiveTab('ca')}>CA</div>

@@ -801,7 +801,30 @@ export default function ContactsAnnuaire() {
 
   // ── CLCC list view (main) ─────────────────────────────
   return (
-    <Layout title="Contacts" sub="— Annuaire">
+    <Layout title="Contacts">
+      <div className="hero-banner">
+        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div className="hero-eyebrow">{'Unicancer \u00b7 Contacts'}</div>
+          <div className="hero-title">Annuaire</div>
+          <div className="hero-subtitle">
+            {'G\u00e9rez les interlocuteurs des 19 CLCC, \u00e9tablissements affili\u00e9s et fournisseurs.'}
+          </div>
+          <div className="hero-stats">
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#2D5F8A' }} />
+              {enrichedClccs.reduce((s, c) => s + c.totalContacts, 0) + ' contacts'}
+            </span>
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#16A34A' }} />
+              {'19 CLCC'}
+            </span>
+            <span className="hero-stat">
+              <span className="hero-stat-dot" style={{ background: '#D97706' }} />
+              {'33 fonctions'}
+            </span>
+          </div>
+        </div>
+      </div>
       <SectionTabs section={section} setSection={setSection} />
       {/* Toolbar : mailing par fonction + export */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
