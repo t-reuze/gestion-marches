@@ -879,3 +879,26 @@ export const etablissementsAffilies = [
   { id: 'chu-angers', nom: 'CHU d\'Angers', ville: 'Angers', type: 'CHU', region: 'Pays de la Loire' },
   { id: 'chu-poitiers', nom: 'CHU de Poitiers', ville: 'Poitiers', type: 'CHU', region: 'Nouvelle-Aquitaine' },
 ];
+
+// ══════════════════════════════════════════════════════════════
+// CONTACTS INTERNES UNICANCER (Siège)
+// ══════════════════════════════════════════════════════════════
+
+export const contactsSiege = [
+  { id: 'siege-achats', service: 'Direction des Achats', contacts: [
+    { nom: 'Gaëtan RAYMOND', fonction: 'Directeur des Achats', email: '', telephone: '' },
+    { nom: 'Alban HARTMANN', fonction: 'Responsable Achats', email: '', telephone: '' },
+    { nom: 'Eloïse SALLES', fonction: 'Acheteuse', email: '', telephone: '' },
+    { nom: 'Claire FOURIS', fonction: 'Acheteuse', email: '', telephone: '' },
+    { nom: 'Sergio RABENJASON', fonction: 'Acheteur', email: '', telephone: '' },
+    { nom: 'Jean Noël BADEL', fonction: 'Acheteur', email: '', telephone: '' },
+    { nom: 'Frédéric PERRIER-GUSTIN', fonction: 'Acheteur', email: '', telephone: '' },
+    { nom: 'Yaël GLIKSMAN', fonction: 'Acheteuse', email: '', telephone: '' },
+    { nom: 'Soumaya EL HIMDI', fonction: 'Acheteuse', email: '', telephone: '' },
+  ]},
+  { id: 'siege-formation', service: 'Formation Scientifique', contacts: [] },
+  { id: 'siege-dsi', service: 'Direction des Systèmes d\'Information', contacts: [] },
+  { id: 'siege-drh', service: 'Direction des Ressources Humaines', contacts: [] },
+  { id: 'siege-juridique', service: 'Direction Juridique', contacts: [] },
+  { id: 'siege-direction', service: 'Direction Générale', contacts: [] },
+];

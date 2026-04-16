@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Layout from '../../components/Layout';
-import { clccs, marches, etablissementsAffilies } from '../../data/mockData';
+import { clccs, marches, etablissementsAffilies, contactsSiege } from '../../data/mockData';
 import { fournisseursContacts as FOURNISSEURS_DATA, CATEGORIES_FOURNISSEURS } from '../../data/fournisseursContacts';
 import { clccContacts as CLCC_CONTACTS_DATA, FONCTIONS_IMPORT } from '../../data/clccContacts';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
@@ -149,6 +149,7 @@ function fonctionColor() {
 function SectionTabs({ section, setSection }) {
   const tabs = [
     { id: 'unicancer', label: 'CLCC Unicancer' },
+    { id: 'siege', label: 'UNICANCER Si\u00e8ge' },
     { id: 'affilies', label: '\u00c9tablissements Affili\u00e9s' },
     { id: 'fournisseurs', label: 'Fournisseurs' },
   ];
@@ -683,6 +684,51 @@ export default function ContactsAnnuaire() {
     );
   }
 
+  // ── Vue UNICANCER Siège ─────────────────────────────
+  if (section === 'siege') {
+    return (
+      <Layout title="Contacts">
+        <div className="hero-banner">
+          <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+            <div className="hero-eyebrow">{'Unicancer \u00b7 Si\u00e8ge'}</div>
+            <div className="hero-title">{'Contacts internes'}</div>
+            <div className="hero-subtitle">
+              {'\u00c9quipes du si\u00e8ge UNICANCER \u2014 Paris.'}
+            </div>
+          </div>
+        </div>
+        <SectionTabs section={section} setSection={setSection} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+          {contactsSiege.map(dept => (
+            <div key={dept.id} className="card" style={{ borderLeft: '4px solid #E8501A' }}>
+              <div className="card-body">
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{dept.service}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
+                  {dept.contacts.length + ' contact' + (dept.contacts.length > 1 ? 's' : '')}
+                </div>
+                {dept.contacts.length === 0 ? (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>{'À renseigner'}</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {dept.contacts.map((ct, ci) => (
+                      <div key={ci} style={{ paddingTop: ci > 0 ? 8 : 0, borderTop: ci > 0 ? '1px solid var(--border)' : 'none' }}>
+                        <div style={{ fontWeight: 600, fontSize: 12 }}>{ct.nom}</div>
+                        <div style={{ fontSize: 11, color: '#E8501A', fontWeight: 500 }}>{ct.fonction}</div>
+                        {ct.email && <div style={{ fontSize: 11 }}><a href={'mailto:' + ct.email} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.email}</a></div>}
+                        {ct.telephone && <div style={{ fontSize: 11 }}><a href={'tel:' + ct.telephone} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.telephone}</a></div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Layout>
+    );
+  }
+
   // ── Vue Établissements Affiliés ──────────────────────
   if (section === 'affilies') {
     const q = search.toLowerCase();
@@ -757,16 +803,15 @@ export default function ContactsAnnuaire() {
   // ── Vue liste fournisseurs (import\u00e9s) ─────────────────
   if (section === 'fournisseurs') {
     const q = search.toLowerCase();
+    const [filtreCategorie, setFiltreCategorie] = [filtreFonction, setFiltreFonction];
     const allFournisseurs = Object.entries(FOURNISSEURS_DATA)
-      .map(([nom, data]) => ({ nom, ...data }))
+      .map(([nom, d]) => ({ nom, ...d }))
       .filter(f => {
+        if (filtreCategorie !== 'tous' && !f.categories.includes(filtreCategorie)) return false;
         if (!q) return true;
         return f.nom.toLowerCase().includes(q) ||
-          f.contacts.some(c => (c.nom || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.fonction || '').toLowerCase().includes(q)) ||
-          f.categories.some(c => c.toLowerCase().includes(q));
+          f.contacts.some(c => (c.nom || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q));
       });
-
-    const totalContacts = allFournisseurs.reduce((s, f) => s + f.contacts.length, 0);
 
     return (
       <Layout title="Contacts">
@@ -774,81 +819,81 @@ export default function ContactsAnnuaire() {
           <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
             <div className="hero-eyebrow">{'Unicancer \u00b7 Fournisseurs'}</div>
             <div className="hero-title">{'R\u00e9pertoire fournisseurs'}</div>
-            <div className="hero-subtitle">
-              {allFournisseurs.length + ' entreprises \u2014 ' + totalContacts + ' contacts \u2014 ' + (CATEGORIES_FOURNISSEURS || []).length + ' cat\u00e9gories'}
+            <div className="hero-stats">
+              <span className="hero-stat">
+                <span className="hero-stat-dot" style={{ background: '#2D5F8A' }} />
+                {Object.keys(FOURNISSEURS_DATA).length + ' entreprises'}
+              </span>
+              <span className="hero-stat">
+                <span className="hero-stat-dot" style={{ background: '#E8501A' }} />
+                {Object.values(FOURNISSEURS_DATA).reduce((s, f) => s + f.contacts.length, 0) + ' contacts'}
+              </span>
             </div>
           </div>
         </div>
         <SectionTabs section={section} setSection={setSection} />
 
-        <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <input type="text" className="filter-input" placeholder="Rechercher une entreprise, un contact..."
-            value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, maxWidth: 360 }} />
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' }}>
+          <select className="info-field-input" value={filtreCategorie}
+            onChange={e => setFiltreCategorie(e.target.value)}
+            style={{ width: 'auto', minWidth: 220, height: 36, fontSize: 13 }}>
+            <option value="tous">{'Toutes les cat\u00e9gories'}</option>
+            {(CATEGORIES_FOURNISSEURS || []).map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <input type="text" className="filter-input" placeholder="Rechercher..."
+            value={search} onChange={e => setSearch(e.target.value)} style={{ width: 240 }} />
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {allFournisseurs.length + ' entreprise' + (allFournisseurs.length > 1 ? 's' : '')}
           </span>
         </div>
 
-        <div className="table-container" style={{ marginBottom: 20 }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Entreprise</th>
-                <th>{'Cat\u00e9gories'}</th>
-                <th>Contacts</th>
-                <th>Email</th>
-                <th>{'T\u00e9l\u00e9phone'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allFournisseurs.map(f => {
-                if (f.contacts.length === 0) {
-                  return (
-                    <tr key={f.nom}>
-                      <td style={{ fontWeight: 600, fontSize: 13 }}>{f.nom}</td>
-                      <td>{f.categories.map(c => (
-                        <span key={c} className="tag" style={{ fontSize: 10, marginRight: 4 }}>{c}</span>
-                      ))}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{'\u2014'}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{'\u2014'}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{'\u2014'}</td>
-                    </tr>
-                  );
-                }
-                return f.contacts.map((ct, ci) => (
-                  <tr key={f.nom + '-' + ci}>
-                    {ci === 0 && (
-                      <td rowSpan={f.contacts.length} style={{ fontWeight: 600, fontSize: 13, verticalAlign: 'top' }}>
-                        {f.nom}
-                        <div style={{ marginTop: 4 }}>
-                          {f.categories.map(c => (
-                            <span key={c} className="tag" style={{ fontSize: 9, marginRight: 3 }}>{c}</span>
-                          ))}
+        {allFournisseurs.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-title">Aucun fournisseur</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+            {allFournisseurs.map(f => (
+              <div key={f.nom} className="card" style={{ borderLeft: '4px solid ' + NAVY }}>
+                <div className="card-body">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: '50%', background: NAVY,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontWeight: 800, fontSize: 13, flexShrink: 0,
+                    }}>{initials(f.nom)}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{f.nom}</div>
+                      <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
+                        {f.categories.map(c => (
+                          <span key={c} className="tag" style={{ fontSize: 9 }}>{c}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {f.contacts.length === 0 ? (
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Aucun contact</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {f.contacts.map((ct, ci) => (
+                        <div key={ci} style={{ paddingTop: ci > 0 ? 8 : 0, borderTop: ci > 0 ? '1px solid var(--border)' : 'none' }}>
+                          <div style={{ fontWeight: 600, fontSize: 12 }}>
+                            {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '\u2014'}
+                          </div>
+                          {ct.fonction && <div style={{ fontSize: 11, color: NAVY, fontWeight: 500 }}>{ct.fonction}</div>}
+                          {ct.email && <div style={{ fontSize: 11 }}><a href={'mailto:' + ct.email} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.email}</a></div>}
+                          {ct.telephone && <div style={{ fontSize: 11 }}><a href={'tel:' + ct.telephone} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.telephone}</a></div>}
                         </div>
-                      </td>
-                    )}
-                    <td style={{ fontSize: 12 }}>
-                      {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '\u2014'}
-                      {ct.fonction && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{ct.fonction}</div>}
-                    </td>
-                    <td style={{ fontSize: 12 }}>
-                      {ct.email
-                        ? <a href={'mailto:' + ct.email} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.email}</a>
-                        : <span style={{ color: 'var(--text-muted)' }}>{'\u2014'}</span>
-                      }
-                    </td>
-                    <td style={{ fontSize: 12 }}>
-                      {ct.telephone
-                        ? <a href={'tel:' + ct.telephone} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.telephone}</a>
-                        : <span style={{ color: 'var(--text-muted)' }}>{'\u2014'}</span>
-                      }
-                    </td>
-                  </tr>
-                ));
-              })}
-            </tbody>
-          </table>
-        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Layout>
     );
   }
