@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  LineChart, Line,
+  LineChart, Line, Legend,
   PieChart, Pie,
 } from 'recharts';
 import { aggregateBy } from '../../data/excelReportingParser';
@@ -239,7 +239,8 @@ export default function ReportingCharts({ rows }) {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tickFormatter={v => formatEuroShort(v)} tick={{ fontSize: 10 }} />
-                <Tooltip formatter={v => [formatEuroTooltip(v), '']} />
+                <Tooltip formatter={(v, name) => [formatEuroTooltip(v), name]} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="gainRef" stackId="g" fill="#10B981" name="Achats (référence)" />
                 <Bar dataKey="gainDgos" stackId="g" fill="#3B82F6" name="Achats (DGOS)" />
                 <Bar dataKey="gainMaint" stackId="g" fill="#F59E0B" name="Maintenance" />
