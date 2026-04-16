@@ -54,19 +54,6 @@ export default function Accueil() {
         borderBottom: '1px solid rgba(15,23,42,.06)',
       }}>
         <img src="/unicancer-logo.svg" alt="Unicancer" style={{ height: 26 }} />
-        <button
-          onClick={() => navigate('/marches')}
-          style={{
-            padding: '7px 20px', borderRadius: 6,
-            background: '#E8501A', border: 'none', color: '#fff',
-            fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            transition: 'opacity .15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '.85'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        >
-          {'Acc\u00e9der \u00e0 PRISM'}
-        </button>
       </nav>
 
       {/* ── Main content — tout visible sans scroll ───────── */}
@@ -126,7 +113,7 @@ export default function Accueil() {
           onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(232,80,26,.25)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 2px 12px rgba(232,80,26,.18)'; }}
         >
-          {'Acc\u00e9der \u00e0 PRISM \u2192'}
+          {'Acc\u00e9der \u00e0 PRISM'}
         </button>
 
         {/* Stats inline */}
