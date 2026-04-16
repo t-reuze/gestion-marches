@@ -70,8 +70,7 @@ export default function Accueil() {
         <h1 style={{
           fontSize: 80, fontWeight: 800, letterSpacing: '-.05em', lineHeight: .9,
           textAlign: 'center', marginBottom: 10,
-          background: 'linear-gradient(135deg, #E8501A 0%, #FF6B35 100%)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          color: '#E8501A',
         }}>
           PRISM
         </h1>
