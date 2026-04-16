@@ -21,11 +21,11 @@ function CountUp({ target, duration = 1000 }) {
 }
 
 const MODULES = [
-  { label: 'Marchés', href: '/marches', icon: '\u{1F4CB}' },
-  { label: 'Formations', href: '/formations', icon: '\u{1F393}' },
-  { label: 'Reporting', href: '/reporting', icon: '\u{1F4CA}' },
-  { label: 'Contacts', href: '/contacts', icon: '\u{1F465}' },
-  { label: 'Calendrier', href: '/calendrier', icon: '\u{1F4C5}' },
+  { label: 'Marchés', href: '/marches' },
+  { label: 'Formations', href: '/formations' },
+  { label: 'Reporting', href: '/reporting' },
+  { label: 'Contacts', href: '/contacts' },
+  { label: 'Calendrier', href: '/calendrier' },
 ];
 
 export default function Accueil() {
@@ -83,7 +83,7 @@ export default function Accueil() {
         <h1 style={{
           fontSize: 80, fontWeight: 800, letterSpacing: '-.05em', lineHeight: .9,
           textAlign: 'center', marginBottom: 10,
-          background: 'linear-gradient(135deg, #E8501A 0%, #FF6B35 25%, #2D5F8A 50%, #7C3AED 75%, #E8501A 100%)',
+          background: 'linear-gradient(135deg, #E8501A 0%, #FF6B35 100%)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         }}>
           PRISM
@@ -170,7 +170,6 @@ export default function Accueil() {
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}
               >
-                <span style={{ fontSize: 18 }}>{m.icon}</span>
                 <span style={{
                   fontSize: 13, fontWeight: 600,
                   color: isH ? '#E8501A' : '#334155',
