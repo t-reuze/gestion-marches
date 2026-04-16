@@ -39,7 +39,6 @@ export default function Navbar() {
     <nav className="navbar">
       <Link to="/" className="navbar-logo" title="Accueil PRISM">
         <img src="/unicancer-logo.svg" alt="Unicancer" className="navbar-logo-img" />
-        <span className="navbar-tagline">PRISM</span>
       </Link>
 
       <div className="navbar-tabs">
