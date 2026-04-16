@@ -10,6 +10,19 @@ import { syncAllToOutlook, syncClccToOutlook, exportContactsVCF } from '../../ut
 
 const NAVY = '#2D5F8A';
 
+function buildMailtoUrl(emails, { subject = '', body = '' } = {}) {
+  const bcc = emails.filter(Boolean).join(',');
+  const params = [];
+  if (bcc) params.push('bcc=' + encodeURIComponent(bcc));
+  if (subject) params.push('subject=' + encodeURIComponent(subject));
+  if (body) params.push('body=' + encodeURIComponent(body));
+  return 'mailto:?' + params.join('&');
+}
+
+function defaultMailBody(fonctionLabel) {
+  return 'Bonjour,\n\n\n\nCordialement,\n\nService Achats\nUNICANCER';
+}
+
 // ── Détection genre par prénom ───────────────────────────────
 const PRENOMS_FEMININS = new Set([
   'alice','amelie','amélie','amandine','andrea','andréa','angelique','angélique','anne',
@@ -427,13 +440,17 @@ export default function ContactsAnnuaire() {
             {(() => {
               const emails = clccContacts.map(ct => ct.email).filter(Boolean);
               if (emails.length === 0) return null;
+              const fn = filtreFonction !== 'tous' ? filtreFonction : '';
               return (
                 <a
-                  href={'mailto:' + emails.join(',')}
+                  href={buildMailtoUrl(emails, {
+                    subject: fn ? fn + ' \u2014 UNICANCER' : 'UNICANCER',
+                    body: defaultMailBody(fn),
+                  })}
                   className="btn btn-primary btn-sm"
                   style={{ textDecoration: 'none', color: '#fff' }}
                 >
-                  Envoyer un mail ({emails.length})
+                  Envoyer un mail en CCI ({emails.length})
                 </a>
               );
             })()}
@@ -840,8 +857,11 @@ export default function ContactsAnnuaire() {
               .flatMap(c => c.contacts)
               .filter(ct => ct.fonction === fn && ct.email)
               .map(ct => ct.email);
-            if (emails.length === 0) { alert('Aucun email trouvé pour cette fonction.'); return; }
-            window.location.href = 'mailto:' + emails.join(',');
+            if (emails.length === 0) { alert('Aucun email trouv\u00e9 pour cette fonction.'); return; }
+            window.location.href = buildMailtoUrl(emails, {
+              subject: fn + ' \u2014 UNICANCER',
+              body: defaultMailBody(fn),
+            });
             e.target.value = '';
           }}
         >
