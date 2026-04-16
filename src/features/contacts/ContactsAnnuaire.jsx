@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Layout from '../../components/Layout';
 import { clccs, marches, etablissementsAffilies } from '../../data/mockData';
+import { fournisseursContacts as FOURNISSEURS_DATA, CATEGORIES_FOURNISSEURS } from '../../data/fournisseursContacts';
 import { clccContacts as CLCC_CONTACTS_DATA, FONCTIONS_IMPORT } from '../../data/clccContacts';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { isConfigured, loginMicrosoft, getAccount, logoutMicrosoft, initMsal } from '../../utils/msalConfig';
@@ -753,65 +754,101 @@ export default function ContactsAnnuaire() {
     );
   }
 
-  // ── Vue liste fournisseurs ───────────────────────────
+  // ── Vue liste fournisseurs (import\u00e9s) ─────────────────
   if (section === 'fournisseurs') {
     const q = search.toLowerCase();
-    const filteredFour = fournisseursAgg.filter(f =>
-      !q || f.nom.toLowerCase().includes(q) ||
-      f.contacts.some(c => (c.nom || '').toLowerCase().includes(q) || (c.mail || '').toLowerCase().includes(q))
-    );
+    const allFournisseurs = Object.entries(FOURNISSEURS_DATA)
+      .map(([nom, data]) => ({ nom, ...data }))
+      .filter(f => {
+        if (!q) return true;
+        return f.nom.toLowerCase().includes(q) ||
+          f.contacts.some(c => (c.nom || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.fonction || '').toLowerCase().includes(q)) ||
+          f.categories.some(c => c.toLowerCase().includes(q));
+      });
+
+    const totalContacts = allFournisseurs.reduce((s, f) => s + f.contacts.length, 0);
+
     return (
-      <Layout title="Contacts" sub="— Annuaire">
-        <SectionTabs section={section} setSection={setSection} />
-        <div className="info-box" style={{ marginBottom: 18 }}>
-          <strong>Contacts fournisseurs</strong> — Aggrégés depuis les annuaires des marchés analysés.
-          Lance un scan dans <em>Analyse des offres</em> d'un marché pour alimenter cette liste.
+      <Layout title="Contacts">
+        <div className="hero-banner">
+          <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+            <div className="hero-eyebrow">{'Unicancer \u00b7 Fournisseurs'}</div>
+            <div className="hero-title">{'R\u00e9pertoire fournisseurs'}</div>
+            <div className="hero-subtitle">
+              {allFournisseurs.length + ' entreprises \u2014 ' + totalContacts + ' contacts \u2014 ' + (CATEGORIES_FOURNISSEURS || []).length + ' cat\u00e9gories'}
+            </div>
+          </div>
         </div>
+        <SectionTabs section={section} setSection={setSection} />
+
         <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <input type="text" className="filter-input" placeholder="Rechercher un fournisseur, contact..."
+          <input type="text" className="filter-input" placeholder="Rechercher une entreprise, un contact..."
             value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, maxWidth: 360 }} />
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {filteredFour.length} fournisseur{filteredFour.length > 1 ? 's' : ''}
+            {allFournisseurs.length + ' entreprise' + (allFournisseurs.length > 1 ? 's' : '')}
           </span>
         </div>
-        {filteredFour.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">&#x1F4E6;</div>
-            <div className="empty-title">Aucun fournisseur</div>
-            <div className="empty-sub">Lance un scan d'annuaire dans la page Analyse d'un marché.</div>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-            {filteredFour.map(f => (
-              <div key={f.nom} className="card"
-                style={{ cursor: 'pointer', borderLeft: '4px solid #2D5F8A' }}
-                onClick={() => setSelectedFournisseur(f.nom)}>
-                <div className="card-body" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <div style={{
-                    width: 48, height: 48, borderRadius: '50%', background: '#2D5F8A',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontWeight: 800, fontSize: 15, flexShrink: 0,
-                  }}>{initials(f.nom)}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{f.nom}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                      {f.marches.length} marché{f.marches.length > 1 ? 's' : ''}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 20, fontWeight: 700,
-                      color: f.contacts.length > 0 ? '#2D5F8A' : 'var(--text-muted)' }}>
-                      {f.contacts.length}
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                      contact{f.contacts.length > 1 ? 's' : ''}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+
+        <div className="table-container" style={{ marginBottom: 20 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Entreprise</th>
+                <th>{'Cat\u00e9gories'}</th>
+                <th>Contacts</th>
+                <th>Email</th>
+                <th>{'T\u00e9l\u00e9phone'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allFournisseurs.map(f => {
+                if (f.contacts.length === 0) {
+                  return (
+                    <tr key={f.nom}>
+                      <td style={{ fontWeight: 600, fontSize: 13 }}>{f.nom}</td>
+                      <td>{f.categories.map(c => (
+                        <span key={c} className="tag" style={{ fontSize: 10, marginRight: 4 }}>{c}</span>
+                      ))}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{'\u2014'}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{'\u2014'}</td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>{'\u2014'}</td>
+                    </tr>
+                  );
+                }
+                return f.contacts.map((ct, ci) => (
+                  <tr key={f.nom + '-' + ci}>
+                    {ci === 0 && (
+                      <td rowSpan={f.contacts.length} style={{ fontWeight: 600, fontSize: 13, verticalAlign: 'top' }}>
+                        {f.nom}
+                        <div style={{ marginTop: 4 }}>
+                          {f.categories.map(c => (
+                            <span key={c} className="tag" style={{ fontSize: 9, marginRight: 3 }}>{c}</span>
+                          ))}
+                        </div>
+                      </td>
+                    )}
+                    <td style={{ fontSize: 12 }}>
+                      {[ct.prenom, ct.nom].filter(Boolean).join(' ') || '\u2014'}
+                      {ct.fonction && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{ct.fonction}</div>}
+                    </td>
+                    <td style={{ fontSize: 12 }}>
+                      {ct.email
+                        ? <a href={'mailto:' + ct.email} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.email}</a>
+                        : <span style={{ color: 'var(--text-muted)' }}>{'\u2014'}</span>
+                      }
+                    </td>
+                    <td style={{ fontSize: 12 }}>
+                      {ct.telephone
+                        ? <a href={'tel:' + ct.telephone} style={{ color: 'var(--blue)', textDecoration: 'none' }}>{ct.telephone}</a>
+                        : <span style={{ color: 'var(--text-muted)' }}>{'\u2014'}</span>
+                      }
+                    </td>
+                  </tr>
+                ));
+              })}
+            </tbody>
+          </table>
+        </div>
       </Layout>
     );
   }
