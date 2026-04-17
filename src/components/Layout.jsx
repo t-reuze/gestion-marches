@@ -4,6 +4,7 @@ import Navbar     from './shared/Navbar';
 import Sidebar    from './shared/Sidebar';
 import Breadcrumb from './shared/Breadcrumb';
 import CopilotWidget from './CopilotWidget';
+import GlobalSearch from './GlobalSearch';
 
 export default function Layout({ children, title, sub, actions }) {
   const { pathname } = useLocation();
@@ -52,6 +53,7 @@ export default function Layout({ children, title, sub, actions }) {
           </main>
         </div>
       </div>
+      <GlobalSearch />
       <CopilotWidget />
     </div>
   );

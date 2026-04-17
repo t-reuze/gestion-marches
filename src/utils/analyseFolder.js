@@ -97,6 +97,29 @@ const SUP_STOPWORDS = new Set([
   'agency', 'agence', 'societe', 'cie',
 ]);
 
+/**
+ * Détecte si un nom de dossier est un "complément" d'un fournisseur existant.
+ * Patterns reconnus : "complément XX Fournisseur", "Complement Fournisseur",
+ *                     "Fournisseur complément", "Fournisseur - complément"
+ * @returns {string|null} le nom du fournisseur de base, ou null si ce n'est pas un complément
+ */
+export function extractComplementBase(dirName) {
+  const s = String(dirName || '').trim();
+  // Détecte si le nom commence par "complément(s)" (singulier ou pluriel, avec/sans accent)
+  const m1 = s.match(/^compl[eéè]ments?\s+(?:\d+\s+)?(.+)$/i);
+  if (m1) {
+    // Nettoie les infos de lot/référence après le nom du fournisseur
+    // ex: "Compléments Qualimedis Lot nr 1 uRT506c UIH" → "Qualimedis"
+    let name = m1[1].trim();
+    name = name.replace(/\s+lot\s+.*/i, '').trim();
+    return name || null;
+  }
+  // "NomFournisseur complément(s)" ou "NomFournisseur - complément(s) XX"
+  const m2 = s.match(/^(.+?)\s*[-–—]?\s*compl[eéè]ments?(?:\s+\d+)?$/i);
+  if (m2) return m2[1].trim();
+  return null;
+}
+
 export const normSupName = s => {
   const base = String(s || '')
     .toLowerCase()
@@ -144,7 +167,25 @@ export async function readXlsxHandle(fileHandle) {
   return XLSX.read(buf, { type: 'array' });
 }
 
-const normPath = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const normPath = s => {
+  let r = s
+    // Fix UTF-8 mojibake (UTF-8 bytes read as Latin-1) BEFORE lowercasing
+    .replace(/Ã©/g, 'e').replace(/Ã¨/g, 'e').replace(/Ã /g, 'a').replace(/Ã®/g, 'i')
+    .replace(/Ã´/g, 'o').replace(/Ã¹/g, 'u').replace(/Ã§/g, 'c').replace(/Ã«/g, 'e')
+    .replace(/Ã¢/g, 'a').replace(/Ã¯/g, 'i').replace(/Ã¼/g, 'u').replace(/Ã»/g, 'u')
+    .toLowerCase();
+  // Fix lowercase mojibake too (ã© → e, ã¨ → e, etc.)
+  r = r.replace(/ã©/g, 'e').replace(/ã¨/g, 'e').replace(/ã¢/g, 'a').replace(/ã®/g, 'i')
+    .replace(/ã´/g, 'o').replace(/ã¹/g, 'u').replace(/ã§/g, 'c').replace(/ã«/g, 'e')
+    .replace(/ã¯/g, 'i').replace(/ã¼/g, 'u').replace(/ã»/g, 'u').replace(/ã /g, 'a');
+  // Strip remaining non-ASCII sequences and normalize quotes/special chars
+  r = r.replace(/[+]?[âãäåæ][\x80-\xbf]?/g, '').replace(/Â®/gi, '').replace(/â/g, '');
+  r = r.replace(/[\u2018\u2019\u201C\u201D\u0060\u00B4']/g, ' '); // quotes → space (pour matching)
+  r = r.replace(/\u2026/g, '...'); // ellipsis
+  r = r.replace(/[\u2013\u2014]/g, '-'); // en/em dash
+  r = r.replace(/[\/]/g, ' '); // slash → space
+  return r.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[_\-]/g, ' ').replace(/\s+/g, ' ').trim();
+};
 
 // ─── Détection documents ──────────────────────────────────────────────────────
 
@@ -176,7 +217,8 @@ const DOC_RULES = {
   'Questionnaire RSE': {
     ext: ['.xls', '.xlsx', '.pdf', '.doc', '.docx'],
     any: ['rse', 'developpement durable', 'questionnaire rse', 'responsabilite sociale',
-          'responsabilite environnementale', 'dd ', 'environnement', 'annexe rse'],
+          'responsabilite environnementale', 'dd ', 'environnement', 'annexe rse',
+          'annexe 8', 'questionnaire developpement durable'],
     exclude: ['standardis'],
   },
   'CCAP signé': {
@@ -205,17 +247,172 @@ const DOC_RULES = {
           'renseignements entreprise', 'formulaire dc2', 'capacites candidat'],
     exclude: ['dc1'],
   },
-  'ATTRI1': {
-    ext: ['.pdf', '.p7m'],
-    any: ['attri1', 'attri', 'attribution', 'accord-cadre', 'accord cadre',
-          'acte d engagement', 'acte engagement', 'notification de marche',
-          'marche attribue', 'lettre attribution', 'avis attribution'],
+  'ATTRI1 / Acte Engagement': {
+    ext: null,
+    any: ['attri1', 'attri', 'acte engagement', 'acte d engagement',
+          'acte dengagement', 'accord-cadre', 'accord cadre'],
+    regexAny: [/(?:^|[\s_\-\/\\])ae(?:[\s_\-\.\/\\]|$)/],
     exclude: [],
   },
   'Fiche Contacts': {
     ext: null,
     any: ['contact', 'coordonnee', 'coordonnees', 'annexe 4', 'interlocuteur',
           'fiche contact', 'referent', 'correspondant', 'equipe', 'responsable marche'],
+    exclude: [],
+  },
+  'DUME': {
+    ext: null,
+    any: ['dume', 'document unique marche europeen', 'document unique de marche',
+          'document_unique', '2_document_unique', 'formulaire europeen'],
+    exclude: [],
+  },
+  'KBIS': {
+    ext: null,
+    any: ['kbis', 'k-bis', 'extrait kbis', 'registre commerce', 'registre du commerce',
+          'extrait du registre', 'extrait registre', '13_kbis'],
+    exclude: [],
+  },
+  'RIB': {
+    ext: null,
+    any: ['rib', 'iban', 'releve identite bancaire', 'coordonnees bancaires'],
+    exclude: [],
+  },
+  'Attestation assurance': {
+    ext: null,
+    any: ['attestation assurance', 'police assurance', 'responsabilite civile',
+          '12_attestation', 'attestation assurance'],
+    exclude: [],
+  },
+  'Attestation fiscale': {
+    ext: null,
+    any: ['attestation fiscale', 'regularite fiscale', 'attestation impots', 'liasse fiscale'],
+    exclude: [],
+  },
+  'Attestation sociale': {
+    ext: null,
+    any: ['attestation sociale', 'declarations sociales', 'urssaf', 'cotisations sociales',
+          'social declaration', '7_attestation'],
+    exclude: ['materiovigilance', 'vigilance'],
+  },
+  'Engagement confidentialité': {
+    ext: null,
+    any: ['confidentialite', 'engagement de confidentialite', 'clause confidentialite', 'nda'],
+    exclude: [],
+  },
+  'Marquage CE': {
+    ext: null,
+    any: ['marquage ce', 'certificat ce', 'certification ce', 'declaration conformite',
+          'ec certificate', 'ce certificate', '8_marquage', 'certificate mdd',
+          'certificate ec', 'certificato'],
+    exclude: [],
+  },
+  'Certifications ISO': {
+    ext: null,
+    any: ['iso 9001', 'iso 13485', 'iso 14001', 'certification iso', 'certificat iso'],
+    exclude: [],
+  },
+  'Mémoire technique': {
+    ext: null,
+    any: ['memoire technique', 'fiche technique', 'notice technique', 'dossier technique',
+          'documentation technique', 'brochure', '2_documentation', 'manuel', 'user manual',
+          'service manual', 'technical file', 'proposition organisationnelle',
+          'proposition technique', 'offre technique', 'dossier organisationnel',
+          'organisationnel et technique'],
+    exclude: ['questionnaire'],
+  },
+  'Contrat maintenance': {
+    ext: null,
+    any: ['contrat maintenance', 'contrat type', 'maintenance type', 'contrat de maintenance',
+          'preventive maintenance', 'corrective maintenance', 'maintenance plan',
+          'descriptif de lorganisation de la maintenance', '4_maintenance'],
+    exclude: [],
+  },
+  'Rétroplanning': {
+    ext: null,
+    any: ['retroplanning', 'planning', 'retro planning', 'calendrier previsionnel'],
+    exclude: [],
+  },
+  'Partenariat': {
+    ext: null,
+    any: ['partenariat', 'fiche partenariat', 'partenariat scientifique', 'sous traitant',
+          'cotraitant'],
+    exclude: [],
+  },
+  'Brochures commerciales': {
+    ext: null,
+    any: ['brochure', 'commercial', 'plaquette', 'catalogue', 'documentation commerciale'],
+    exclude: [],
+  },
+  'Certificats de visites': {
+    ext: null,
+    any: ['certificat visite', '3_certificat', 'certificats visites sur site'],
+    exclude: ['formulaire visite', 'annexe 3 rc'],
+  },
+  'Documentation politique RSE': {
+    ext: null,
+    any: ['politique rse', 'documentation rse', 'politique developpement durable',
+          'charte rse', 'rapport rse', 'politique ehs', '5_responsabilite',
+          'politique environnement', 'engagement rse', 'annexe 8',
+          'developpement durable', 'durable et rse', 'ecovadis',
+          'rapport impact', 'politique impact', 'charte rse'],
+    exclude: [],
+  },
+  'Liste de références': {
+    ext: null,
+    any: ['reference client', 'references client', 'liste reference', 'liste des reference',
+          '6_liste', '7_liste', 'references clcc', 'references of ', 'liste de reference'],
+    exclude: [],
+  },
+  'Management qualité': {
+    ext: null,
+    any: ['management qualite', 'management de la qualite', '9_management',
+          'systeme qualite', 'demarche qualite', 'politique qualite',
+          'quality manual', 'quality policy', 'quality management'],
+    exclude: [],
+  },
+  'Modules de formation': {
+    ext: null,
+    any: ['formation', 'module formation', 'descriptif formation', 'plan formation',
+          '10_descriptif', 'programme formation', 'declaration formation',
+          'traininggroups', 'training'],
+    exclude: ['information'],
+  },
+  'Matériovigilance': {
+    ext: null,
+    any: ['materiovigilance', 'matériovigilance', 'vigilance materiel',
+          '11_materio', 'pgq 12', 'post market survaillance', 'post market surveillance',
+          'reclamation'],
+    exclude: [],
+  },
+  'Cybersécurité': {
+    ext: null,
+    any: ['cybersecurite', 'cybersécurité', 'cyber securite', 'securite informatique',
+          'conformite cyber', 'norme cyber', 'cyber security'],
+    exclude: [],
+  },
+  'RC signé': {
+    ext: null,
+    any: ['reglement consultation', 'reglement de consultation', 'rgc', '11_rgc',
+          'rc signe', 'rc date', 'reglement de la consultation'],
+    exclude: ['ccap', 'cctp'],
+  },
+  'Complément CCAP': {
+    ext: null,
+    any: ['complement ccap', 'avenant ccap', 'ccap complement', 'modification ccap'],
+    exclude: [],
+  },
+  'Délégation de pouvoir': {
+    ext: null,
+    any: ['delegation', 'delegation de pouvoir', 'pouvoir signature', 'mandat',
+          'procuration', 'habilitation'],
+    exclude: [],
+  },
+  'Critères économiques': {
+    ext: null,
+    any: ['critere economique', 'criteres economiques', 'ca annuel', 'chiffre affaire',
+          'bilan financier', 'capacite economique', 'capacite financiere',
+          'capacite eco fin', 'eco fin', 'consolidated turnover', 'chiffre d affaire',
+          '03 capacite eco', '04 capacite tech'],
     exclude: [],
   },
 };
@@ -245,14 +442,357 @@ export function detectDocs(files, lots = []) {
   }));
 
   const result = {};
-  for (const [label, { ext: exts, any: anyKw, exclude: exclKw }] of Object.entries(allRules)) {
+  for (const [label, rule] of Object.entries(allRules)) {
+    const { ext: exts, any: anyKw, exclude: exclKw, regexAny } = rule;
     result[label] = entries.some(({ p, ext }) => {
       if (exts && !exts.includes(ext)) return false;
       if (exclKw.some(kw => p.includes(normPath(kw)))) return false;
-      return anyKw.some(kw => p.includes(normPath(kw)));
+      const kwMatch = anyKw.some(kw => p.includes(normPath(kw)));
+      if (kwMatch) return true;
+      // Support regex patterns (pour les mots courts comme "AE")
+      if (regexAny && regexAny.some(rx => rx.test(p))) return true;
+      return false;
     });
   }
   return result;
+}
+
+// ─── Export DOC_RULES pour le CQ ──────────────────────────────────────────────
+export { DOC_RULES };
+
+// ─── Import fichier de référence pour contrôle qualité ────────────────────────
+
+/**
+ * Parse un fichier Excel de suivi des pièces justificatives (format Unicancer).
+ * Structure attendue : row 4 = lots, row 5 = fournisseurs, row 6+ = pièces.
+ *
+ * @param {Workbook} wb - workbook XLSX
+ * @returns {{ refData: { [supplier]: { [piece]: string } }, columns }}
+ */
+export function parseReferenceFile(wb) {
+  const refData = {};
+  const pieceLabels = [];
+  const columns = [];
+
+  // Détection automatique du format :
+  // Format A (accélérateurs) : fournisseurs EN COLONNES, pièces en lignes (row 4=lots, row 5=fournisseurs)
+  // Format B (cybersécurité) : fournisseurs EN LIGNES, documents en colonnes (row 3=headers, row 4+=data)
+  // Clé : si la première feuille a "Lot" dans les premières cellules, c'est format B (lots en colonnes)
+  //        si la colonne A contient beaucoup de noms, c'est format B
+
+  for (const sheetName of wb.SheetNames) {
+    const sheet = wb.Sheets[sheetName];
+    const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    if (!raw.length) continue;
+
+    // Cherche la ligne d'en-tête : la ligne dont la PREMIÈRE CELLULE contient "Candidat" (pas juste "fournisseur" dans un titre)
+    let headerIdx = -1;
+    for (let r = 0; r < Math.min(raw.length, 10); r++) {
+      const row = raw[r];
+      if (!row) continue;
+      const firstCell = String(row[0] || '').trim().toLowerCase();
+      // La première cellule doit être exactement "Candidats" ou "Fournisseurs" (pas un titre long)
+      if (/^candidats?$/i.test(firstCell) || /^fournisseurs?$/i.test(firstCell)) {
+        headerIdx = r; break;
+      }
+      // Ou une ligne avec beaucoup de headers courts (pas un titre descriptif)
+      const nonEmpty = row.filter(v => String(v || '').trim()).length;
+      if (nonEmpty >= 4 && firstCell.length < 30 && row.some(v => /attestation|document|bpu|ccap|fiche/i.test(String(v || '')))) {
+        headerIdx = r; break;
+      }
+    }
+
+    if (headerIdx === -1) {
+      // Format A : fournisseurs en colonnes (ancien format accélérateurs)
+      let lotsRowIdx = -1;
+      for (let r = 0; r < Math.min(raw.length, 10); r++) {
+        if (raw[r].some(v => /lot\s*\d/i.test(String(v)))) { lotsRowIdx = r; break; }
+      }
+      if (lotsRowIdx === -1) lotsRowIdx = 4;
+      const suppRowIdx = lotsRowIdx + 1;
+      const lotsRow = raw[lotsRowIdx] || [];
+      const suppRow = raw[suppRowIdx] || [];
+
+      let currentLot = '';
+      for (let c = 1; c < suppRow.length; c++) {
+        if (lotsRow[c]) currentLot = String(lotsRow[c]);
+        const sup = String(suppRow[c] || '').trim();
+        if (!sup) continue;
+        const lotMatch = currentLot.match(/lot\s*(\d+)/i);
+        columns.push({ col: c, lotNum: lotMatch ? parseInt(lotMatch[1]) : 0, supplier: sup });
+      }
+      for (let r = suppRowIdx + 1; r < raw.length; r++) {
+        const label = String(raw[r][0] || '').trim();
+        if (!label) continue;
+        if (!pieceLabels.includes(label)) pieceLabels.push(label);
+        for (const col of columns) {
+          const key = normSupName(col.supplier);
+          if (!refData[key]) refData[key] = { _supplier: col.supplier };
+          refData[key][label] = String(raw[r][col.col] || '').trim();
+        }
+      }
+      continue;
+    }
+
+    // Format B : fournisseurs en lignes, documents/lots en colonnes
+    const headers = raw[headerIdx];
+    const colHeaders = [];
+    for (let c = 1; c < headers.length; c++) {
+      const h = String(headers[c] || '').trim();
+      if (h) colHeaders.push({ col: c, label: h });
+    }
+
+    for (let r = headerIdx + 1; r < raw.length; r++) {
+      const row = raw[r];
+      const sup = String(row[0] || '').trim();
+      if (!sup) continue;
+      const key = normSupName(sup);
+      if (!refData[key]) refData[key] = { _supplier: sup };
+
+      for (const { col, label } of colHeaders) {
+        const val = String(row[col] || '').trim();
+        if (val) {
+          refData[key][label] = val;
+          if (!pieceLabels.includes(label)) pieceLabels.push(label);
+        }
+      }
+    }
+  }
+
+  return { refData, columns, pieceLabels };
+}
+
+/**
+ * Compare les résultats de l'annuaire avec le fichier de référence.
+ * Retourne les divergences par fournisseur.
+ *
+ * @param {object[]} annuaireRows - rows de scanAnnuaire
+ * @param {object} refData - de parseReferenceFile
+ * @param {string[]} docLabels - labels utilisés dans l'annuaire
+ * @returns {{ accuracy, matches, mismatches, details[] }}
+ */
+export function compareAnnuaireWithRef(annuaireRows, refData, docLabels) {
+  let matches = 0, mismatches = 0;
+  const details = [];
+
+  // ── Mapping explicite scan → référence ──
+  // Clé = label annuaire (scan), Valeur = liste de labels référence acceptés
+  const SCAN_TO_REF = {
+    'QT (Annexe 1)':                ['Questionnaire Technique'],
+    'QT':                           ['Questionnaire Technique'],
+    'BPU (Annexe 5)':               ['BPU mono (excel) Base', 'BPU multi (excel) Base', 'BPU mono (PDF) Base', 'BPU multi (PDF) Base'],
+    'BPU':                          ['BPU mono (excel) Base', 'BPU multi (excel) Base', 'BPU mono (PDF) Base', 'BPU multi (PDF) Base', 'BPU signé', 'BPU Excel', 'BPU signe'],
+    'Optim. Tarifaire':             [],
+    'BPU Chiffrage':                [],
+    'Questionnaire RSE':            ['Questionnaire RSE', 'Annexe 8 DD'],
+    'Documentation politique RSE':  ['Documentation politique RSE', 'Annexe 8 DD'],
+    'CCAP signé':                   ['CCAP daté et signé', 'Complément CCAP daté et signé', 'CCAP signé'],
+    'CCTP signé':                   ['CCTP daté et signé', 'CCTP signé'],
+    'DC1':                          ['DUME (ou DC1/DC2/DC4)'],
+    'DC2':                          ['DUME (ou DC1/DC2/DC4)'],
+    'DUME':                         ['DUME (ou DC1/DC2/DC4)'],
+    'ATTRI1 / Acte Engagement':     ['Acte d\'engagement base', 'Acte d\'engagement'],
+    'Fiche Contacts':               ['Fiche contacts', 'Annexe 4 Fiche contacts', 'Annexe 4'],
+    'KBIS':                         ['KBIS', 'Extrait KBIS', 'Extrait KBis'],
+    'RIB':                          ['RIB'],
+    'Attestation assurance':        ['Attestation assurance', 'Attestation RC PRO', 'Attestation d assurance'],
+    'Attestation fiscale':          ['Attestation de régularité fiscale', 'Attestation fiscale', 'regularite fiscale'],
+    'Attestation sociale':          ['Attestation déclarations sociales', 'Attestation URSSAF', 'URSSAF'],
+    'Engagement confidentialité':   ['Engagement de confidentialité', 'Annexe 10 Engagement de confidentialité', 'Engagement de confidentialite'],
+    'Marquage CE':                  ['Marquage CE base (MDR)'],
+    'Certifications ISO':           ['Certifications ISO'],
+    'Mémoire technique':            ['Fiches ou Mémoires techniques', 'Mémoire technique'],
+    'Contrat maintenance':          ['Contrats de maintenance type'],
+    'Rétroplanning':                ['Rétroplanning'],
+    'Partenariat':                  ['Fiche partenariat'],
+    'Brochures commerciales':       ['Brochures commerciales'],
+    'Certificats de visites':       ['Certificats de visites'],
+    'Liste de références':          ['Liste de références clients'],
+    'Management qualité':           ['Descriptif du management de la qualité'],
+    'Modules de formation':         ['Descriptif des modules de formation'],
+    'Matériovigilance':             ['Procédure de Matériovigilance'],
+    'Cybersécurité':                ['Documentation de conformité Cybersécurité'],
+    'RC signé':                     ['RC daté et signé', 'RGC signé', 'RGC signe'],
+    'Complément CCAP':              ['Complément CCAP daté et signé'],
+    'Délégation de pouvoir':        ['Délégation de pouvoir de signature'],
+    'Critères économiques':         ['Critères économiques'],
+  };
+
+  // Pour DC1/DC2 → DUME : un seul match suffit (évite les doublons)
+  const dumeMatchedPerSup = new Set();
+
+  for (const row of annuaireRows) {
+    const supName = row['Nom fournisseur'];
+    const supNorm = normSupName(supName);
+
+    // Find matching ref entry (fuzzy)
+    const refKey = Object.keys(refData).find(rk => {
+      if (rk.startsWith('_')) return false;
+      return rk === supNorm || rk.includes(supNorm) || supNorm.includes(rk) ||
+        rk.split(' ').filter(w => w.length > 2).some(w => supNorm.includes(w));
+    });
+    if (!refKey) continue;
+
+    const ref = refData[refKey];
+
+    for (const label of docLabels) {
+      const scanVal = row[label];
+      if (scanVal === undefined) continue;
+      const scanPresent = scanVal === 'x' || (scanVal && scanVal !== 'non fourni' && scanVal !== '—' && scanVal !== 'vide');
+
+      // Utilise le mapping explicite d'abord
+      const mappedRefLabels = SCAN_TO_REF[label];
+      if (mappedRefLabels !== undefined) {
+        if (mappedRefLabels.length === 0) continue; // pas de correspondance dans la réf
+
+        // Pour DUME : DC1 et DC2 pointent vers le même champ ref, ne compter qu'une fois
+        const isDumeField = mappedRefLabels.includes('DUME (ou DC1/DC2/DC4)');
+        if (isDumeField) {
+          const dumeKey = supNorm + '|DUME';
+          if (dumeMatchedPerSup.has(dumeKey)) continue;
+          dumeMatchedPerSup.add(dumeKey);
+          // Pour DUME, on vérifie DC1 OR DC2 OR DUME dans le scan
+          const dc1 = row['DC1'], dc2 = row['DC2'], dume = row['DUME'];
+          const anyPresent = [dc1, dc2, dume].some(v =>
+            v === 'x' || (v && v !== 'non fourni' && v !== '—' && v !== 'vide'));
+          const refEntry = Object.entries(ref).find(([k]) =>
+            mappedRefLabels.some(ml => normPath(k).includes(normPath(ml)))
+          );
+          if (!refEntry) continue;
+          const refVal = String(refEntry[1]).toLowerCase().trim();
+          const refPresent = refVal === 'x' || refVal.startsWith('oui');
+          const refAbsent = refVal === 'non';
+          if (!refPresent && !refAbsent) continue;
+          if (anyPresent === refPresent) { matches++; }
+          else {
+            mismatches++;
+            // Diagnostic DUME
+            const dumeRule = DOC_RULES['DUME'] || {};
+            const dc1Rule = DOC_RULES['DC1'] || {};
+            const dc2Rule = DOC_RULES['DC2'] || {};
+            const allKw = [...(dumeRule.any || []), ...(dc1Rule.any || []), ...(dc2Rule.any || [])];
+            details.push({
+              supplier: supName, piece: 'DC1/DC2/DUME', refPiece: refEntry[0],
+              scanValue: anyPresent ? 'x' : 'non fourni', refValue: refEntry[1],
+              type: anyPresent ? 'Faux positif' : 'Non détecté',
+              diag: {
+                rule: 'DOC_RULES[DUME] + DOC_RULES[DC1] + DOC_RULES[DC2]',
+                keywords: allKw.join(', '),
+                scanCols: `DC1=${dc1||''}, DC2=${dc2||''}, DUME=${dume||''}`,
+                mapping: 'DC1/DC2/DUME → ' + mappedRefLabels.join(' | '),
+                hint: anyPresent
+                  ? 'Le scan détecte un fichier mais la réf dit Non — vérifier si le fichier est vraiment un DUME/DC1/DC2'
+                  : 'Aucun fichier matché par les keywords — vérifier le nom des fichiers du fournisseur (noms cryptés ? sous-dossiers non scannés ?)',
+              },
+            });
+          }
+          continue;
+        }
+
+        // Match normal avec mapping explicite
+        // Quand plusieurs colonnes réf matchent (ex: BPU mono + multi),
+        // on considère le document présent si AU MOINS UNE colonne réf = Oui
+        const refEntries = Object.entries(ref).filter(([k]) => {
+          if (k.startsWith('_')) return false;
+          // Exclure les champs groupés (contenant ";") pour éviter les faux matchs
+          if (k.includes(';')) return false;
+          return mappedRefLabels.some(ml => normPath(k).includes(normPath(ml)));
+        });
+        if (!refEntries.length) continue;
+        const isPresent = v => { const s = String(v).toLowerCase().trim(); return s === 'x' || s.startsWith('oui'); };
+        const anyRefOui = refEntries.some(([, v]) => isPresent(v));
+        const anyRefNon = refEntries.some(([, v]) => String(v).toLowerCase().trim() === 'non');
+        const refPresent = anyRefOui;
+        if (!anyRefOui && !anyRefNon) continue;
+        const refEntry = refEntries.find(([, v]) => isPresent(v)) || refEntries[0];
+
+        if (scanPresent === refPresent) { matches++; }
+        else {
+          mismatches++;
+          // Diagnostic pour chaque divergence — cherche la règle par nom exact ou partiel
+          const docRule = DOC_RULES[label]
+            || Object.entries(DOC_RULES).find(([k]) => k.startsWith(label) || label.startsWith(k))?.[1]
+            || {};
+          details.push({
+            supplier: supName, piece: label, refPiece: refEntry[0],
+            scanValue: scanVal, refValue: refEntry[1],
+            type: scanPresent ? 'Faux positif' : 'Non détecté',
+            diag: {
+              rule: `DOC_RULES['${label}']`,
+              keywords: (docRule.any || []).join(', '),
+              extensions: docRule.ext ? docRule.ext.join(', ') : 'toutes',
+              excludeKw: (docRule.exclude || []).join(', ') || 'aucun',
+              mapping: label + ' → ' + mappedRefLabels.join(' | '),
+              refAllCols: refEntries.map(([k, v]) => `${k}=${v}`).join('; '),
+              hint: scanPresent
+                ? 'Le scan trouve un fichier correspondant aux keywords mais la réf dit Non — faux positif possible si le keyword est trop large'
+                : 'Aucun fichier ne matche les keywords — vérifier : (1) le fichier existe ? (2) son nom contient-il un keyword ? (3) est-il dans un sous-dossier exclu ?',
+            },
+          });
+        }
+        continue;
+      }
+
+      // Fallback : fuzzy matching pour les colonnes sans mapping explicite
+      // EXCLURE les colonnes dynamiques (Lot N, AE Lot N, Lots positionnés) du fuzzy
+      if (/^(Lot \d|AE Lot \d|Lots positionnés)/i.test(label)) continue;
+
+      // Cherche dans la réf une colonne dont le label contient les mêmes mots significatifs
+      const normLabel = normPath(label);
+      const labelWords = normLabel.split(' ').filter(w => w.length > 2);
+      if (labelWords.length === 0) continue;
+
+      const refEntry = Object.entries(ref).find(([k]) => {
+        if (k.startsWith('_')) return false;
+        // Exclure les colonnes lot de la réf du fuzzy
+        if (/^lot\s*\d/i.test(k)) return false;
+        const nk = normPath(k);
+        // Match exact ou inclusion
+        if (nk === normLabel || nk.includes(normLabel) || normLabel.includes(nk)) return true;
+        // Match par mots significatifs (au moins 60% des mots communs)
+        const refWords = nk.split(' ').filter(w => w.length > 2);
+        const common = labelWords.filter(w => refWords.some(rw => rw.includes(w) || w.includes(rw)));
+        return common.length >= Math.ceil(labelWords.length * 0.6);
+      });
+
+      if (!refEntry) continue;
+      const refVal = String(refEntry[1]).toLowerCase();
+      const refPresent = refVal === 'x' || refVal.startsWith('oui');
+      const refAbsent = refVal === 'non' || refVal === '';
+      if (!refPresent && !refAbsent) continue;
+
+      if (scanPresent === refPresent) { matches++; }
+      else {
+        mismatches++;
+        const docRule = DOC_RULES[label]
+          || Object.entries(DOC_RULES).find(([k]) => k.startsWith(label) || label.startsWith(k))?.[1]
+          || {};
+        details.push({
+          supplier: supName, piece: label, refPiece: refEntry[0],
+          scanValue: scanVal, refValue: refEntry[1],
+          type: scanPresent ? 'Faux positif' : 'Non détecté',
+          diag: {
+            rule: `DOC_RULES['${label}'] (fuzzy)`,
+            keywords: (docRule.any || []).join(', '),
+            extensions: docRule.ext ? docRule.ext.join(', ') : 'toutes',
+            excludeKw: (docRule.exclude || []).join(', ') || 'aucun',
+            mapping: label + ' ≈ ' + refEntry[0] + ' (fuzzy)',
+            refAllCols: `${refEntry[0]}=${refEntry[1]}`,
+            hint: scanPresent
+              ? 'Le scan trouve un fichier mais la réf dit Non (matching fuzzy)'
+              : 'Aucun fichier matché — le mapping est approximatif, vérifier manuellement',
+          },
+        });
+      }
+    }
+  }
+
+  const total = matches + mismatches;
+  return {
+    matches, mismatches, total,
+    accuracy: total > 0 ? Math.round(matches / total * 100) : 0,
+    details,
+  };
 }
 
 // ─── Scan annuaire ────────────────────────────────────────────────────────────
@@ -313,8 +853,21 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       }
       if (!lotNum) continue;
       const rawSheet = XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1, defval: '' });
-      const dataRows = rawSheet.slice(1).filter(r => String(r[0] || '').trim());
+      // Garde toutes les lignes qui ont au moins une cellule non vide (pas juste colonne A,
+      // car les cellules fusionnées laissent la colonne A vide pour les sous-lignes)
+      const dataRows = rawSheet.slice(1).filter(r =>
+        r.some(v => String(v || '').trim() !== '')
+      );
       const reqCols = bpuReq[lotNum] || [];
+      // Détecte les colonnes "template" pré-remplies (ex: TVA 20%)
+      // On identifie la ligne d'en-tête pour repérer les colonnes TVA
+      const headerRow = rawSheet.find(r => r.some(v => /tva/i.test(String(v || ''))));
+      const templateCols = new Set();
+      if (headerRow) {
+        for (let c = 0; c < headerRow.length; c++) {
+          if (/tva/i.test(String(headerRow[c] || ''))) templateCols.add(c);
+        }
+      }
       const totalLines = dataRows.length;
       let filledLines = 0;
       const missing = [];
@@ -325,7 +878,7 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       for (const r of dataRows) {
         const isFilled = reqCols.length
           ? reqCols.some(({ col }) => isRealVal(r[col]))
-          : r.slice(1).some(isNum);
+          : r.slice(1).some((v, i) => !templateCols.has(i + 1) && isNum(v));
         if (isFilled) filledLines++;
       }
       let status;
@@ -417,15 +970,42 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
       || (/questionnaire/i.test(lower) && !isRse);
     if (!isBpu && !isChiffrage && !isQt && !isRse) return;
     return (async () => {
+      const norm = normSupName(supplierName);
+      ensure(norm, supplierName);
       try {
         const wb = await readXlsxHandle(file.handle);
-        const norm = normSupName(supplierName);
-        ensure(norm, supplierName);
         if (isBpu && !supInfo[norm].hasBpu) processBpuWb(wb, norm);
+        // Complément : si le nom du fichier BPU contient un lot mais que processBpuWb
+        // n'a rien trouvé (feuilles sans "Lot N"), on déduit du nom de fichier
+        if (isBpu && supInfo[norm].lots.size === 0) {
+          const fileNameLots = [...lower.matchAll(/lot\s*(\d+)/gi)];
+          for (const m of fileNameLots) {
+            const lotNum = parseInt(m[1], 10);
+            if (autoMode) autoLots.add(lotNum);
+            supInfo[norm].lots.add(lotNum);
+          }
+        }
         if (isChiffrage) supInfo[norm].hasChiffrage = true;
         if (isQt) supInfo[norm].hasQT = true;
         if (isRse) supInfo[norm].hasRse = true;
-      } catch {}
+      } catch (e) {
+        console.warn(`[classifyAndProcess] Erreur lecture ${file.name}:`, e);
+        // Fallback BPU : si le fichier n'a pas pu être lu mais que le nom contient un lot,
+        // on positionne quand même le fournisseur sur ce lot
+        if (isBpu) {
+          supInfo[norm].hasBpu = true;
+          const lotMatches = lower.matchAll(/lot\s*(\d+)/gi);
+          for (const m of lotMatches) {
+            const lotNum = parseInt(m[1], 10);
+            if (autoMode) autoLots.add(lotNum);
+            supInfo[norm].lots.add(lotNum);
+            if (!supInfo[norm].lotStatus) supInfo[norm].lotStatus = {};
+            if (!supInfo[norm].lotStatus[lotNum]) {
+              supInfo[norm].lotStatus[lotNum] = { status: 'x (nom fichier)', filledLines: 0, totalLines: 0, missing: [] };
+            }
+          }
+        }
+      }
     })();
   }
 
@@ -437,6 +1017,8 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
   const hasLotStructure = rootSubdirs.some(s => isLotDir(s.name));
 
   let supplierFolders = []; // { dirName, dirHandle }
+  // Suivi ATTRI1/AE par lot et par fournisseur
+  const attriByLot = {}; // { normSupName: { lotNum: boolean } }
   if (hasLotStructure) {
     for (const { name: lotName, handle: lotHandle } of rootSubdirs) {
       if (!isLotDir(lotName) && SKIP_FALLBACK.has(normSupName(lotName))) continue;
@@ -447,13 +1029,20 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
         const lotSubdirs = await getSubdirs(lotHandle);
         for (const { name, handle } of lotSubdirs) {
           if (SKIP_FALLBACK.has(normSupName(name))) continue;
-          supplierFolders.push({ dirName: name, dirHandle: handle });
+          // Ignore les dossiers "mise au point" / "documents complémentaires"
+          if (/mise au point/i.test(name)) continue;
+          // Détecte les dossiers "complément" → rattache au fournisseur de base
+          const compBase = extractComplementBase(name);
+          const effectiveName = compBase || name;
+          supplierFolders.push({ dirName: effectiveName, dirHandle: handle });
           // Positionnement par lot : le fournisseur est dans ce dossier de lot
           if (lotNum) {
-            const sn = normSupName(name);
-            const display = name.replace(/\s+(ok|OK|valid[eé])\s*$/i, '').trim();
+            const sn = normSupName(effectiveName);
+            const display = effectiveName.replace(/\s+(ok|OK|valid[eé])\s*$/i, '').trim();
             ensure(sn, display);
             supInfo[sn].lots.add(lotNum);
+            // AE par lot : détection initiale dans le dossier lot (sera complétée plus tard)
+            if (!attriByLot[sn]) attriByLot[sn] = {};
           }
         }
       } else {
@@ -472,7 +1061,10 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
   } else {
     supplierFolders = rootSubdirs
       .filter(s => !SKIP_FALLBACK.has(normSupName(s.name)))
-      .map(s => ({ dirName: s.name, dirHandle: s.handle }));
+      .map(s => {
+        const compBase = extractComplementBase(s.name);
+        return { dirName: compBase || s.name, dirHandle: s.handle };
+      });
   }
 
   let processedAny = false;
@@ -513,27 +1105,39 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     'consignes', 'instructions', 'template', 'modele', 'modeles',
   ]);
   // Réutilise la même logique de détection lot/fournisseur que le scan principal
+  // Accumule TOUS les dossiers par fournisseur (multi-lots)
   const subdirs2 = await getSubdirs(rootHandle);
-  const folderMap = {};
+  const folderMap = {};      // { normName: { name, handle } } — premier dossier pour le nom
+  const folderMapAll = {};   // { normName: [{ name, handle }] } — tous les dossiers (multi-lots)
   if (hasLotStructure) {
     for (const { name: lotName, handle: lotHandle } of subdirs2) {
       if (isLotDir(lotName)) {
         const lotSubs = await getSubdirs(lotHandle);
         for (const { name, handle } of lotSubs) {
+          // Ignore les dossiers "compléments" et "documents mise au point"
+          if (/^compl[eéè]ment/i.test(name) || /mise au point/i.test(name)) continue;
           const n = normSupName(name);
           if (SKIP_DIRS.has(n)) continue;
           if (!folderMap[n]) folderMap[n] = { name, handle };
+          if (!folderMapAll[n]) folderMapAll[n] = [];
+          folderMapAll[n].push({ name, handle });
         }
       } else {
+        if (/mise au point/i.test(lotName)) continue;
         const n = normSupName(lotName);
-        if (!SKIP_DIRS.has(n)) folderMap[n] = { name: lotName, handle: lotHandle };
+        if (!SKIP_DIRS.has(n)) {
+          folderMap[n] = { name: lotName, handle: lotHandle };
+          folderMapAll[n] = [{ name: lotName, handle: lotHandle }];
+        }
       }
     }
   } else {
     for (const { name, handle } of subdirs2) {
+      if (/mise au point/i.test(name)) continue;
       const n = normSupName(name);
       if (SKIP_DIRS.has(n)) continue;
       folderMap[n] = { name, handle };
+      folderMapAll[n] = [{ name, handle }];
     }
   }
 
@@ -548,6 +1152,17 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
   if (autoMode && autoLots.size) {
     lots = [...autoLots].sort((a, b) => a - b).map(num => ({ num, label: `Lot ${num}` }));
     docLabels = [...lots.map(l => l.label), ...docLabels];
+  }
+  // Colonne "Lots positionnés" + AE par lot
+  if (lots.length > 0) {
+    const aeLotCols = lots.map(l => `AE Lot ${l.num}`);
+    // Remplace la colonne globale par : Lots positionnés + AE par lot
+    const attriIdx = docLabels.indexOf('ATTRI1 / Acte Engagement');
+    if (attriIdx >= 0) {
+      docLabels.splice(attriIdx, 1, 'Lots positionnés', ...aeLotCols);
+    } else {
+      docLabels.push('Lots positionnés', ...aeLotCols);
+    }
   }
 
   // Index global des fichiers contacts (xlsx exploitables + pdf en marqueur)
@@ -569,14 +1184,54 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     const info = supInfo[n];
     onProgress(`${i + 1}/${allNorms.length} — ${info.displayName}`);
 
-    let raw = {};
     let contact = { prenom: '', nom: '', tel: '', mail: '' };
     const folder = folderMap[n];
+    const allFolders = folderMapAll[n] || (folder ? [folder] : []);
     let supFiles = [];
-    if (folder) {
-      supFiles = await getAllFiles(folder.handle);
+    // Accumule les fichiers de TOUS les dossiers du fournisseur (multi-lots)
+    for (const f of allFolders) {
+      const files = await getAllFiles(f.handle);
+      supFiles.push(...files);
+    }
+    let raw = {};
+    if (supFiles.length) {
       raw = detectDocs(supFiles, lots);
     }
+
+    // AE / ATTRI1 / Acte d'engagement — détection par lot dans TOUS les fichiers du fournisseur
+    // Cherche si le chemin complet (nom fichier + dossiers parents) contient un mot-clé AE
+    // Si le fichier contient aussi un numéro de lot → affecté à ce lot uniquement
+    // Si le fichier AE n'a PAS de numéro de lot → affecté à TOUS les lots positionnés
+    if (lots.length > 0 && supFiles.length > 0) {
+      const attriRule = DOC_RULES['ATTRI1 / Acte Engagement'];
+      const isAeFile = (p) => {
+        if (attriRule.any.some(kw => p.includes(normPath(kw)))) return true;
+        if (attriRule.regexAny && attriRule.regexAny.some(rx => rx.test(p))) return true;
+        return false;
+      };
+      if (!attriByLot[n]) attriByLot[n] = {};
+      // D'abord : détection par lot spécifique (fichier AE + numéro de lot dans le chemin)
+      for (const lot of lots) {
+        if (attriByLot[n][lot.num]) continue;
+        const lotRx = new RegExp('(?:^|[\\s_\\-\\/\\\\])lot\\s*' + lot.num + '(?:[\\s_\\-\\.\\/\\\\]|$)', 'i');
+        attriByLot[n][lot.num] = supFiles.some(f => {
+          const p = normPath(f.path || f.name);
+          return isAeFile(p) && lotRx.test(p);
+        });
+      }
+      // Ensuite : si un fichier AE existe SANS mention de lot → il couvre tous les lots positionnés
+      const anyLotRx = /(?:^|[\s_\-\/\\])lot\s*\d+(?:[\s_\-\.\/\\]|$)/i;
+      const hasGenericAe = supFiles.some(f => {
+        const p = normPath(f.path || f.name);
+        return isAeFile(p) && !anyLotRx.test(p);
+      });
+      if (hasGenericAe) {
+        for (const lot of lots) {
+          if (!attriByLot[n][lot.num]) attriByLot[n][lot.num] = true;
+        }
+      }
+    }
+
     // Étape "rangement virtuel" : classifie tous les fichiers du fournisseur
     // par catégorie (comme l'export zip), puis lit TOUS les fichiers Contacts
     // et fusionne les résultats. Fallback : recherche globale par tokens.
@@ -699,7 +1354,56 @@ export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
     row['CCTP signé'] = docVal(raw['CCTP signé']);
     row['DC1'] = docVal(raw['DC1']);
     row['DC2'] = docVal(raw['DC2']);
-    row['ATTRI1'] = docVal(raw['ATTRI1']);
+    row['DUME'] = docVal(raw['DUME']);
+    row['KBIS'] = docVal(raw['KBIS']);
+    row['RIB'] = docVal(raw['RIB']);
+    row['Attestation assurance'] = docVal(raw['Attestation assurance']);
+    row['Attestation fiscale'] = docVal(raw['Attestation fiscale']);
+    row['Attestation sociale'] = docVal(raw['Attestation sociale']);
+    row['Engagement confidentialité'] = docVal(raw['Engagement confidentialité']);
+    row['Marquage CE'] = docVal(raw['Marquage CE']);
+    row['Certifications ISO'] = docVal(raw['Certifications ISO']);
+    row['Mémoire technique'] = docVal(raw['Mémoire technique']);
+    row['Contrat maintenance'] = docVal(raw['Contrat maintenance']);
+    row['Rétroplanning'] = docVal(raw['Rétroplanning']);
+    row['Partenariat'] = docVal(raw['Partenariat']);
+    row['Brochures commerciales'] = docVal(raw['Brochures commerciales']);
+    row['Certificats de visites'] = docVal(raw['Certificats de visites']);
+    row['Documentation politique RSE'] = docVal(raw['Documentation politique RSE']);
+    row['Liste de références'] = docVal(raw['Liste de références']);
+    row['Management qualité'] = docVal(raw['Management qualité']);
+    row['Modules de formation'] = docVal(raw['Modules de formation']);
+    row['Matériovigilance'] = docVal(raw['Matériovigilance']);
+    row['Cybersécurité'] = docVal(raw['Cybersécurité']);
+    row['RC signé'] = docVal(raw['RC signé']);
+    row['Complément CCAP'] = docVal(raw['Complément CCAP']);
+    row['Délégation de pouvoir'] = docVal(raw['Délégation de pouvoir']);
+    row['Critères économiques'] = docVal(raw['Critères économiques']);
+    // Colonne récap lots positionnés
+    const posLots = lots.filter(lot =>
+      info.lots.has(lot.num) || raw[`Lot ${lot.num}`] ||
+      (lotStatus[lot.num] && lotStatus[lot.num].status !== 'vide')
+    ).map(l => l.num);
+    row['Lots positionnés'] = posLots.length ? posLots.join(', ') : '—';
+
+    // AE / ATTRI1 / Acte d'engagement — par lot
+    const supAttri = attriByLot[n] || {};
+    if (lots.length > 0) {
+      for (const lot of lots) {
+        const colName = `AE Lot ${lot.num}`;
+        // Positionné = lot trouvé dans le BPU, dans la structure dossier, ou dans les fichiers
+        const isPositioned = info.lots.has(lot.num) || raw[`Lot ${lot.num}`] ||
+          (lotStatus[lot.num] && lotStatus[lot.num].status !== 'vide');
+        if (!isPositioned) {
+          row[colName] = '—'; // fournisseur non positionné sur ce lot
+        } else {
+          row[colName] = supAttri[lot.num] ? 'x' : 'non fourni';
+        }
+      }
+    } else {
+      // Pas de lots → colonne globale
+      row['ATTRI1 / Acte Engagement'] = docVal(raw['ATTRI1 / Acte Engagement'] || raw['ATTRI1']);
+    }
     row['Fiche Contacts'] = docVal(raw['Fiche Contacts']);
     row['PRENOM'] = contact.prenom || '';
     row['NOM'] = contact.nom || '';

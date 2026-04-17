@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NavLink, useParams, useLocation } from 'react-router-dom';
 import { SECTEURS, getMarchesBySecteur, formations } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
@@ -33,6 +33,20 @@ const IconSearch = () => (
   </svg>
 );
 
+const IconStar = ({ filled }) => (
+  <svg
+    width="11" height="11" viewBox="0 0 16 16"
+    fill={filled ? '#F59E0B' : 'none'}
+    stroke={filled ? '#F59E0B' : '#9CA3AF'}
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ flexShrink: 0, cursor: 'pointer' }}
+  >
+    <polygon points="8,1 10.2,5.4 15,6.1 11.5,9.5 12.4,14.3 8,12 3.6,14.3 4.5,9.5 1,6.1 5.8,5.4"/>
+  </svg>
+);
+
 /* ── Status dot colors ──────────────────────────────────────── */
 const STATUT_DOT = {
   sourcing:    '#0EA5E9',
@@ -60,6 +74,20 @@ const FORMATION_GROUPS = [
   { key: 'autres',     label: 'Autres formations', filter: f => !f.renouvellement },
 ];
 
+/* ── Favorites helpers ──────────────────────────────────────── */
+const FAVORITES_KEY = 'gm-favorites';
+
+function loadFavorites() {
+  try {
+    const raw = localStorage.getItem(FAVORITES_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+function saveFavorites(set) {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify([...set]));
+}
+
 export default function Sidebar() {
   const { id: activeId } = useParams();
   const { pathname } = useLocation();
@@ -72,7 +100,9 @@ export default function Sidebar() {
   const [search,    setSearch]    = useState('');
   const [showAdd,   setShowAdd]   = useState(false);
   const [showAddF,  setShowAddF]  = useState(false);
+  const [favorites, setFavorites] = useState(loadFavorites);
   const [collapsed, setCollapsed] = useState(() => ({
+    favorites: false,
     ...Object.fromEntries(Object.keys(SECTEURS).map(k => [k, true])),
     ...Object.fromEntries(FORMATION_GROUPS.map(g => [g.key, true])),
   }));
@@ -81,6 +111,37 @@ export default function Sidebar() {
   const isFormations = pathname.startsWith('/formations');
 
   const toggle = (key) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
+
+  const toggleFavorite = useCallback((e, marcheId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(marcheId)) next.delete(marcheId);
+      else next.add(marcheId);
+      saveFavorites(next);
+      return next;
+    });
+  }, []);
+
+  /* Build all marchés list (used for both favorites section and secteur sections) */
+  const allMarches = (() => {
+    const result = [];
+    Object.entries(SECTEURS).forEach(([key]) => {
+      const staticMarches = getMarchesBySecteur(key);
+      const userMarches = newMarches.filter(m => m.secteur === key);
+      [...staticMarches, ...userMarches].forEach(m => {
+        result.push({ ...m, _statut: getMeta(m.id).statut || m.statut });
+      });
+    });
+    return result;
+  })();
+
+  /* Favorite marchés */
+  const favoriteMarches = allMarches
+    .filter(m => favorites.has(m.id))
+    .filter(m => !search || m.nom.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }));
 
   return (
     <aside className={'sidebar' + (!isMarches && !isFormations ? ' sidebar--empty' : '')}>
@@ -108,6 +169,70 @@ export default function Sidebar() {
             </button>
           </div>
           {showAdd && <AddMarcheModal onClose={() => setShowAdd(false)} />}
+
+          {/* Favoris section */}
+          {favoriteMarches.length > 0 && (
+            <nav className="sidebar-nav" style={{ marginBottom: 0 }}>
+              <div className="sidebar-secteur">
+                <button
+                  className="sidebar-secteur-label"
+                  onClick={() => toggle('favorites')}
+                >
+                  <span className="sidebar-secteur-title">
+                    <span style={{ marginRight: 4 }}>⭐</span>
+                    Favoris
+                    <span className="sidebar-secteur-count">{favoriteMarches.length}</span>
+                  </span>
+                  <span className="sidebar-secteur-chevron">
+                    <IconChevron open={!collapsed.favorites} />
+                  </span>
+                </button>
+
+                {!collapsed.favorites && (
+                  <div className="sidebar-secteur-items">
+                    {favoriteMarches.map((m) => {
+                      const statut     = m._statut;
+                      const hasSession = !!getSession(m.id);
+                      const isActive   = activeId === m.id;
+                      const isCloture  = statut === 'cloture';
+
+                      return (
+                        <NavLink
+                          key={m.id}
+                          to={'/marche/' + m.id + '/notation'}
+                          className={() =>
+                            'nav-item nav-marche-item' + (isActive ? ' active' : '') + (isCloture ? ' is-cloture' : '')
+                          }
+                          style={isCloture ? { opacity: 0.6 } : undefined}
+                          title={isCloture ? m.nom + ' (clôturé)' : m.nom}
+                        >
+                          <span
+                            className="nm-dot"
+                            style={{ background: STATUT_DOT[statut] || '#94A3B8' }}
+                          />
+                          <span className="nm-nom" style={isCloture ? { textDecoration: 'line-through', color: 'var(--text-muted)' } : undefined}>
+                            {m.nom}
+                          </span>
+                          <span
+                            onClick={(e) => toggleFavorite(e, m.id)}
+                            title="Retirer des favoris"
+                            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}
+                          >
+                            <IconStar filled={true} />
+                          </span>
+                          {hasSession && (
+                            <span className="nm-session" title="Session active">
+                              <IconPen />
+                            </span>
+                          )}
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </nav>
+          )}
 
           {/* Secteurs + marchés */}
           <nav className="sidebar-nav">
@@ -170,6 +295,13 @@ export default function Sidebar() {
                             />
                             <span className="nm-nom" style={isCloture ? { textDecoration: 'line-through', color: 'var(--text-muted)' } : undefined}>
                               {m.nom}
+                            </span>
+                            <span
+                              onClick={(e) => toggleFavorite(e, m.id)}
+                              title={favorites.has(m.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                              style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}
+                            >
+                              <IconStar filled={favorites.has(m.id)} />
                             </span>
                             {hasSession && (
                               <span className="nm-session" title="Session active">

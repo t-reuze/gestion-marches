@@ -29,7 +29,7 @@ import { useMarcheMeta } from "../../context/MarcheMetaContext";
 import StandardisationBpuTab from "./StandardisationBpuTab";
 import StandardisationQuestionnaireTab from "./StandardisationQuestionnaireTab";
 import QualityControlTab from "./QualityControlTab";
-
+import DocTemplatesTab from "./DocTemplatesTab";
 // PALETTE & HELPERS
 
 const PALETTE = ["#2563eb","#16a34a","#dc2626","#9333ea","#f59e0b","#0891b2","#db2777","#0d9488"];
@@ -216,38 +216,132 @@ function parseAnalyseExcel(wb) {
 
 // FOLDER PICKER ZONE
 
-function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nbFournisseurs, onBundle, bundling, bundleProgress }) {
+function FolderPickerZone({ onScan, scanning, scanProgress, dirPath, warning, nbFournisseurs, onBundle, bundling, bundleProgress, onDropFolder }) {
   const supportsApi = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
+  const [dragOver, setDragOver] = React.useState(false);
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  }
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  }
+  async function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const items = e.dataTransfer.items;
+    if (!items || !items.length) return;
+    const item = items[0];
+    // Try modern getAsFileSystemHandle first
+    if (item.getAsFileSystemHandle) {
+      try {
+        const handle = await item.getAsFileSystemHandle();
+        if (handle && handle.kind === 'directory') {
+          onDropFolder(handle);
+          return;
+        }
+      } catch (_) {}
+    }
+    // Fallback: webkitGetAsEntry
+    if (item.webkitGetAsEntry) {
+      const entry = item.webkitGetAsEntry();
+      if (entry && entry.isDirectory) {
+        // webkitGetAsEntry doesn't give a FileSystemDirectoryHandle,
+        // so we can't use it directly with our scanner. Inform the user.
+        alert('Le glisser-déposer de dossiers nécessite Chrome 86+ ou Edge 86+. Utilisez le bouton "Sélectionner le dossier" à la place.');
+        return;
+      }
+    }
+  }
+
+  const dropZoneStyle = {
+    border: dragOver ? '2px dashed #2563eb' : '2px dashed transparent',
+    background: dragOver ? '#eff6ff' : 'transparent',
+    borderRadius: 8,
+    padding: 12,
+    transition: 'border-color 0.2s, background 0.2s',
+  };
 
   return (
     <div className="card" style={{ marginBottom:16 }}>
       <div className="card-header"><span className="card-title">Dossier de l&apos;AO</span></div>
       <div className="card-body">
-        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
-          <button className="btn btn-outline" onClick={() => onScan('pick')} disabled={!supportsApi || scanning}>
-            Sélectionner le dossier…
-          </button>
-          {dirPath && (
-            <>
-              <div>
-                <div style={{ fontSize:11, color:"var(--text-muted)", marginBottom:2 }}>Dossier :</div>
-                <code style={{ background:"var(--bg)", border:"1px solid var(--border)", padding:"4px 10px", borderRadius:5, fontSize:12 }}>{dirPath}</code>
-              </div>
-              <button className="btn btn-primary" onClick={() => onScan('scan')} disabled={scanning}>
-                {scanning ? scanProgress : 'Analyser'}
-              </button>
-              <button className="btn btn-outline" onClick={onBundle} disabled={bundling || scanning}
-                title="Réorganise les réponses fournisseurs en dossiers par type de document et télécharge un .zip">
-                {bundling ? (bundleProgress || 'Création du zip…') : '📦 Ranger & télécharger zip'}
-              </button>
-            </>
-          )}
-          {nbFournisseurs > 0 && !scanning && (
-            <span style={{ fontSize:12, color:"#15803d", fontWeight:600, background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:6, padding:"3px 10px" }}>
-              ✓ {nbFournisseurs} fournisseur{nbFournisseurs > 1 ? 's' : ''} détecté{nbFournisseurs > 1 ? 's' : ''}
-            </span>
-          )}
+        <div
+          style={dropZoneStyle}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+            <button className="btn btn-outline" onClick={() => onScan('pick')} disabled={!supportsApi || scanning}>
+              Sélectionner le dossier…
+            </button>
+            <span style={{ fontSize:12, color:"var(--text-muted)", fontStyle:"italic" }}>ou glissez un dossier ici</span>
+            {dirPath && (
+              <>
+                <div>
+                  <div style={{ fontSize:11, color:"var(--text-muted)", marginBottom:2 }}>Dossier :</div>
+                  <code style={{ background:"var(--bg)", border:"1px solid var(--border)", padding:"4px 10px", borderRadius:5, fontSize:12 }}>{dirPath}</code>
+                </div>
+                <button className="btn btn-primary" onClick={() => onScan('scan')} disabled={scanning}>
+                  {scanning ? scanProgress : 'Analyser'}
+                </button>
+                <button className="btn btn-outline" onClick={onBundle} disabled={bundling || scanning}
+                  title="Réorganise les réponses fournisseurs en dossiers par type de document et télécharge un .zip">
+                  {bundling ? (bundleProgress || 'Création du zip…') : '📦 Ranger & télécharger zip'}
+                </button>
+              </>
+            )}
+            {nbFournisseurs > 0 && !scanning && (
+              <span style={{ fontSize:12, color:"#15803d", fontWeight:600, background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:6, padding:"3px 10px" }}>
+                ✓ {nbFournisseurs} fournisseur{nbFournisseurs > 1 ? 's' : ''} détecté{nbFournisseurs > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
         </div>
+        {/* Barre de progression pendant le scan */}
+        {scanning && (
+          <div style={{
+            marginTop: 12, padding: '12px 16px', borderRadius: 10,
+            background: 'linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%)',
+            border: '1px solid #bfdbfe',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: '50%',
+                border: '3px solid #3b82f6', borderTopColor: 'transparent',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#1e40af' }}>
+                Analyse en cours...
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: '#3b82f6', marginLeft: 30 }}>
+              {scanProgress || 'Initialisation...'}
+            </div>
+            <div style={{
+              marginTop: 8, height: 4, borderRadius: 2, background: '#dbeafe', overflow: 'hidden',
+            }}>
+              <div style={{
+                height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                animation: 'progressPulse 1.5s ease-in-out infinite',
+                width: '40%',
+              }} />
+            </div>
+            <style>{`
+              @keyframes spin { to { transform: rotate(360deg); } }
+              @keyframes progressPulse {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(350%); }
+              }
+            `}</style>
+          </div>
+        )}
         {!supportsApi && (
           <div style={{ marginTop:8, fontSize:12, color:"#d97706" }}>
             Navigateur non compatible — Chrome ou Edge requis.
@@ -1036,6 +1130,30 @@ function StatusBadge({ value, tooltip, isLot }) {
 function AnnuaireTab({ annuaire, edits, setCell, config }) {
   const { docLabels } = config;
   const [filter, setFilter] = useState('');
+  const [refCQ, setRefCQ] = useState(null);   // { fileName, comparison }
+  const [cqLoading, setCqLoading] = useState(false);
+
+  // Groupes de colonnes pour affichage compact
+  const COL_GROUPS = [
+    { key: 'lots', label: 'Lots', match: l => /^(Lot |Lots positionnés|AE Lot)/i.test(l) },
+    { key: 'offre', label: 'Offre technique', match: l => ['QT', 'BPU', 'Optim. Tarifaire', 'BPU Chiffrage', 'Mémoire technique', 'Brochures commerciales', 'Certificats de visites', 'Contrat maintenance', 'Rétroplanning'].includes(l) },
+    { key: 'rse', label: 'RSE / Qualité', match: l => ['Questionnaire RSE', 'Documentation politique RSE', 'Liste de références', 'Management qualité', 'Modules de formation', 'Matériovigilance', 'Cybersécurité'].includes(l) },
+    { key: 'admin', label: 'Administratif', match: l => ['CCAP signé', 'CCTP signé', 'RC signé', 'Complément CCAP', 'DC1', 'DC2', 'DUME', 'Délégation de pouvoir', 'ATTRI1 / Acte Engagement', 'Engagement confidentialité', 'Attestation fiscale', 'Attestation sociale', 'Attestation assurance', 'Critères économiques', 'Marquage CE', 'Certifications ISO', 'KBIS', 'RIB', 'Partenariat'].includes(l) },
+    { key: 'contact', label: 'Contacts', match: l => l === 'Fiche Contacts' },
+  ];
+  const [visibleGroups, setVisibleGroups] = useState(() => {
+    // Par défaut : lots + offre visible, le reste masqué
+    return { lots: true, offre: true, rse: false, admin: false, contact: true };
+  });
+  const toggleGroup = (key) => setVisibleGroups(g => ({ ...g, [key]: !g[key] }));
+
+  // Filtre les colonnes visibles
+  const visibleDocLabels = docLabels.filter(l => {
+    for (const g of COL_GROUPS) {
+      if (g.match(l)) return visibleGroups[g.key];
+    }
+    return true; // colonnes non groupées toujours visibles
+  });
   const allRows = annuaire.map((row, i) => ({ ...row, ...(edits[i] || {}), _idx: i }));
   const rows = filter
     ? allRows.filter(r => (r['Nom fournisseur'] || '').toLowerCase().includes(filter.toLowerCase()))
@@ -1084,7 +1202,308 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
         <span style={{ fontSize: 12, color: '#6b7280' }}>
           {rows.length} affiché{rows.length > 1 ? 's' : ''} sur {totalSups}
         </span>
+        {/* Toggle groupes de colonnes */}
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {COL_GROUPS.map(g => {
+            const count = docLabels.filter(g.match).length;
+            if (!count) return null;
+            const active = visibleGroups[g.key];
+            return (
+              <button key={g.key}
+                onClick={() => toggleGroup(g.key)}
+                style={{
+                  padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 500,
+                  border: active ? '1px solid #3b82f6' : '1px solid #d1d5db',
+                  background: active ? '#eff6ff' : '#f9fafb',
+                  color: active ? '#1d4ed8' : '#6b7280',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                {active ? '●' : '○'} {g.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+        <button
+          className="btn btn-outline btn-sm"
+          style={{ marginLeft: 'auto' }}
+          onClick={() => {
+            const contactCols = ['PRENOM', 'NOM', 'FONCTION', 'TEL', 'MAIL'];
+            const headers = ['Nom fournisseur', ...docLabels, ...contactCols];
+            const data = allRows.map(r => headers.map(h => r[h] || ''));
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+            // Largeur des colonnes
+            ws['!cols'] = headers.map((h, i) => ({ wch: i === 0 ? 28 : h.length > 12 ? h.length + 2 : 14 }));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Annuaire');
+            XLSX.writeFile(wb, 'annuaire_fournisseurs.xlsx');
+          }}
+        >
+          Exporter Excel
+        </button>
+        <button
+          className="btn btn-outline btn-sm"
+          disabled={cqLoading || !allRows.length}
+          onClick={async () => {
+            try {
+              setCqLoading(true);
+              const [fh] = await window.showOpenFilePicker({
+                types: [{ description: 'Excel', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xls'] } }],
+              });
+              const file = await fh.getFile();
+              const buf = await file.arrayBuffer();
+              const wb = XLSX.read(buf, { type: 'array' });
+              const { parseReferenceFile, compareAnnuaireWithRef } = await import('../../utils/analyseFolder.js');
+              const { refData } = parseReferenceFile(wb);
+              const comparison = compareAnnuaireWithRef(allRows, refData, docLabels);
+              setRefCQ({ fileName: file.name, comparison });
+            } catch (e) {
+              if (e.name !== 'AbortError') console.error('CQ import error:', e);
+            }
+            setCqLoading(false);
+          }}
+        >
+          {cqLoading ? 'Chargement...' : 'Importer réf. CQ'}
+        </button>
       </div>
+
+      {/* CQ Results */}
+      {refCQ && (
+        <div style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+          <div style={{
+            padding: '12px 16px', display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
+            background: refCQ.comparison.accuracy >= 90 ? '#f0fdf4' : refCQ.comparison.accuracy >= 70 ? '#fffbeb' : '#fef2f2',
+          }}>
+            <div>
+              <span style={{
+                fontSize: 24, fontWeight: 700,
+                color: refCQ.comparison.accuracy >= 90 ? '#16a34a' : refCQ.comparison.accuracy >= 70 ? '#d97706' : '#dc2626',
+              }}>
+                {refCQ.comparison.accuracy}%
+              </span>
+              <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>
+                de précision ({refCQ.comparison.matches}/{refCQ.comparison.total} concordances)
+              </span>
+            </div>
+            <span style={{ fontSize: 12, color: '#9ca3af' }}>Réf: {refCQ.fileName}</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+              <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }}
+                onClick={async () => {
+                  const { default: jsPDF } = await import('jspdf');
+                  const doc = new jsPDF({ orientation: 'landscape' });
+                  const cq = refCQ.comparison;
+                  const now = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+                  // Header
+                  doc.setFillColor(0, 30, 69);
+                  doc.rect(0, 0, 297, 28, 'F');
+                  doc.setTextColor(255, 255, 255);
+                  doc.setFontSize(16);
+                  doc.text('Rapport de Contrôle Qualité — Annuaire Fournisseurs', 14, 14);
+                  doc.setFontSize(9);
+                  doc.text('Généré le ' + now + '  |  Référence : ' + refCQ.fileName, 14, 22);
+
+                  // Score
+                  let y = 38;
+                  const scoreColor = cq.accuracy >= 90 ? [22,163,74] : cq.accuracy >= 70 ? [217,119,6] : [220,38,38];
+                  doc.setTextColor(...scoreColor);
+                  doc.setFontSize(28);
+                  doc.text(cq.accuracy + '%', 14, y);
+                  doc.setFontSize(11);
+                  doc.setTextColor(100, 100, 100);
+                  doc.text('de précision  (' + cq.matches + ' concordances / ' + cq.total + ' vérifications)', 42, y - 2);
+                  doc.setFontSize(10);
+                  doc.text(cq.mismatches + ' divergence' + (cq.mismatches > 1 ? 's' : '') + ' détectée' + (cq.mismatches > 1 ? 's' : ''), 42, y + 5);
+
+                  // Divergences détaillées avec diagnostic
+                  if (cq.details.length > 0) {
+                    y += 18;
+                    doc.setFontSize(12);
+                    doc.setTextColor(0, 0, 0);
+                    doc.text('Détail des divergences avec diagnostic', 14, y);
+                    y += 10;
+
+                    for (let di = 0; di < cq.details.length; di++) {
+                      const d = cq.details[di];
+                      const blockH = d.diag ? 42 : 14;
+                      if (y + blockH > 195) { doc.addPage(); y = 20; }
+
+                      // Divergence header bar
+                      const barColor = d.type === 'Faux positif' ? [254, 243, 199] : [254, 226, 226];
+                      const textColor = d.type === 'Faux positif' ? [146, 64, 14] : [153, 27, 27];
+                      doc.setFillColor(...barColor);
+                      doc.rect(12, y - 4, 273, 8, 'F');
+                      doc.setFontSize(8);
+                      doc.setFont(undefined, 'bold');
+                      doc.setTextColor(...textColor);
+                      doc.text((di + 1) + '. ' + d.type, 14, y);
+                      doc.setTextColor(55, 65, 81);
+                      doc.text(String(d.supplier || ''), 54, y);
+                      doc.setFont(undefined, 'normal');
+                      doc.text('Scan: ' + String(d.piece || '') + ' = ' + String(d.scanValue || ''), 120, y);
+                      doc.setTextColor(120, 120, 120);
+                      doc.text('Réf: ' + String(d.refPiece || '').substring(0, 35) + ' = ' + String(d.refValue || ''), 200, y);
+                      y += 10;
+
+                      // Diagnostic block
+                      if (d.diag) {
+                        doc.setFillColor(248, 250, 252);
+                        doc.rect(14, y - 4, 269, 30, 'F');
+                        doc.setDrawColor(226, 232, 240);
+                        doc.rect(14, y - 4, 269, 30, 'S');
+                        doc.setFontSize(6.5);
+
+                        doc.setTextColor(100, 116, 139);
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Règle utilisée:', 16, y);
+                        doc.setFont(undefined, 'normal');
+                        doc.setTextColor(30, 41, 59);
+                        doc.text(String(d.diag.rule || ''), 48, y);
+                        y += 4.5;
+
+                        doc.setTextColor(100, 116, 139);
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Keywords:', 16, y);
+                        doc.setFont(undefined, 'normal');
+                        doc.setTextColor(30, 41, 59);
+                        doc.text(String(d.diag.keywords || '').substring(0, 120), 40, y);
+                        y += 4.5;
+
+                        if (d.diag.extensions) {
+                          doc.setTextColor(100, 116, 139);
+                          doc.setFont(undefined, 'bold');
+                          doc.text('Extensions:', 16, y);
+                          doc.setFont(undefined, 'normal');
+                          doc.text(d.diag.extensions, 42, y);
+                          doc.setFont(undefined, 'bold');
+                          doc.text('Exclusions:', 80, y);
+                          doc.setFont(undefined, 'normal');
+                          doc.text(String(d.diag.excludeKw || 'aucun'), 104, y);
+                        }
+                        if (d.diag.scanCols) {
+                          doc.setTextColor(100, 116, 139);
+                          doc.setFont(undefined, 'bold');
+                          doc.text('Colonnes scan:', 16, y);
+                          doc.setFont(undefined, 'normal');
+                          doc.text(String(d.diag.scanCols), 50, y);
+                        }
+                        y += 4.5;
+
+                        doc.setTextColor(100, 116, 139);
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Mapping CQ:', 16, y);
+                        doc.setFont(undefined, 'normal');
+                        doc.text(String(d.diag.mapping || '').substring(0, 100), 44, y);
+                        y += 4.5;
+
+                        if (d.diag.refAllCols) {
+                          doc.setTextColor(100, 116, 139);
+                          doc.setFont(undefined, 'bold');
+                          doc.text('Colonnes réf:', 16, y);
+                          doc.setFont(undefined, 'normal');
+                          doc.text(String(d.diag.refAllCols).substring(0, 120), 46, y);
+                          y += 4.5;
+                        }
+
+                        doc.setTextColor(13, 90, 167);
+                        doc.setFont(undefined, 'italic');
+                        doc.text('→ ' + String(d.diag.hint || '').substring(0, 130), 16, y);
+                        doc.setFont(undefined, 'normal');
+                        y += 8;
+                      } else {
+                        y += 4;
+                      }
+                    }
+                  }
+
+                  // Summary per supplier
+                  y += 10;
+                  if (y > 170) { doc.addPage(); y = 20; }
+                  doc.setFontSize(12);
+                  doc.setTextColor(0, 0, 0);
+                  doc.text('Résumé par fournisseur', 14, y);
+                  y += 8;
+
+                  // Group divergences by supplier
+                  const bySup = {};
+                  for (const d of cq.details) {
+                    if (!bySup[d.supplier]) bySup[d.supplier] = { fp: 0, nd: 0 };
+                    if (d.type === 'Faux positif') bySup[d.supplier].fp++;
+                    else bySup[d.supplier].nd++;
+                  }
+
+                  doc.setFontSize(8);
+                  const supEntries = Object.entries(bySup).sort((a, b) => (b[1].fp + b[1].nd) - (a[1].fp + a[1].nd));
+                  if (supEntries.length === 0) {
+                    doc.setTextColor(22, 163, 74);
+                    doc.text('Aucune divergence — tous les fournisseurs sont conformes.', 14, y);
+                  } else {
+                    for (const [sup, counts] of supEntries) {
+                      if (y > 190) { doc.addPage(); y = 20; }
+                      doc.setTextColor(55, 65, 81);
+                      doc.text(sup + ' : ', 14, y);
+                      const parts = [];
+                      if (counts.nd > 0) parts.push(counts.nd + ' non détecté' + (counts.nd > 1 ? 's' : ''));
+                      if (counts.fp > 0) parts.push(counts.fp + ' faux positif' + (counts.fp > 1 ? 's' : ''));
+                      doc.setTextColor(153, 27, 27);
+                      doc.text(parts.join(', '), 14 + doc.getTextWidth(sup + ' : '), y);
+                      y += 5;
+                    }
+                  }
+
+                  // Footer
+                  const pageCount = doc.internal.getNumberOfPages();
+                  for (let p = 1; p <= pageCount; p++) {
+                    doc.setPage(p);
+                    doc.setFontSize(7);
+                    doc.setTextColor(180, 180, 180);
+                    doc.text('UNICANCER — Gestion des Marchés — CQ Annuaire — Page ' + p + '/' + pageCount, 14, 205);
+                  }
+
+                  doc.save('rapport_cq_annuaire.pdf');
+                }}
+              >
+                Exporter PDF
+              </button>
+              <button className="btn btn-outline btn-sm" style={{ fontSize: 11 }}
+                onClick={() => setRefCQ(null)}>Fermer</button>
+            </div>
+          </div>
+          {refCQ.comparison.details.length > 0 && (
+            <div style={{ maxHeight: 200, overflowY: 'auto', padding: '8px 16px', background: '#fff' }}>
+              <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>
+                    <td style={{ padding: '4px 8px' }}>Type</td>
+                    <td style={{ padding: '4px 8px' }}>Fournisseur</td>
+                    <td style={{ padding: '4px 8px' }}>Pièce (scan)</td>
+                    <td style={{ padding: '4px 8px' }}>Pièce (réf)</td>
+                    <td style={{ padding: '4px 8px' }}>Scan</td>
+                    <td style={{ padding: '4px 8px' }}>Réf</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {refCQ.comparison.details.map((d, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '4px 8px' }}>
+                        <span style={{
+                          padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 600,
+                          background: d.type === 'Faux positif' ? '#fef3c7' : '#fee2e2',
+                          color: d.type === 'Faux positif' ? '#92400e' : '#991b1b',
+                        }}>{d.type}</span>
+                      </td>
+                      <td style={{ padding: '4px 8px', fontWeight: 500 }}>{d.supplier}</td>
+                      <td style={{ padding: '4px 8px' }}>{d.piece}</td>
+                      <td style={{ padding: '4px 8px', color: '#9ca3af' }}>{d.refPiece}</td>
+                      <td style={{ padding: '4px 8px' }}>{d.scanValue}</td>
+                      <td style={{ padding: '4px 8px' }}>{d.refValue}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <div style={{
@@ -1096,10 +1515,11 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
             <thead>
               <tr style={{ background: 'linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%)' }}>
                 <th style={thStyle({ left: true, sticky: true })}>Fournisseur</th>
-                {docLabels.map(l => (
+                {visibleDocLabels.map(l => (
                   <th key={l} style={thStyle({ center: true })}>
-                    {l.replace(/^Lot\s*/, 'L').replace('Questionnaire RSE', 'RSE')
-                       .replace('Optim. Tarifaire', 'Optim').replace('BPU Chiffrage', 'Chiffrage')}
+                    {l === 'Lots positionnés' ? 'Lots'
+                       : l.replace(/^Lot\s*/, 'L').replace('Questionnaire RSE', 'RSE')
+                          .replace('Optim. Tarifaire', 'Optim').replace('BPU Chiffrage', 'Chiffrage')}
                   </th>
                 ))}
                 <th style={thStyle({ center: true, contact: true })}>Prénom</th>
@@ -1124,8 +1544,19 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
                   }}>
                     {row['Nom fournisseur']}
                   </td>
-                  {docLabels.map(col => {
+                  {visibleDocLabels.map(col => {
                     const v = row[col] || '';
+                    const isLotsPos = col === 'Lots positionnés';
+                    if (isLotsPos) {
+                      return (
+                        <td key={col} style={{
+                          padding: '8px 6px', textAlign: 'center',
+                          fontWeight: 600, fontSize: 12, color: v === '—' ? '#9ca3af' : '#1e40af',
+                        }}>
+                          {v}
+                        </td>
+                      );
+                    }
                     const isLotCol = col.toLowerCase().includes('lot');
                     let tooltip;
                     if (isLotCol && row._lotStatus) {
@@ -1471,6 +1902,32 @@ export default function AnalyseMarche() {
     setBundling(false); setBundleProgress('');
   }
 
+  async function handleDropFolder(handle) {
+    setDirHandle(handle);
+    setDirPath(handle.name);
+    setAnnuaire([]); setEdits({}); setDirWarning('');
+    // Run scan immediately with the handle (state won't be updated yet)
+    setScanning(true); setScanProgress('');
+    try {
+      const { rows, warning, docLabels } = await scanAnnuaire(handle, config, setScanProgress);
+      setAnnuaire(rows);
+      try {
+        const fournisseurs = rows.map(r => ({
+          nom: r['Nom fournisseur'],
+          contacts: (r._contacts && r._contacts.length)
+            ? r._contacts
+            : ((r.PRENOM || r.NOM || r.TEL || r.MAIL)
+              ? [{ prenom: r.PRENOM, nom: r.NOM, fonction: r.FONCTION, tel: r.TEL, mail: r.MAIL }]
+              : []),
+        }));
+        setMeta(id, { fournisseurs, fournisseursScanDate: new Date().toISOString() });
+      } catch (e) { console.warn('persist fournisseurs failed', e); }
+      if (docLabels) setDynDocLabels(docLabels);
+      if (warning) setDirWarning(warning);
+    } catch (e) { console.error(e); }
+    setScanning(false); setScanProgress('');
+  }
+
   async function handleCompileQT(selectedLots) {
     if (!dirHandle) return;
     setCompilingQt(true);
@@ -1565,6 +2022,7 @@ export default function AnalyseMarche() {
         onBundle={handleBundle}
         bundling={bundling}
         bundleProgress={bundleProgress}
+        onDropFolder={handleDropFolder}
       />
 
       <div className="tabs" style={{ marginBottom:16 }}>

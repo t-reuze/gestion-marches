@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import StatusBadge from '../components/StatusBadge';
 import KpiCard from '../components/KpiCard';
-import { marches, SECTEURS, STATUT_CONFIG, formatDate } from '../data/mockData';
+import { marches, formations, SECTEURS, STATUT_CONFIG, formatDate } from '../data/mockData';
 import { useMarcheMeta } from '../context/MarcheMetaContext';
 import { useNewMarches } from '../context/NewMarchesContext';
+import { useNotation } from '../context/NotationContext';
+import { useNewFormations } from '../context/NewFormationsContext';
 import AddMarcheModal from '../components/AddMarcheModal';
 
 /* ── KPI Icons ──────────────────────────────────────────────── */
@@ -33,10 +35,79 @@ const IconBudget = () => (
   </svg>
 );
 
+/* ── Alert Icons ─────────────────────────────────────────────── */
+const IconClock = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="8" r="7"/>
+    <polyline points="8,4 8,8 11,10"/>
+  </svg>
+);
+const IconWarning = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 1L1 14h14L8 1z"/>
+    <line x1="8" y1="6" x2="8" y2="9"/>
+    <circle cx="8" cy="11.5" r="0.5" fill="currentColor"/>
+  </svg>
+);
+
 function parseBudget(s) { return parseInt(String(s).replace(/[\s€]/g, '')) || 0; }
 function formatBudget(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' M€';
   return n.toLocaleString('fr-FR') + ' €';
+}
+
+/* ── Alert helpers ───────────────────────────────────────────── */
+function parseLooseDate(str) {
+  if (!str) return null;
+  // Standard ISO date
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + 'T00:00:00');
+  // Year only like "2027"
+  if (/^\d{4}$/.test(str)) return new Date(str + '-01-01T00:00:00');
+  // "début 2026" → Jan 1
+  if (/^d[ée]but\s+(\d{4})$/i.test(str)) {
+    const y = str.match(/(\d{4})/)[1];
+    return new Date(y + '-01-01T00:00:00');
+  }
+  // "mi 2026" → Jul 1
+  if (/^mi\s+(\d{4})$/i.test(str)) {
+    const y = str.match(/(\d{4})/)[1];
+    return new Date(y + '-07-01T00:00:00');
+  }
+  // "fin 2026" → Dec 31
+  if (/^fin\s+(\d{4})$/i.test(str)) {
+    const y = str.match(/(\d{4})/)[1];
+    return new Date(y + '-12-31T00:00:00');
+  }
+  return null;
+}
+
+function daysDiff(target, now) {
+  const diff = target.getTime() - now.getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function getAlertStyle(daysLeft) {
+  if (daysLeft < 0) return { background: '#FEE2E2', borderColor: '#FECACA', color: '#991B1B' };
+  if (daysLeft <= 7) return { background: '#FFF7ED', borderColor: '#FED7AA', color: '#9A3412' };
+  return { background: '#FEFCE8', borderColor: '#FEF08A', color: '#854D0E' };
+}
+
+/* ── Notation completeness helper ────────────────────────────── */
+function computeNotationProgress(session) {
+  if (!session || !session.questions || !session.vendors) return null;
+  const totalQuestions = session.questions.length;
+  if (totalQuestions === 0) return null;
+  const vendorCount = session.vendors.length;
+  if (vendorCount === 0) return null;
+
+  let completed = 0;
+  for (const q of session.questions) {
+    if (q.notes) {
+      const notedVendors = Object.keys(q.notes).length;
+      if (notedVendors >= vendorCount) completed++;
+    }
+  }
+  return { completed, total: totalQuestions, pct: Math.round((completed / totalQuestions) * 100) };
 }
 
 export default function Dashboard() {
@@ -47,6 +118,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { getMeta } = useMarcheMeta();
   const { newMarches, removeMarche } = useNewMarches();
+  const { getSession } = useNotation();
+  const { newFormations } = useNewFormations();
 
   function mergeMarche(m) {
     const meta = getMeta(m.id);
@@ -90,6 +163,52 @@ export default function Dashboard() {
     return matchStatut && matchSecteur && matchSearch;
   });
 
+  /* ── Build alerts ────────────────────────────────────────────── */
+  const now = new Date();
+  const alerts = [];
+
+  // Marchés with dateLimiteDepot within 30 days or already passed
+  marchesMerged.forEach(m => {
+    if (!m.dateLimiteDepot) return;
+    const d = parseLooseDate(m.dateLimiteDepot);
+    if (!d) return;
+    const days = daysDiff(d, now);
+    if (days <= 30) {
+      alerts.push({
+        id: m.id,
+        type: 'marche',
+        nom: m.nom,
+        date: d,
+        daysLeft: days,
+        dateStr: m.dateLimiteDepot,
+        navigate: '/marche/' + m.id,
+      });
+    }
+  });
+
+  // Formations with dateEcheance within 60 days or already passed
+  const allFormations = [...formations, ...newFormations];
+  allFormations.forEach(f => {
+    if (!f.dateEcheance) return;
+    const d = parseLooseDate(f.dateEcheance);
+    if (!d) return;
+    const days = daysDiff(d, now);
+    if (days <= 60) {
+      alerts.push({
+        id: f.id,
+        type: 'formation',
+        nom: f.nom,
+        date: d,
+        daysLeft: days,
+        dateStr: f.dateEcheance,
+        navigate: '/formations/' + f.id,
+      });
+    }
+  });
+
+  // Sort alerts: most urgent first
+  alerts.sort((a, b) => a.daysLeft - b.daysLeft);
+
   return (
     <Layout title="Marchés">
 
@@ -117,6 +236,72 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Alerts / Échéances ───────────────────────────────── */}
+      {alerts.length > 0 && (
+        <div style={{
+          marginBottom: 20,
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>
+            Alertes et échéances
+          </div>
+          <div style={{
+            display: 'flex',
+            gap: 10,
+            paddingBottom: 4,
+            minWidth: 'min-content',
+          }}>
+            {alerts.map(a => {
+              const style = getAlertStyle(a.daysLeft);
+              return (
+                <div
+                  key={a.type + '-' + a.id}
+                  onClick={() => navigate(a.navigate)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(a.navigate); } }}
+                  style={{
+                    ...style,
+                    border: '1px solid ' + style.borderColor,
+                    borderRadius: 8,
+                    padding: '10px 14px',
+                    minWidth: 200,
+                    maxWidth: 280,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'box-shadow 150ms',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ display: 'flex', alignItems: 'center' }}>
+                      {a.daysLeft < 0 ? <IconWarning /> : <IconClock />}
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {a.type === 'marche' ? 'Marché' : 'Formation'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, lineHeight: 1.3 }}>
+                    {a.nom}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                    <span>{formatDate(a.dateStr)}</span>
+                    <span style={{ fontWeight: 700 }}>
+                      {a.daysLeft < 0
+                        ? 'D\u00e9pass\u00e9 de ' + Math.abs(a.daysLeft) + ' jour' + (Math.abs(a.daysLeft) > 1 ? 's' : '')
+                        : 'J-' + a.daysLeft
+                      }
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Secteur Pills ────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -220,6 +405,8 @@ export default function Dashboard() {
         <div className="marche-grid">
           {marchesFiltres.map(m => {
             const cfg = STATUT_CONFIG[m.statut] || {};
+            const session = getSession(m.id);
+            const notationProgress = computeNotationProgress(session);
             return (
               <div
                 key={m.id}
@@ -280,6 +467,27 @@ export default function Dashboard() {
                         />
                       </div>
                     </>
+                  )}
+                  {notationProgress && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 3 }}>
+                        Notation : {notationProgress.completed}/{notationProgress.total} crit\u00e8res
+                      </div>
+                      <div style={{
+                        height: 3,
+                        borderRadius: 2,
+                        background: '#E2E8F0',
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          width: notationProgress.pct + '%',
+                          background: '#3B82F6',
+                          borderRadius: 2,
+                          transition: 'width 300ms',
+                        }} />
+                      </div>
+                    </div>
                   )}
                 </div>
 

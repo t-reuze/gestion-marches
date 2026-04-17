@@ -8,6 +8,7 @@
 import XLSX from 'xlsx-js-style';
 import { normalizeSheet, normStr } from './normalize.js';
 import { detectDocType, readWorkbook, fournisseurFromFilename } from './ingest.js';
+import { extractComplementBase } from '../analyseFolder.js';
 import { mapBpuHeaders, applyBpuMapping } from './mappers/bpuMapper.js';
 import {
   emptyStandardizedBPU,
@@ -72,7 +73,9 @@ async function listXlsxInSubdir(rootHandle, subdirName) {
         if (name.startsWith('.') || SKIP_DIRS.has(norm(name))) {
           continue;
         }
-        const nextSup = supplierName || (depth >= 0 && !isLotDir(name) ? name : null);
+        // Détecte les dossiers "complément XX Fournisseur" → rattache au fournisseur de base
+        const resolvedName = extractComplementBase(name) || name;
+        const nextSup = supplierName || (depth >= 0 && !isLotDir(name) ? resolvedName : null);
         await walk(handle, depth + 1, nextSup);
       } else if (handle.kind === 'file') {
         if (!/\.xlsx$/i.test(name) || name.startsWith('~')) continue;

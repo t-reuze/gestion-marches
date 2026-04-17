@@ -630,7 +630,7 @@ select.info-field-input   { cursor: pointer; }
 .fq-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; transition: transform var(--fast); }
 .fq-dot:hover { transform: scale(1.15); }
 .fq-card { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--e-2); overflow: hidden; margin-bottom: 14px; }
-.fq-header { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; background: var(--sb-bg); color: #fff; }
+.fq-header { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; background: #001E45; color: #fff; }
 .fq-header-num { background: var(--grad-orange); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
 .fq-header-text  { flex: 1; }
 .fq-header-q     { font-size: 13.5px; font-weight: 600; line-height: 1.5; }

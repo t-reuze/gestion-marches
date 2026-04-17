@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, Legend as RechartsLegend } from 'recharts';
 
 import Layout from '../../components/Layout';
@@ -60,7 +61,7 @@ function parseExcel(wb, fileName) {
 export default function Notation() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getSession, setSession, clearSession } = useNotation();
+  const { getSession, setSession, clearSession, getHistory } = useNotation();
   const marche = marches.find(m => m.id === id);
   const session = getSession(id);
 
@@ -68,6 +69,7 @@ export default function Notation() {
   const [selectedLot, setSelectedLot] = useState(null);
   const [tab, setTab] = useState('notation');
   const [exporting, setExporting] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const origBin = useRef(null);
 
   function handleSmartImport({ wb, fileName, buf }) {
@@ -177,6 +179,176 @@ export default function Notation() {
     setExporting(false);
   }
 
+  function doExportPdf() {
+    if (!session) return;
+    const { vendors, questions } = session;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    let y = margin;
+
+    function checkPage(needed) {
+      if (y + needed > pageH - margin) { doc.addPage(); y = margin; }
+    }
+
+    // Header background
+    doc.setFillColor(37, 99, 235); // blue
+    doc.rect(0, 0, pageW, 22, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('Rapport de notation - ' + (marche.nom || marche.reference), margin, 14);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    doc.text('Export du ' + new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }), pageW - margin, 14, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    y = 30;
+
+    // Ranking table
+    const ranking = [...vendors].map(v => ({ ...v, avgScore: avg(v) })).sort((a, b) => (b.avgScore || 0) - (a.avgScore || 0));
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text('Classement general', margin, y);
+    y += 8;
+
+    const rankColW = [12, 70, 30];
+    const rankHeaders = ['#', 'Fournisseur', 'Moyenne'];
+    // Header row
+    doc.setFillColor(37, 99, 235);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.rect(margin, y - 4, rankColW.reduce((a, b) => a + b, 0), 7, 'F');
+    let rx = margin + 2;
+    rankHeaders.forEach((h, i) => { doc.text(h, rx, y); rx += rankColW[i]; });
+    y += 6;
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+
+    const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+    ranking.forEach((v, i) => {
+      checkPage(7);
+      if (i % 2 === 0) {
+        doc.setFillColor(241, 245, 249);
+        doc.rect(margin, y - 4, rankColW.reduce((a, b) => a + b, 0), 7, 'F');
+      }
+      rx = margin + 2;
+      const medal = i < 3 ? (i + 1) + 'er' : (i + 1) + 'e';
+      doc.text(medal, rx, y); rx += rankColW[0];
+      doc.text(v.label.split('(')[0].trim(), rx, y); rx += rankColW[1];
+      doc.text(v.avgScore !== null && v.avgScore !== undefined ? v.avgScore.toFixed(3) + ' /5' : '--', rx, y);
+      y += 7;
+    });
+    y += 6;
+
+    // Group questions by category
+    const categories = new Map();
+    questions.forEach((q, idx) => {
+      const cat = (q.theme || q.categorie || '').trim() || 'Sans categorie';
+      if (!categories.has(cat)) categories.set(cat, []);
+      categories.get(cat).push({ ...q, _idx: idx });
+    });
+
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    checkPage(12);
+    doc.text('Detail par critere', margin, y);
+    y += 8;
+
+    const vendorNames = vendors.map(v => v.label.split('(')[0].trim());
+    const vColW = Math.min(28, (pageW - margin * 2 - 12 - 80) / vendors.length);
+
+    for (const [catName, catQuestions] of categories) {
+      checkPage(20);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(37, 99, 235);
+      doc.text(catName, margin, y);
+      doc.setTextColor(0, 0, 0);
+      y += 6;
+
+      // Table header
+      doc.setFillColor(37, 99, 235);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'bold');
+      const tableW = 12 + 80 + vColW * vendors.length;
+      doc.rect(margin, y - 4, tableW, 6, 'F');
+      let hx = margin + 2;
+      doc.text('#', hx, y); hx += 12;
+      doc.text('Critere', hx, y); hx += 80;
+      vendorNames.forEach((vn, vi) => {
+        const shortName = vn.length > 12 ? vn.substring(0, 10) + '..' : vn;
+        doc.text(shortName, hx, y);
+        hx += vColW;
+      });
+      y += 5;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+
+      catQuestions.forEach((q, ri) => {
+        checkPage(7);
+        if (ri % 2 === 0) {
+          doc.setFillColor(248, 250, 252);
+          doc.rect(margin, y - 4, tableW, 6, 'F');
+        }
+        let cx = margin + 2;
+        doc.setFontSize(7);
+        doc.text(String(q.num || ri + 1), cx, y); cx += 12;
+        const label = q.question.length > 50 ? q.question.substring(0, 48) + '..' : q.question;
+        doc.text(label, cx, y); cx += 80;
+        vendors.forEach(v => {
+          const n = q.notes[v.name];
+          const isSkip = !!q.skipped[v.name];
+          if (isSkip) {
+            doc.setTextColor(148, 163, 184);
+            doc.text('N/N', cx, y);
+          } else if (n !== null && n !== undefined && !isNaN(n)) {
+            if (n >= 4.25) doc.setTextColor(16, 185, 129);
+            else if (n >= 3.5) doc.setTextColor(245, 158, 11);
+            else doc.setTextColor(239, 68, 68);
+            doc.text(n.toFixed(2), cx, y);
+          } else {
+            doc.setTextColor(148, 163, 184);
+            doc.text('--', cx, y);
+          }
+          doc.setTextColor(0, 0, 0);
+          cx += vColW;
+        });
+        y += 6;
+      });
+      y += 4;
+    }
+
+    // Comments section
+    const hasComments = questions.some(q => vendors.some(v => (q.comments[v.name] || '').trim()));
+    if (hasComments) {
+      checkPage(14);
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.text('Commentaires', margin, y);
+      y += 8;
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'normal');
+      questions.forEach(q => {
+        vendors.forEach(v => {
+          const c = (q.comments[v.name] || '').trim();
+          if (!c) return;
+          checkPage(10);
+          doc.setFont(undefined, 'bold');
+          doc.text('Q' + q.num + ' - ' + v.label.split('(')[0].trim() + ' : ', margin, y);
+          doc.setFont(undefined, 'normal');
+          const lines = doc.splitTextToSize(c, pageW - margin * 2 - 40);
+          doc.text(lines, margin + 40, y);
+          y += Math.max(5, lines.length * 4);
+        });
+      });
+    }
+
+    doc.save('rapport_notation_' + (marche.reference || 'export') + '.pdf');
+  }
+
 
   if (!marche) return (
     <Layout title="Marché introuvable">
@@ -220,6 +392,16 @@ export default function Notation() {
           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{totalNoted}/{questions.length} critères notés</span>
           <button className="btn btn-success btn-sm" onClick={doExport} disabled={exporting || !origBin.current}>
             &#x2B07; Exporter XLSX
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={doExportPdf} style={{ background:'#dc2626', borderColor:'#dc2626' }}>
+            &#x1F4C4; Exporter PDF
+          </button>
+          <button
+            className={'btn btn-sm ' + (showHistory ? 'btn-primary' : 'btn-outline')}
+            onClick={() => setShowHistory(h => !h)}
+            style={{ fontSize: 11 }}
+          >
+            &#x1F4DC; Historique
           </button>
           <button
             className="btn btn-outline btn-sm"
@@ -491,6 +673,49 @@ export default function Notation() {
           </div>
         </div>
       )}
+
+      {showHistory && (() => {
+        const history = getHistory(id);
+        function timeAgo(ts) {
+          const diff = Date.now() - ts;
+          if (diff < 60000) return 'il y a ' + Math.max(1, Math.floor(diff / 1000)) + 's';
+          if (diff < 3600000) return 'il y a ' + Math.floor(diff / 60000) + ' min';
+          if (diff < 86400000) return 'il y a ' + Math.floor(diff / 3600000) + 'h';
+          return 'il y a ' + Math.floor(diff / 86400000) + 'j';
+        }
+        return (
+          <div style={{
+            marginTop: 16, background: 'var(--surface-subtle, #f8fafc)', border: '1px solid var(--border, #e2e8f0)',
+            borderRadius: 8, padding: 12, maxHeight: 300, overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>Historique des modifications</span>
+              <button className="btn btn-outline btn-sm" style={{ fontSize: 10, padding: '2px 8px' }} onClick={() => setShowHistory(false)}>Fermer</button>
+            </div>
+            {history.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Aucune modification enregistree.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {[...history].reverse().map((entry, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, fontSize: 11,
+                    padding: '4px 8px', background: i % 2 === 0 ? '#fff' : 'transparent', borderRadius: 4,
+                  }}>
+                    <span style={{ color: 'var(--text-muted)', minWidth: 70, fontSize: 10 }}>{timeAgo(entry.timestamp)}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {(entry.questionLabel || '').length > 40 ? entry.questionLabel.substring(0, 38) + '...' : entry.questionLabel}
+                    </span>
+                    <span style={{ color: 'var(--blue, #2563eb)', fontWeight: 600, minWidth: 60 }}>{entry.vendor.length > 10 ? entry.vendor.substring(0, 8) + '..' : entry.vendor}</span>
+                    <span style={{ color: '#ef4444', fontWeight: 600 }}>{entry.oldValue != null ? Number(entry.oldValue).toFixed(2) : '--'}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>&rarr;</span>
+                    <span style={{ color: '#10b981', fontWeight: 600 }}>{entry.newValue != null ? Number(entry.newValue).toFixed(2) : '--'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </Layout>
   );
 }

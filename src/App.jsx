@@ -11,10 +11,12 @@ import ContactsAnnuaire     from './features/contacts/ContactsAnnuaire';
 import ClccContactForm      from './features/contacts/ClccContactForm';
 import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
 import MarcheSourcing       from './features/sourcing/MarcheSourcing';
-import ErpKpi               from './features/erp/ErpKpi';
+import MarcheTemplates      from './pages/MarcheTemplates';
+import MarcheContactsFournisseurs from './pages/MarcheContactsFournisseurs';
 import Calendrier           from './pages/Calendrier';
 import Accueil              from './pages/Accueil';
 import Fournisseurs         from './pages/Fournisseurs';
+import Profil               from './pages/Profil';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider }            from './context/MarcheMetaContext';
 import { NewMarchesProvider }            from './context/NewMarchesContext';
@@ -22,6 +24,7 @@ import { FormationsMetaProvider }        from './context/FormationsMetaContext';
 import { ReportingDataProvider }         from './context/ReportingDataContext';
 import { NewFormationsProvider }         from './context/NewFormationsContext';
 import { SourcingTemplatesProvider }     from './context/SourcingTemplatesContext';
+import { ShortcutsProvider }            from './context/ShortcutsContext';
 import { marches }          from './data/mockData';
 import { APP_ID_TO_MARCHE } from './data/reportingConstants';
 
@@ -44,21 +47,24 @@ const router = createHashRouter([
   { path: '/contacts',                      element: <ContactsAnnuaire /> },
   { path: '/calendrier',                    element: <Calendrier /> },
   { path: '/fournisseurs',                  element: <Fournisseurs /> },
+  { path: '/profil',                        element: <Profil /> },
   { path: '/contacts/:clccId/add',          element: <ClccContactForm /> },
   { path: '/marche/:id/reporting',          element: <Reporting /> },
   { path: '/marche/:id/notation',           element: <Notation /> },
   { path: '/marche/:id/reponses',           element: <Reponses /> },
   { path: '/marche/:id/infos',              element: <MarcheInfos /> },
   { path: '/marche/:id/analyse',            element: <AnalyseMarche /> },
-  { path: '/marche/:id/interlocuteurs',     element: <MarcheInterlocuteurs /> },
-  { path: '/marche/:id/sourcing',           element: <MarcheSourcing /> },
-  { path: '/marche/:id/erp',               element: <ErpKpi /> },
-  { path: '/marche/:id',                    element: <MarcheRedirect /> },
+  { path: '/marche/:id/interlocuteurs',          element: <MarcheInterlocuteurs /> },
+  { path: '/marche/:id/sourcing',                element: <MarcheSourcing /> },
+  { path: '/marche/:id/templates',               element: <MarcheTemplates /> },
+  { path: '/marche/:id/contacts-fournisseurs',   element: <MarcheContactsFournisseurs /> },
+  { path: '/marche/:id',                         element: <MarcheRedirect /> },
   { path: '*',                              element: <Navigate to="/" replace /> },
 ]);
 
 export default function App() {
   return (
+    <ShortcutsProvider>
     <FormationsMetaProvider>
     <MarcheMetaProvider>
     <NewMarchesProvider>
@@ -74,5 +80,6 @@ export default function App() {
     </NewMarchesProvider>
     </MarcheMetaProvider>
     </FormationsMetaProvider>
+    </ShortcutsProvider>
   );
 }
