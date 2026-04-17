@@ -227,7 +227,7 @@ export default function ReportingCharts({ rows }) {
       </div>
 
       {/* Barres empilées : Gains achats par année */}
-      {gainsByAnnee.some(g => g.gainRef || g.gainDgos || g.gainMaint) && (
+      {gainsByAnnee.some(g => g.gainDgos || g.gainMaint) && (
         <div className="card">
           <div className="card-header">
             <span className="card-title">Gains achats cumulés par année</span>
@@ -241,7 +241,6 @@ export default function ReportingCharts({ rows }) {
                 <YAxis tickFormatter={v => formatEuroShort(v)} tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(v, name) => [formatEuroTooltip(v), name]} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="gainRef" stackId="g" fill="#10B981" name="Achats (référence)" />
                 <Bar dataKey="gainDgos" stackId="g" fill="#3B82F6" name="Achats (DGOS)" />
                 <Bar dataKey="gainMaint" stackId="g" fill="#F59E0B" name="Maintenance" />
               </BarChart>
