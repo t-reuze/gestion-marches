@@ -14,6 +14,7 @@ const ACCENT = '#E8501A';
 
 function activeFromPath(path) {
   if (path.includes('/sourcing'))              return 'sourcing';
+  if (path.includes('/documents'))             return 'documents';
   if (path.includes('/analyse'))               return 'analyse';
   if (path.includes('/notation'))              return 'notation';
   if (path.includes('/reponses'))              return 'reponses';
@@ -38,12 +39,13 @@ export default function MarcheNavTabs() {
   const workflowSteps = (getMeta(id).workflowSteps) || {};
 
   const dockItems = [
+    { key: 'documents',            label: 'Documents',             path: '/marche/' + id + '/documents',             show: true },
     { key: 'templates',             label: 'Templates',             path: '/marche/' + id + '/templates',             show: true },
     { key: 'contacts-fournisseurs', label: 'Contacts fournisseurs', path: '/marche/' + id + '/contacts-fournisseurs', show: true },
-    { key: 'infos',                 label: 'Informations',          path: '/marche/' + id + '/infos',                 show: true },
-    { key: 'interlocuteurs',        label: 'Interlocuteurs',        path: '/marche/' + id + '/interlocuteurs',        show: true },
     { key: 'reponses',              label: 'Réponses fournisseurs', path: '/marche/' + id + '/reponses',              show: !!getSession(id) },
     { key: 'reporting',             label: 'Reporting',             path: '/marche/' + id + '/reporting',             show: true },
+    { key: 'interlocuteurs',        label: 'Interlocuteurs',        path: '/marche/' + id + '/interlocuteurs',        show: true },
+    { key: 'infos',                 label: 'Informations',          path: '/marche/' + id + '/infos',                 show: true },
   ].filter(d => d.show);
 
   // Tous les onglets pour les raccourcis clavier

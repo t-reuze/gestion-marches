@@ -1813,13 +1813,31 @@ export default function AnalyseMarche() {
   const marche = marches.find(m => m.id === id);
   const config = getAnalyseConfig(id);
 
-  // ── Dossier state (restauré depuis le cache de session si on revient sur la page) ──
+  // ── Dossier state (restauré depuis le cache de session ou IndexedDB) ──
   const __s0 = getSession(id);
   const [dirHandle, setDirHandle] = useState(__s0.dirHandle || null);
   const [dirPath, setDirPath] = useState(__s0.dirPath || '');
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState('');
   const [dirWarning, setDirWarning] = useState('');
+
+  // Auto-charger le dossier lié depuis IndexedDB si pas de handle en session
+  useEffect(() => {
+    if (dirHandle) return;
+    (async () => {
+      try {
+        const { getFolderHandle, verifyPermission } = await import('../../utils/folderStore.js');
+        const handle = await getFolderHandle(id);
+        if (handle) {
+          const ok = await verifyPermission(handle);
+          if (ok) {
+            setDirHandle(handle);
+            setDirPath(handle.name);
+          }
+        }
+      } catch {}
+    })();
+  }, [id]);
 
   // ── Annuaire ──
   const { setMeta } = useMarcheMeta();
@@ -1858,10 +1876,12 @@ export default function AnalyseMarche() {
     let root = dirHandle;
     if (action === 'pick') {
       try {
-        root = await window.showDirectoryPicker();
+        root = await window.showDirectoryPicker({ mode: 'readwrite' });
         setDirHandle(root);
         setDirPath(root.name);
         setAnnuaire([]); setEdits({}); setDirWarning('');
+        // Persister le handle dans IndexedDB pour le retrouver dans la page Documents
+        import('../../utils/folderStore.js').then(({ saveFolderHandle }) => saveFolderHandle(id, root)).catch(() => {});
       } catch (e) { if (e.name !== 'AbortError') console.error(e); return; }
     }
     if (!root) return;

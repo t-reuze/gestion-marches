@@ -13,6 +13,7 @@ import MarcheInterlocuteurs from './features/contacts/MarcheInterlocuteurs';
 import MarcheSourcing       from './features/sourcing/MarcheSourcing';
 import MarcheTemplates      from './pages/MarcheTemplates';
 import MarcheContactsFournisseurs from './pages/MarcheContactsFournisseurs';
+import MarcheDocuments      from './pages/MarcheDocuments';
 import Calendrier           from './pages/Calendrier';
 import Accueil              from './pages/Accueil';
 import Fournisseurs         from './pages/Fournisseurs';
@@ -56,6 +57,7 @@ const router = createHashRouter([
   { path: '/marche/:id/analyse',            element: <AnalyseMarche /> },
   { path: '/marche/:id/interlocuteurs',          element: <MarcheInterlocuteurs /> },
   { path: '/marche/:id/sourcing',                element: <MarcheSourcing /> },
+  { path: '/marche/:id/documents',                 element: <MarcheDocuments /> },
   { path: '/marche/:id/templates',               element: <MarcheTemplates /> },
   { path: '/marche/:id/contacts-fournisseurs',   element: <MarcheContactsFournisseurs /> },
   { path: '/marche/:id',                         element: <MarcheRedirect /> },
