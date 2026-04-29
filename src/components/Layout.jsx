@@ -5,6 +5,7 @@ import Sidebar    from './shared/Sidebar';
 import Breadcrumb from './shared/Breadcrumb';
 import CopilotWidget from './CopilotWidget';
 import GlobalSearch from './GlobalSearch';
+import PlanDeCharge from './PlanDeCharge';
 
 export default function Layout({ children, title, sub, actions }) {
   const { pathname } = useLocation();

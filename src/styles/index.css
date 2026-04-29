@@ -123,6 +123,47 @@ code, kbd, pre { font-family: inherit; }
   --z-dropdown: 100; --z-sticky: 200; --z-overlay: 300; --z-modal: 400; --z-toast: 500;
 }
 
+/* ── DARK THEME ───────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:             #0f172a;
+  --surface:        #1e293b;
+  --surface-subtle: #1e293b;
+  --surface-hover:  #334155;
+  --border:         rgba(255,255,255,.1);
+  --border-strong:  rgba(255,255,255,.2);
+  --text:           #f1f5f9;
+  --text-2:         #cbd5e1;
+  --text-3:         #94a3b8;
+  --text-inv:       #0f172a;
+  --sb-bg:          #1e293b;
+  --sb-text:        #94a3b8;
+  --sb-hover:       rgba(232,80,26,.12);
+  --sb-active-bg:   rgba(232,80,26,.18);
+  --sb-active-glow: rgba(232,80,26,.2);
+  --sb-border:      rgba(255,255,255,.08);
+  --white:          #1e293b;
+  --page:           #0f172a;
+  --border-s:       rgba(255,255,255,.06);
+  --green-soft:     rgba(22,163,74,.15);
+  --amber-soft:     rgba(217,119,6,.15);
+  --red-soft:       rgba(220,38,38,.15);
+  --blue-soft:      rgba(45,95,138,.2);
+  --purple-soft:    rgba(124,58,237,.15);
+  --orange-soft:    rgba(232,80,26,.15);
+  --e-1: 0 0 0 1px rgba(255,255,255,.06);
+  --e-2: 0 0 0 1px rgba(255,255,255,.08);
+  --e-3: 0 0 0 1px rgba(255,255,255,.1);
+  --e-4: 0 0 0 1px rgba(255,255,255,.1), 0 8px 24px rgba(0,0,0,.3);
+}
+[data-theme="dark"] .navbar { background: #1e293b; border-color: rgba(255,255,255,.08); }
+[data-theme="dark"] .marche-card { background: #1e293b; border-color: rgba(255,255,255,.1); }
+[data-theme="dark"] .card { background: #1e293b; border-color: rgba(255,255,255,.1); }
+[data-theme="dark"] .hero-banner { background: linear-gradient(160deg, #0a1628 0%, #1a2d4a 60%, #0f172a 100%); }
+[data-theme="dark"] .filter-input { background: #1e293b; border-color: rgba(255,255,255,.1); color: #f1f5f9; }
+[data-theme="dark"] .topbar { background: #1e293b; border-color: rgba(255,255,255,.06); }
+[data-theme="dark"] .btn-outline { border-color: rgba(255,255,255,.15); color: #cbd5e1; }
+[data-theme="dark"] .btn-outline:hover { background: rgba(255,255,255,.05); }
+
 /* ================================================================
    APP SHELL — colonne : navbar en haut, puis sidebar+main
 ================================================================ */

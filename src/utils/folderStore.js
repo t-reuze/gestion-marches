@@ -199,3 +199,68 @@ export async function createSubfolder(dirHandle, name, subPath) {
   await target.getDirectoryHandle(name, { create: true });
   return true;
 }
+
+/**
+ * Supprime un fichier ou dossier
+ * @param {FileSystemDirectoryHandle} parentHandle - dossier parent
+ * @param {string} name - nom de l'entrée à supprimer
+ * @param {boolean} recursive - supprimer récursivement si dossier
+ */
+export async function deleteEntry(parentHandle, name, recursive = false) {
+  await parentHandle.removeEntry(name, { recursive });
+  return true;
+}
+
+/**
+ * Renomme un fichier (copie + suppression car l'API ne supporte pas le rename natif)
+ * @param {FileSystemDirectoryHandle} parentHandle - dossier parent
+ * @param {string} oldName - ancien nom
+ * @param {string} newName - nouveau nom
+ */
+export async function renameEntry(parentHandle, oldName, newName) {
+  // Lire l'ancien fichier
+  const oldHandle = await parentHandle.getFileHandle(oldName);
+  const file = await oldHandle.getFile();
+  const buf = await file.arrayBuffer();
+
+  // Créer le nouveau fichier
+  const newHandle = await parentHandle.getFileHandle(newName, { create: true });
+  const writable = await newHandle.createWritable();
+  await writable.write(buf);
+  await writable.close();
+
+  // Supprimer l'ancien
+  await parentHandle.removeEntry(oldName);
+  return true;
+}
+
+/**
+ * Renomme un dossier (pas supporté nativement — copie récursive)
+ */
+export async function renameFolder(parentHandle, oldName, newName) {
+  // Créer le nouveau dossier
+  const newDir = await parentHandle.getDirectoryHandle(newName, { create: true });
+  const oldDir = await parentHandle.getDirectoryHandle(oldName);
+
+  // Copier récursivement
+  async function copyDir(src, dst) {
+    for await (const [name, entry] of src.entries()) {
+      if (entry.kind === 'file') {
+        const file = await entry.getFile();
+        const buf = await file.arrayBuffer();
+        const newFile = await dst.getFileHandle(name, { create: true });
+        const w = await newFile.createWritable();
+        await w.write(buf);
+        await w.close();
+      } else {
+        const newSub = await dst.getDirectoryHandle(name, { create: true });
+        await copyDir(entry, newSub);
+      }
+    }
+  }
+  await copyDir(oldDir, newDir);
+
+  // Supprimer l'ancien
+  await parentHandle.removeEntry(oldName, { recursive: true });
+  return true;
+}

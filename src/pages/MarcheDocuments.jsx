@@ -7,7 +7,7 @@ import { useMarcheMeta } from '../context/MarcheMetaContext';
 import {
   saveFolderHandle, getFolderHandle, removeFolderHandle,
   verifyPermission, listFolderTreeWithProgress, uploadFile, createSubfolder,
-  loadFileMeta,
+  loadFileMeta, deleteEntry, renameEntry, renameFolder,
 } from '../utils/folderStore';
 
 function formatSize(bytes) {
@@ -52,7 +52,7 @@ function FolderIcon() {
   );
 }
 
-function FileTree({ items, level = 0, onDownload, expandedDirs, toggleDir, dragOverPath, onDragOver, onDragLeave, onDrop }) {
+function FileTree({ items, level = 0, onDownload, onDelete, onRename, expandedDirs, toggleDir, dragOverPath, onDragOver, onDragLeave, onDrop }) {
   return items.map(item => {
     if (item.kind === 'directory') {
       const isOpen = expandedDirs[item.path] !== false;
@@ -82,10 +82,21 @@ function FileTree({ items, level = 0, onDownload, expandedDirs, toggleDir, dragO
             <span style={{ fontSize: 11, color: '#9ca3af' }}>
               {item.children.length} element{item.children.length > 1 ? 's' : ''}
             </span>
+            <button onClick={e => { e.stopPropagation(); onRename(item); }} title="Renommer"
+              style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 2, color: '#9ca3af', opacity: 0.5 }}
+              onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+            <button onClick={e => { e.stopPropagation(); onDelete(item); }} title="Supprimer"
+              style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 2, color: '#dc2626', opacity: 0.5 }}
+              onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
           </div>
           {isOpen && item.children.length > 0 && (
             <FileTree items={item.children} level={level + 1}
-              onDownload={onDownload} expandedDirs={expandedDirs} toggleDir={toggleDir}
+              onDownload={onDownload} onDelete={onDelete} onRename={onRename}
+              expandedDirs={expandedDirs} toggleDir={toggleDir}
               dragOverPath={dragOverPath} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} />
           )}
         </div>
@@ -108,6 +119,16 @@ function FileTree({ items, level = 0, onDownload, expandedDirs, toggleDir, dragO
         </span>
         {item._metaLoaded && <span style={{ fontSize: 11, color: '#9ca3af', flexShrink: 0 }}>{formatSize(item.size)}</span>}
         {item._metaLoaded && <span style={{ fontSize: 10, color: '#d1d5db', flexShrink: 0 }}>{formatDate(item.lastModified)}</span>}
+        <button onClick={() => onRename(item)} title="Renommer"
+          style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 2, color: '#9ca3af', opacity: 0.5 }}
+          onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+        <button onClick={() => onDelete(item)} title="Supprimer"
+          style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 2, color: '#dc2626', opacity: 0.5 }}
+          onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.5}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
         <button onClick={() => onDownload(item)} title="Telecharger"
           style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 2, color: '#6b7280' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -164,7 +185,7 @@ export default function MarcheDocuments() {
           } catch {}
         }
       } catch (e) {
-        console.warn('Folder restore error:', e);
+        // silently ignore restore errors
       }
       setLoading(false);
     })();
@@ -179,13 +200,7 @@ export default function MarcheDocuments() {
       setLoading(true);
       setProgress({ scanned: 0, total: 0, currentName: 'Lecture du dossier...' });
       try {
-        // Debug : vérifier qu'on peut lire le contenu
-        let count = 0;
-        for await (const [name] of handle.entries()) { count++; if (count > 2) break; }
-        console.log('[Documents] Dossier accessible, premières entrées:', count);
-
         const t = await listFolderTreeWithProgress(handle, setProgress);
-        console.log('[Documents] Tree chargé:', t.length, 'entrées racine');
         setTree(t);
         setProgress(null);
       } catch (e) {
@@ -239,6 +254,47 @@ export default function MarcheDocuments() {
     a.href = url; a.download = item.name; a.click();
     URL.revokeObjectURL(url);
   }, []);
+
+  // Résoudre le dossier parent à partir du path
+  const getParentHandle = useCallback(async (itemPath) => {
+    const parts = itemPath.split('/');
+    parts.pop(); // enlever le nom du fichier/dossier
+    let h = dirHandle;
+    for (const p of parts) {
+      h = await h.getDirectoryHandle(p);
+    }
+    return h;
+  }, [dirHandle]);
+
+  const handleDelete = useCallback(async (item) => {
+    const msg = item.kind === 'directory'
+      ? `Supprimer le dossier "${item.name}" et tout son contenu ?`
+      : `Supprimer "${item.name}" ?`;
+    if (!window.confirm(msg)) return;
+    try {
+      const parent = await getParentHandle(item.path);
+      await deleteEntry(parent, item.name, item.kind === 'directory');
+      await refreshTree();
+    } catch (e) {
+      alert('Erreur suppression : ' + e.message);
+    }
+  }, [getParentHandle, refreshTree]);
+
+  const handleRename = useCallback(async (item) => {
+    const newName = window.prompt('Nouveau nom :', item.name);
+    if (!newName || newName === item.name) return;
+    try {
+      const parent = await getParentHandle(item.path);
+      if (item.kind === 'directory') {
+        await renameFolder(parent, item.name, newName);
+      } else {
+        await renameEntry(parent, item.name, newName);
+      }
+      await refreshTree();
+    } catch (e) {
+      alert('Erreur renommage : ' + e.message);
+    }
+  }, [getParentHandle, refreshTree]);
 
   const handleUpload = useCallback(async (files, targetPath, targetHandle) => {
     const target = targetHandle || dirHandle;
@@ -433,6 +489,7 @@ export default function MarcheDocuments() {
               </div>
             ) : (
               <FileTree items={tree} onDownload={handleDownload}
+                onDelete={handleDelete} onRename={handleRename}
                 expandedDirs={expandedDirs} toggleDir={toggleDir}
                 dragOverPath={dragOverPath}
                 onDragOver={p => setDragOverPath(p)}

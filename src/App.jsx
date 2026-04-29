@@ -18,6 +18,7 @@ import Calendrier           from './pages/Calendrier';
 import Accueil              from './pages/Accueil';
 import Fournisseurs         from './pages/Fournisseurs';
 import Profil               from './pages/Profil';
+import Matwin               from './pages/Matwin';
 import { NotationProvider, useNotation } from './context/NotationContext';
 import { MarcheMetaProvider }            from './context/MarcheMetaContext';
 import { NewMarchesProvider }            from './context/NewMarchesContext';
@@ -49,6 +50,7 @@ const router = createHashRouter([
   { path: '/calendrier',                    element: <Calendrier /> },
   { path: '/fournisseurs',                  element: <Fournisseurs /> },
   { path: '/profil',                        element: <Profil /> },
+  { path: '/matwin',                        element: <Matwin /> },
   { path: '/contacts/:clccId/add',          element: <ClccContactForm /> },
   { path: '/marche/:id/reporting',          element: <Reporting /> },
   { path: '/marche/:id/notation',           element: <Notation /> },

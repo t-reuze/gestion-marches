@@ -36,7 +36,23 @@ export default function MarcheNavTabs() {
   if (!marche) return null;
 
   const active = activeFromPath(location.pathname);
-  const workflowSteps = (getMeta(id).workflowSteps) || {};
+  const meta = getMeta(id);
+  const session = getSession(id);
+
+  // Auto-calcul de la progression du workflow
+  const STATUT_ORDER = { sourcing: 0, ouvert: 1, analyse: 2, attribution: 3, reporting: 4, cloture: 5 };
+  const statutRank = STATUT_ORDER[meta.statut || marche.statut] ?? 0;
+  const hasFournisseurs = meta.fournisseurs && meta.fournisseurs.length > 0;
+  const hasNotation = session && session.questions && session.questions.some(q =>
+    q.notes && Object.keys(q.notes).length > 0
+  );
+
+  const workflowSteps = {
+    sourcing: statutRank >= 1 || hasFournisseurs,  // passé sourcing ou des fournisseurs détectés
+    analyse: hasFournisseurs || statutRank >= 2,    // annuaire scanné ou statut analyse+
+    notation: hasNotation || statutRank >= 3,       // notes saisies ou statut attribution+
+    ...(meta.workflowSteps || {}),                  // override manuel si existant
+  };
 
   const dockItems = [
     { key: 'documents',            label: 'Documents',             path: '/marche/' + id + '/documents',             show: true },
