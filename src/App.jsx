@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { createHashRouter, RouterProvider, Navigate, useParams } from 'react-router-dom';
+import SplashScreen         from './components/SplashScreen';
 import Dashboard            from './pages/Dashboard';
 import Reporting            from './features/reporting/Reporting';
 import Notation             from './features/notation/Notation';
@@ -67,6 +69,12 @@ const router = createHashRouter([
 ]);
 
 export default function App() {
+  const [splashDone, setSplashDone] = useState(false);
+
+  const handleSplashDone = () => {
+    setSplashDone(true);
+  };
+
   return (
     <ShortcutsProvider>
     <FormationsMetaProvider>
@@ -76,6 +84,7 @@ export default function App() {
     <ReportingDataProvider>
     <SourcingTemplatesProvider>
     <NotationProvider>
+      {!splashDone && <SplashScreen onDone={handleSplashDone} />}
       <RouterProvider router={router} />
     </NotationProvider>
     </SourcingTemplatesProvider>
