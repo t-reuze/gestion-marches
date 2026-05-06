@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import MedTechHero from '../components/MedTechHero';
 import { marches, formations, STATUT_CONFIG, SECTEURS } from '../data/mockData';
 import { useMarcheMeta } from '../context/MarcheMetaContext';
 import { useFormationsMeta } from '../context/FormationsMetaContext';
@@ -154,8 +155,20 @@ export default function Calendrier() {
   return (
     <Layout title="Calendrier" sub="Échéances et dates clés">
 
-      {/* ── Hero Banner ────────────────────────────────────── */}
-      <div className="hero-banner">
+      {/* ── Hero MedTech 3D ────────────────────────────────── */}
+      <MedTechHero
+        theme="orbits"
+        eyebrow="Unicancer · Planning"
+        title="Calendrier des échéances"
+        subtitle="Visualisez toutes les dates clés : limites de dépôt, attributions prévues, et renouvellements de formations."
+        kpis={[
+          { label: 'Marchés',    value: events.filter(e => e.type.startsWith('marche')).length, sub: 'échéances' },
+          { label: 'Formations', value: events.filter(e => e.type === 'formation').length, sub: 'échéances' },
+          { label: 'Urgentes',   value: events.filter(e => monthsUntil(e.date) >= 0 && monthsUntil(e.date) < 3).length, sub: '< 3 mois' },
+        ]}
+      />
+      {false && (
+        <div className="hero-banner">
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div className="hero-eyebrow">Unicancer · Planning</div>
           <div className="hero-title">Calendrier des échéances</div>
@@ -178,6 +191,7 @@ export default function Calendrier() {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── Year pills ─────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>

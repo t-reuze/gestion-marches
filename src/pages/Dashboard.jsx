@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
+import MedTechHero from '../components/MedTechHero';
 import StatusBadge from '../components/StatusBadge';
 import KpiCard from '../components/KpiCard';
 import { marches, formations, SECTEURS, STATUT_CONFIG, formatDate } from '../data/mockData';
@@ -213,8 +215,19 @@ export default function Dashboard() {
     <Layout title="Marchés">
 
       {/* ── Hero Banner ──────────────────────────────────────── */}
-      <div className="hero-banner">
-        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+      <MedTechHero
+        eyebrow={'Unicancer · Achats'}
+        title={'Marchés publics'}
+        subtitle={'Suivez, analysez et pilotez l’ensemble de vos appels d’offres en temps réel.'}
+        kpis={[
+          { label: 'Marchés actifs', value: actifs,    sub: 'en cours' },
+          { label: 'En analyse',          value: enAnalyse, sub: 'à noter' },
+          { label: 'Offres reçues',  value: offres,    sub: 'cumulées' },
+        ]}
+      />
+      {/* OLD HERO REMOVED BELOW */}
+      <div style={{ display: 'none' }}>
+        <div>
           <div className="hero-eyebrow">{'Unicancer \u00b7 Achats'}</div>
           <div className="hero-title">{'March\u00e9s publics'}</div>
           <div className="hero-subtitle">
@@ -403,19 +416,27 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="marche-grid">
-          {marchesFiltres.map(m => {
+          {marchesFiltres.map((m, idx) => {
             const cfg = STATUT_CONFIG[m.statut] || {};
             const session = getSession(m.id);
             const notationProgress = computeNotationProgress(session);
             return (
-              <div
+              <motion.div
                 key={m.id}
-                className="marche-card fade-in"
+                className="marche-card"
                 style={{ cursor: 'pointer' }}
                 onClick={() => navigate('/marche/' + m.id)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/marche/' + m.id); } }}
+                initial={{ opacity: 0, y: 32 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{
+                  duration: 0.6,
+                  delay: Math.min(idx, 8) * 0.05,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
               >
                 <div className="marche-card-header">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, gap: 8 }}>
@@ -499,7 +520,7 @@ export default function Dashboard() {
                     Ouvrir
                   </button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

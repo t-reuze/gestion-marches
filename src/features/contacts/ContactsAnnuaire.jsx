@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Layout from '../../components/Layout';
+import MedTechHero from '../../components/MedTechHero';
 import { clccs, marches, etablissementsAffilies, contactsSiege } from '../../data/mockData';
 import { fournisseursContacts as FOURNISSEURS_DATA, CATEGORIES_FOURNISSEURS } from '../../data/fournisseursContacts';
 import { clccContacts as CLCC_CONTACTS_DATA, FONCTIONS_IMPORT } from '../../data/clccContacts';
@@ -688,15 +689,12 @@ export default function ContactsAnnuaire() {
   if (section === 'siege') {
     return (
       <Layout title="Contacts">
-        <div className="hero-banner">
-          <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-            <div className="hero-eyebrow">{'Unicancer \u00b7 Si\u00e8ge'}</div>
-            <div className="hero-title">{'Contacts internes'}</div>
-            <div className="hero-subtitle">
-              {'\u00c9quipes du si\u00e8ge UNICANCER \u2014 Paris.'}
-            </div>
-          </div>
-        </div>
+        <MedTechHero
+          theme="network"
+          eyebrow="Unicancer \u00b7 Si\u00e8ge"
+          title="Contacts internes"
+          subtitle="\u00c9quipes du si\u00e8ge UNICANCER \u2014 Paris."
+        />
         <SectionTabs section={section} setSection={setSection} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
@@ -815,22 +813,15 @@ export default function ContactsAnnuaire() {
 
     return (
       <Layout title="Contacts">
-        <div className="hero-banner">
-          <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-            <div className="hero-eyebrow">{'Unicancer \u00b7 Fournisseurs'}</div>
-            <div className="hero-title">{'R\u00e9pertoire fournisseurs'}</div>
-            <div className="hero-stats">
-              <span className="hero-stat">
-                <span className="hero-stat-dot" style={{ background: '#2D5F8A' }} />
-                {Object.keys(FOURNISSEURS_DATA).length + ' entreprises'}
-              </span>
-              <span className="hero-stat">
-                <span className="hero-stat-dot" style={{ background: '#E8501A' }} />
-                {Object.values(FOURNISSEURS_DATA).reduce((s, f) => s + f.contacts.length, 0) + ' contacts'}
-              </span>
-            </div>
-          </div>
-        </div>
+        <MedTechHero
+          theme="network"
+          eyebrow="Unicancer \u00b7 Fournisseurs"
+          title="R\u00e9pertoire fournisseurs"
+          kpis={[
+            { label: 'Entreprises', value: Object.keys(FOURNISSEURS_DATA).length },
+            { label: 'Contacts',    value: Object.values(FOURNISSEURS_DATA).reduce((s, f) => s + f.contacts.length, 0) },
+          ]}
+        />
         <SectionTabs section={section} setSection={setSection} />
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' }}>

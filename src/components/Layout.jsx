@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import Lenis from 'lenis';
 import Navbar     from './shared/Navbar';
 import Sidebar    from './shared/Sidebar';
 import Breadcrumb from './shared/Breadcrumb';
@@ -16,6 +17,35 @@ export default function Layout({ children, title, sub, actions }) {
     return saved !== null ? JSON.parse(saved) : true;
   });
   useEffect(() => { localStorage.setItem('gm-sidebar-open', JSON.stringify(sidebarOpen)); }, [sidebarOpen]);
+
+  /* === Lenis smooth scroll sur le conteneur .content === */
+  const contentRef = useRef(null);
+  useEffect(() => {
+    if (!contentRef.current) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const wrapper = contentRef.current;
+    const content = wrapper.firstElementChild;
+    if (!content) return;
+    const lenis = new Lenis({
+      wrapper,
+      content,
+      duration: 1.05,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 2,
+    });
+    let rafId;
+    const raf = (time) => {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    };
+    rafId = requestAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
+  }, [pathname]);
 
   return (
     <div className="app-shell">
@@ -49,8 +79,10 @@ export default function Layout({ children, title, sub, actions }) {
             </div>
           </header>
           <Breadcrumb />
-          <main className="content fade-in">
-            {children}
+          <main className="content fade-in" ref={contentRef}>
+            <div>
+              {children}
+            </div>
           </main>
         </div>
       </div>

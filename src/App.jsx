@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createHashRouter, RouterProvider, Navigate, useParams } from 'react-router-dom';
-import SplashScreen         from './components/SplashScreen';
+import SplashScreen         from './components/SplashScreen3D';
 import Dashboard            from './pages/Dashboard';
 import Reporting            from './features/reporting/Reporting';
 import Notation             from './features/notation/Notation';

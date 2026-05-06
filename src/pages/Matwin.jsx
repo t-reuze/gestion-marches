@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Layout from '../components/Layout';
+import MedTechHero from '../components/MedTechHero';
 
 const LS_KEY = 'gm-matwin';
 
@@ -48,20 +49,18 @@ export default function Matwin() {
     <Layout title="Matwin">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
-        {/* Hero */}
-        <div style={{
-          padding: '32px 28px', marginBottom: 24, borderRadius: 16,
-          background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
-          color: '#fff',
-        }}>
-          <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, opacity: .7, marginBottom: 6 }}>
-            Unicancer
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 800 }}>Espace Matwin</div>
-          <div style={{ fontSize: 14, opacity: .8, marginTop: 6 }}>
-            Suivi des projets et initiatives Matwin — collaboration avec l'equipe Matwin.
-          </div>
-        </div>
+        {/* Hero MedTech 3D */}
+        <MedTechHero
+          theme="cells"
+          eyebrow="Unicancer · Innovation"
+          title="Espace Matwin"
+          subtitle="Suivi des projets et initiatives Matwin — collaboration avec l'équipe Matwin."
+          kpis={[
+            { label: 'Projets',  value: data.projets.length, sub: 'au total' },
+            { label: 'Terminés', value: data.projets.filter(p => p.statut === 'termine').length },
+            { label: 'En cours', value: data.projets.filter(p => p.statut === 'en_cours').length },
+          ]}
+        />
 
         {/* Stats */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
