@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 
 import Layout from '../../components/Layout';
 import MarcheNavTabs from '../../components/MarcheNavTabs';
+import MedTechHero from '../../components/MedTechHero';
 import KpiCard from '../../components/KpiCard';
 import StatusBadge from '../../components/StatusBadge';
 import ReportingDashboard from '../../components/reporting/ReportingDashboard';
@@ -92,6 +93,14 @@ export default function Reporting() {
       <MarcheNavTabs />
 
       {isGlobal && (
+        <MedTechHero
+          theme="pulse"
+          eyebrow="Unicancer · Reporting"
+          title="Reporting global"
+          subtitle="Synthèse de tous les marchés — suivi CA et maintenance."
+        />
+      )}
+      {false && isGlobal && (
         <div className="hero-banner">
           <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
             <div className="hero-eyebrow">{'Unicancer \u00b7 Reporting'}</div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import KpiCard from '../../components/KpiCard';
+import MedTechHero from '../../components/MedTechHero';
 import { formations } from '../../data/mockData';
 import { useFormationsMeta } from '../../context/FormationsMetaContext';
 import { useNewFormations } from '../../context/NewFormationsContext';
@@ -120,8 +121,20 @@ export default function Formations() {
   return (
     <Layout title="Formations" sub="Suivi des formations scientifiques">
 
-      {/* Hero Banner */}
-      <div className="hero-banner">
+      {/* Hero MedTech 3D */}
+      <MedTechHero
+        theme="molecules"
+        eyebrow="Unicancer · Formation"
+        title="Formations scientifiques"
+        subtitle="Suivez les formations à renouveler, les inscriptions et les modèles économiques."
+        kpis={[
+          { label: 'À renouveler', value: aRenouveler, sub: 'formations' },
+          { label: 'En cours',     value: enCours,     sub: 'actives' },
+          { label: 'Urgentes',     value: urgentes,    sub: '< 6 mois' },
+        ]}
+      />
+      {false && (
+        <div className="hero-banner">
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div className="hero-eyebrow">{'Unicancer \u00b7 Formation'}</div>
           <div className="hero-title">Formations scientifiques</div>
@@ -146,6 +159,7 @@ export default function Formations() {
           </div>
         </div>
       </div>
+      )}
 
       {/* KPI Grid */}
       <div className="kpi-grid">

@@ -729,64 +729,86 @@ export function getAnalyseConfig(marcheId) {
 
 // Socle commun à tous les marchés publics Unicancer
 const TEMPLATES_SOCLE = [
-  { category: 'Candidature', docs: [
-    { id: 'dc1',    label: 'DC1 — Lettre de candidature',       format: '.pdf',  obligatoire: true,  description: 'Formulaire DC1 signé par le représentant habilité' },
-    { id: 'dc2',    label: 'DC2 — Déclaration du candidat',     format: '.pdf',  obligatoire: true,  description: 'Formulaire DC2 avec capacités économiques et techniques' },
-    { id: 'ae',     label: 'Acte d\'engagement (ATTRI1)',       format: '.pdf',  obligatoire: true,  description: 'Acte d\'engagement signé — un par lot' },
-    { id: 'kbis',   label: 'Extrait KBIS',                      format: '.pdf',  obligatoire: true,  description: 'Extrait KBIS de moins de 3 mois' },
-    { id: 'rib',    label: 'RIB',                                format: '.pdf',  obligatoire: true,  description: 'Relevé d\'identité bancaire' },
-    { id: 'att-fisc', label: 'Attestation de régularité fiscale', format: '.pdf', obligatoire: true,  description: 'Attestation des impôts' },
-    { id: 'att-soc', label: 'Attestation sociale (URSSAF)',      format: '.pdf',  obligatoire: true,  description: 'Attestation de vigilance URSSAF en cours de validité' },
-    { id: 'att-ass', label: 'Attestation assurance RC',          format: '.pdf',  obligatoire: true,  description: 'Attestation d\'assurance responsabilité civile professionnelle' },
-    { id: 'pouvoir', label: 'Délégation de pouvoir',             format: '.pdf',  obligatoire: false, description: 'Si le signataire n\'est pas le représentant légal' },
+  { category: 'Dossier de candidature', docs: [
+    { id: 'dc1',      label: 'DC1 — Lettre de candidature',            format: '.xlsx',  obligatoire: true,  description: 'Formulaire DC1 signé — identification du candidat, forme du groupement' },
+    { id: 'dc2',      label: 'DC2 — Déclaration du candidat',          format: '.xlsx',  obligatoire: true,  description: 'Formulaire DC2 — capacités économiques, financières et techniques' },
+    { id: 'kbis',     label: 'Extrait KBIS',                            format: '.xlsx',  obligatoire: true,  description: 'Extrait KBIS de moins de 3 mois (ou équivalent pour les candidats étrangers)' },
+    { id: 'rib',      label: 'RIB',                                     format: '.xlsx',  obligatoire: true,  description: 'Relevé d\'identité bancaire — IBAN, BIC, nom du titulaire' },
+    { id: 'att-fisc', label: 'Attestation de régularité fiscale',       format: '.xlsx',  obligatoire: true,  description: 'Attestation délivrée par l\'administration fiscale (impôts directs et TVA)' },
+    { id: 'att-soc',  label: 'Attestation sociale (URSSAF)',            format: '.xlsx',  obligatoire: true,  description: 'Attestation de vigilance URSSAF en cours de validité — vérifie la régularité des cotisations' },
+    { id: 'att-ass',  label: 'Attestation assurance RC Pro',            format: '.xlsx',  obligatoire: true,  description: 'Attestation d\'assurance responsabilité civile professionnelle couvrant la durée du marché' },
+    { id: 'honneur',  label: 'Attestation sur l\'honneur',              format: '.xlsx',  obligatoire: true,  description: 'Déclaration sur l\'honneur du candidat (absence d\'exclusion, régularité fiscale et sociale)' },
+    { id: 'pouvoir',  label: 'Délégation de pouvoir de signature',      format: '.xlsx',  obligatoire: false, description: 'Si le signataire n\'est pas le représentant légal — justificatif d\'habilitation' },
+    { id: 'ca-eff',   label: 'Déclaration CA et effectifs',             format: '.xlsx',  obligatoire: true,  description: 'Chiffre d\'affaires annuel et effectifs sur les 3 derniers exercices (N-2, N-1, N)' },
   ]},
-  { category: 'Documents contractuels', docs: [
-    { id: 'ccap',    label: 'CCAP signé',                       format: '.pdf',  obligatoire: true,  description: 'Cahier des Clauses Administratives Particulières daté et signé' },
-    { id: 'cctp',    label: 'CCTP signé',                       format: '.pdf',  obligatoire: true,  description: 'Cahier des Clauses Techniques Particulières daté et signé' },
-    { id: 'rc',      label: 'Règlement de consultation signé',  format: '.pdf',  obligatoire: true,  description: 'RC/RGC daté et signé' },
-    { id: 'confid',  label: 'Engagement de confidentialité',    format: '.pdf',  obligatoire: true,  description: 'Engagement de confidentialité signé' },
+  { category: 'Documents contractuels signés', docs: [
+    { id: 'ccap',     label: 'CCAP daté et signé',                     format: '.xlsx',  obligatoire: true,  description: 'Cahier des Clauses Administratives Particulières — parapher chaque page, dater et signer la dernière' },
+    { id: 'cctp',     label: 'CCTP daté et signé',                     format: '.xlsx',  obligatoire: true,  description: 'Cahier des Clauses Techniques Particulières — parapher et signer' },
+    { id: 'rc',       label: 'Règlement de consultation signé',         format: '.xlsx',  obligatoire: true,  description: 'RC/RGC daté et signé par le représentant habilité' },
+    { id: 'ae',       label: 'Annexe 7 — Acte d\'engagement (ATTRI1)',  format: '.xlsx',  obligatoire: true,  description: 'Acte d\'engagement signé — un par lot sur lequel le candidat se positionne' },
+    { id: 'confid',   label: 'Annexe 10 — Engagement de confidentialité', format: '.xlsx', obligatoire: true, description: 'Engagement de confidentialité signé — protection des données échangées dans le cadre du marché' },
   ]},
   { category: 'Offre financière', docs: [
-    { id: 'bpu-xls', label: 'BPU Excel',                        format: '.xlsx', obligatoire: true,  description: 'Bordereau de Prix Unitaires — fichier Excel complété' },
-    { id: 'bpu-pdf', label: 'BPU PDF signé',                    format: '.pdf',  obligatoire: false, description: 'Version PDF signée du BPU' },
+    { id: 'bpu-xls',  label: 'BPU Excel — Bordereau de Prix Unitaires', format: '.xlsx', obligatoire: true,  description: 'Un BPU par lot — fichier Excel avec les prix complétés (PUHT, remises, TVA, PUTTC)' },
   ]},
   { category: 'Offre technique', docs: [
-    { id: 'memoire', label: 'Mémoire technique',                format: '.pdf',  obligatoire: true,  description: 'Présentation de l\'offre technique, méthodologie, références, CV' },
-    { id: 'contact', label: 'Fiche contacts',                   format: '.xlsx', obligatoire: true,  description: 'Annexe 4 — Coordonnées des interlocuteurs du marché' },
+    { id: 'memoire',  label: 'Mémoire technique',                       format: '.xlsx',  obligatoire: true,  description: 'Présentation de l\'offre : organisation, méthodologie, moyens humains et matériels, références, CV des intervenants clés' },
+    { id: 'contact',  label: 'Annexe 4 — Fiche contacts',               format: '.xlsx', obligatoire: true,  description: 'Coordonnées des interlocuteurs du marché : commercial, technique, facturation, SAV, référent marché' },
   ]},
   { category: 'RSE & Développement durable', docs: [
-    { id: 'rse-quest', label: 'Questionnaire RSE / DD',         format: '.xls',  obligatoire: true,  description: 'Annexe 8 — Questionnaire développement durable complété' },
-    { id: 'rse-pol',   label: 'Documentation politique RSE',    format: '.pdf',  obligatoire: false, description: 'Politique RSE, rapport d\'impact, certifications EcoVadis…' },
+    { id: 'rse-quest', label: 'Annexe 8 — Questionnaire Développement Durable', format: '.xls', obligatoire: true, description: 'Questionnaire RSE/DD Unicancer — thématiques : pilier social, gouvernance, achats responsables, performance environnementale, échanges dématérialisés' },
+    { id: 'rse-pol',   label: 'Documentation politique RSE',                     format: '.xlsx', obligatoire: false, description: 'Rapport RSE/DD, politique EHS, certification EcoVadis, Pacte Mondial, charte diversité, bilan carbone…' },
   ]},
 ];
 
 // Documents spécifiques par marché (s'ajoutent au socle)
 const TEMPLATES_SPECIFIQUES = {
   'inv-accelerateurs': [
-    { category: 'Technique spécifique', docs: [
-      { id: 'qt',       label: 'Questionnaire Technique (Annexe 1)',  format: '.xlsx', obligatoire: true,  description: 'QT standardisé par lot — rempli avec les spécifications de l\'équipement' },
-      { id: 'retro',    label: 'Rétroplanning (Annexe 3)',           format: '.xlsx', obligatoire: true,  description: 'Planning d\'installation prévisionnel par site' },
-      { id: 'chiffr',   label: 'Chiffrage (Annexe 3)',               format: '.xlsx', obligatoire: true,  description: 'Simulation financière multi-sites' },
-      { id: 'certif',   label: 'Certificats de visites sur site',    format: '.pdf',  obligatoire: false, description: 'Formulaires de visite des centres bénéficiaires' },
-      { id: 'ce',       label: 'Marquage CE / MDR',                  format: '.pdf',  obligatoire: true,  description: 'Certificat CE pour chaque équipement proposé (base + variantes)' },
-      { id: 'iso',      label: 'Certifications ISO',                 format: '.pdf',  obligatoire: true,  description: 'ISO 13485 et/ou ISO 9001' },
-      { id: 'maint',    label: 'Contrat de maintenance type',        format: '.pdf',  obligatoire: true,  description: 'Descriptif de l\'organisation de la maintenance et contrat type' },
-      { id: 'vigil',    label: 'Procédure de matériovigilance',      format: '.pdf',  obligatoire: true,  description: 'Processus de déclaration et suivi des incidents' },
-      { id: 'partenariat', label: 'Fiche partenariat scientifique',  format: '.docx', obligatoire: false, description: 'Annexe 7 — Formulaire de partenariat scientifique' },
+    { category: 'Technique — Accélérateurs Radiothérapie', docs: [
+      { id: 'qt',       label: 'Annexe 1 CCTP — Questionnaire Technique',       format: '.xlsx', obligatoire: true,  description: 'QT standardisé par lot — un onglet par lot, réponses aux questions techniques complémentaires (spécifications, performance, installation, maintenance, formation)' },
+      { id: 'retro',    label: 'Annexe 3 CCTP — Rétroplanning installation',     format: '.xlsx', obligatoire: true,  description: 'Planning prévisionnel par site bénéficiaire : commande, fabrication, livraison, installation, mise en service, formation' },
+      { id: 'visite',   label: 'Annexe 3 RC — Formulaire de visite sur site',    format: '.xlsx',  obligatoire: false, description: 'Formulaire de visite de fonctionnement à remplir pour chaque centre bénéficiaire visité (CLCC)' },
+    ]},
+    { category: 'Financier — Accélérateurs', docs: [
+      { id: 'bpu-mono', label: 'BPU Mono-Référence (Excel)',                     format: '.xlsx', obligatoire: true,  description: 'BPU pour achat unitaire — onglets : Base, Variante 1, Variante 2, Financement, DROM-COM' },
+      { id: 'bpu-multi', label: 'BPU Multi-Références (Excel)',                  format: '.xlsx', obligatoire: true,  description: 'BPU pour achat groupé multi-sites — mêmes onglets + Guide des Remises dégressives' },
+    ]},
+    { category: 'Administratif — Accélérateurs', docs: [
+      { id: 'ce',         label: 'Marquage CE / MDR',                            format: '.xlsx',  obligatoire: true,  description: 'Certificat CE (MDR 2017/745 ou MDD 93/42) pour chaque équipement proposé — offre de base + variantes' },
+      { id: 'iso',        label: 'Certifications ISO 13485 / ISO 9001',          format: '.xlsx',  obligatoire: true,  description: 'Certificats de conformité au système de management de la qualité' },
+      { id: 'maint',      label: 'Contrat de maintenance type',                  format: '.xlsx',  obligatoire: true,  description: 'Descriptif organisation maintenance, délais d\'intervention, stock pièces détachées, contrat type' },
+      { id: 'vigil',      label: 'Procédure de matériovigilance',                format: '.xlsx',  obligatoire: true,  description: 'Processus de déclaration et suivi des incidents, post-market surveillance' },
+      { id: 'formation',  label: 'Descriptif des modules de formation',          format: '.xlsx',  obligatoire: true,  description: 'Programme de formation par fonction (utilisateur, physicien, technicien), durée, contenu' },
+      { id: 'ref-clients', label: 'Liste de références clients',                 format: '.xlsx',  obligatoire: true,  description: 'Références d\'installations similaires — clients, sites, équipements, dates' },
+      { id: 'partenariat', label: 'Annexe 7 CCAP — Partenariat scientifique',    format: '.xlsx', obligatoire: false, description: 'Formulaire de partenariat scientifique — collaborations recherche avec les CLCC' },
+      { id: 'complement-ccap', label: 'Complément CCAP signé',                   format: '.xlsx',  obligatoire: false, description: 'Complément au CCAP si fourni par Unicancer — parapher et signer' },
     ]},
   ],
   'rd-cybersecurite': [
-    { category: 'Spécifique Cybersécurité', docs: [
-      { id: 'passi',   label: 'Qualification PASSI / ISO 27001',    format: '.pdf',  obligatoire: false, description: 'Attestation PASSI ANSSI ou certification ISO 27001' },
-      { id: 'dc4',     label: 'DC4 — Sous-traitance',               format: '.pdf',  obligatoire: false, description: 'Déclaration de sous-traitance si applicable' },
-      { id: 'ref',     label: 'Déclaration de références missions',  format: '.pdf',  obligatoire: true,  description: 'Références de missions similaires dans le secteur santé' },
-      { id: 'outillage', label: 'Description de l\'outillage',       format: '.pdf',  obligatoire: false, description: 'Outils et plateformes utilisés pour les prestations' },
+    { category: 'Technique — Cybersécurité', docs: [
+      { id: 'memoire-lot', label: 'Mémoire technique par lot',                   format: '.xlsx',  obligatoire: true,  description: 'Proposition organisationnelle et technique par lot — méthodologie, équipe, outils, planning, références' },
+      { id: 'passi',       label: 'Qualification PASSI ANSSI',                   format: '.xlsx',  obligatoire: false, description: 'Attestation PASSI (Prestataire d\'Audit de Sécurité des SI) délivrée par l\'ANSSI' },
+      { id: 'iso27001',    label: 'Certification ISO 27001 / HDS',              format: '.xlsx',  obligatoire: false, description: 'Certification ISO 27001 système de management de la sécurité de l\'information, ou HDS' },
+      { id: 'ref-missions', label: 'Déclaration de références missions',         format: '.xlsx',  obligatoire: true,  description: 'Références de missions similaires — secteur santé, volume, périmètre, résultats' },
+      { id: 'outillage',   label: 'Description de l\'outillage',                 format: '.xlsx',  obligatoire: false, description: 'Outils et plateformes utilisés (SIEM, scanner, EDR, SOC…)' },
+    ]},
+    { category: 'Financier — Cybersécurité', docs: [
+      { id: 'bpu-tjm',     label: 'BPU — Taux Journaliers Moyens (TJM)',        format: '.xlsx', obligatoire: true,  description: 'TJM par profil (Junior, Senior, Expert) et par lot — colonnes : TJM HT, TVA, TTC' },
+      { id: 'bpu-cas',     label: 'BPU — Cas d\'usage',                          format: '.xlsx', obligatoire: true,  description: 'Chiffrage de cas d\'usage types par lot (test d\'intrusion simple/moyen/complexe, audit architecture…)' },
+    ]},
+    { category: 'Administratif — Cybersécurité', docs: [
+      { id: 'dc4',         label: 'DC4 — Sous-traitance',                       format: '.xlsx',  obligatoire: false, description: 'Déclaration de sous-traitance si le candidat prévoit de confier une partie des prestations' },
+      { id: 'annexe1',     label: 'Annexe 1 — Liste des bénéficiaires',         format: '.xlsx',  obligatoire: false, description: 'Liste des centres Unicancer bénéficiaires du marché' },
+      { id: 'annexe3',     label: 'Annexe 3 — Référents Unicancer Achats',      format: '.xlsx',  obligatoire: false, description: 'Coordonnées des référents Unicancer pour le suivi du marché' },
+      { id: 'annexe6',     label: 'Annexe 6 — Volumes du marché',               format: '.xlsx', obligatoire: false, description: 'Estimation des volumes prévisionnels par lot et par an' },
     ]},
   ],
+  // Config par défaut pour les marchés sans templates spécifiques
+  '_default': [],
 };
 
 export function getDocTemplates(marcheId) {
-  const specifiques = TEMPLATES_SPECIFIQUES[marcheId] || [];
+  const specifiques = TEMPLATES_SPECIFIQUES[marcheId] || TEMPLATES_SPECIFIQUES['_default'];
   return [...TEMPLATES_SOCLE, ...specifiques];
 }
 

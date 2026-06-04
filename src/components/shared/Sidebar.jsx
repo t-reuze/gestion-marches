@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { NavLink, useParams, useLocation } from 'react-router-dom';
-import { SECTEURS, getMarchesBySecteur, formations } from '../../data/mockData';
+import { SECTEURS, getMarchesBySecteur, formations, marches as allStaticMarches } from '../../data/mockData';
 import { useNotation } from '../../context/NotationContext';
 import { useMarcheMeta } from '../../context/MarcheMetaContext';
 import { useFormationsMeta } from '../../context/FormationsMetaContext';
@@ -92,7 +92,7 @@ export default function Sidebar() {
   const { id: activeId } = useParams();
   const { pathname } = useLocation();
   const { getSession }  = useNotation();
-  const { getMeta }     = useMarcheMeta();
+  const { getMeta, setMeta } = useMarcheMeta();
   const { getMeta: getFormMeta } = useFormationsMeta();
   const { newFormations } = useNewFormations();
   const { newMarches }    = useNewMarches();
@@ -101,6 +101,12 @@ export default function Sidebar() {
   const [showAdd,   setShowAdd]   = useState(false);
   const [showAddF,  setShowAddF]  = useState(false);
   const [favorites, setFavorites] = useState(loadFavorites);
+  const [draggedId, setDraggedId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  const [dragOverSecteur, setDragOverSecteur] = useState(null);
+  const [customOrder, setCustomOrder] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('gm-sidebar-order')) || {}; } catch { return {}; }
+  });
   const [collapsed, setCollapsed] = useState(() => ({
     favorites: false,
     ...Object.fromEntries(Object.keys(SECTEURS).map(k => [k, true])),
@@ -111,6 +117,83 @@ export default function Sidebar() {
   const isFormations = pathname.startsWith('/formations');
 
   const toggle = (key) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
+
+  const handleDragStart = (e, marcheId) => {
+    setDraggedId(marcheId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const handleDragOver = (e, marcheId) => {
+    e.preventDefault();
+    if (marcheId !== draggedId) setDragOverId(marcheId);
+  };
+  const handleDrop = (e, targetId, secteurKey, marchesInSecteur) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedId || draggedId === targetId) { setDraggedId(null); setDragOverId(null); setDragOverSecteur(null); return; }
+    const ids = marchesInSecteur.map(m => m.id);
+    const fromIdx = ids.indexOf(draggedId);
+    const toIdx = ids.indexOf(targetId);
+
+    if (fromIdx >= 0 && toIdx >= 0) {
+      // Même secteur — réordonner
+      ids.splice(fromIdx, 1);
+      ids.splice(toIdx, 0, draggedId);
+      const newOrder = { ...customOrder, [secteurKey]: ids };
+      setCustomOrder(newOrder);
+      localStorage.setItem('gm-sidebar-order', JSON.stringify(newOrder));
+    } else if (fromIdx === -1) {
+      // Vient d'un autre secteur — changer le secteur du marché
+      setMeta(draggedId, { secteur: secteurKey });
+      // Ajouter à l'ordre personnalisé de la cible
+      const targetIds = [...ids];
+      targetIds.splice(toIdx, 0, draggedId);
+      const newOrder = { ...customOrder, [secteurKey]: targetIds };
+      // Retirer de l'ancien secteur
+      for (const [k, v] of Object.entries(newOrder)) {
+        if (k !== secteurKey && Array.isArray(v)) {
+          newOrder[k] = v.filter(id => id !== draggedId);
+        }
+      }
+      setCustomOrder(newOrder);
+      localStorage.setItem('gm-sidebar-order', JSON.stringify(newOrder));
+    }
+    setDraggedId(null);
+    setDragOverId(null);
+    setDragOverSecteur(null);
+  };
+
+  const handleDropOnSecteur = (e, secteurKey) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedId) { setDragOverSecteur(null); return; }
+    // Changer le secteur du marché
+    setMeta(draggedId, { secteur: secteurKey });
+    // Retirer de l'ancien ordre personnalisé
+    const newOrder = { ...customOrder };
+    for (const [k, v] of Object.entries(newOrder)) {
+      if (Array.isArray(v)) newOrder[k] = v.filter(id => id !== draggedId);
+    }
+    setCustomOrder(newOrder);
+    localStorage.setItem('gm-sidebar-order', JSON.stringify(newOrder));
+    setDraggedId(null);
+    setDragOverId(null);
+    setDragOverSecteur(null);
+  };
+
+  const handleDragEnd = () => { setDraggedId(null); setDragOverId(null); setDragOverSecteur(null); };
+
+  const applyCustomOrder = (marches, secteurKey) => {
+    const order = customOrder[secteurKey];
+    if (!order || !order.length) return marches;
+    return [...marches].sort((a, b) => {
+      const ia = order.indexOf(a.id);
+      const ib = order.indexOf(b.id);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  };
 
   const toggleFavorite = useCallback((e, marcheId) => {
     e.preventDefault();
@@ -237,9 +320,12 @@ export default function Sidebar() {
           {/* Secteurs + marchés */}
           <nav className="sidebar-nav">
             {Object.entries(SECTEURS).map(([key, secteur]) => {
+              // Inclure les marchés natifs de ce secteur + ceux déplacés ici via meta
               const staticMarches = getMarchesBySecteur(key);
-              const userMarches = newMarches.filter(m => m.secteur === key);
-              const marches = [...staticMarches, ...userMarches]
+              const movedHere = allStaticMarches.filter(m => m.secteur !== key && getMeta(m.id).secteur === key);
+              const userMarches = newMarches.filter(m => (getMeta(m.id).secteur || m.secteur) === key);
+              const marchesSorted = [...staticMarches, ...movedHere, ...userMarches]
+                .filter(m => (getMeta(m.id).secteur || m.secteur) === key)
                 .filter((m) => !search || m.nom.toLowerCase().includes(search.toLowerCase()))
                 .map(m => ({ ...m, _statut: getMeta(m.id).statut || m.statut }))
                 .sort((a, b) => {
@@ -248,6 +334,7 @@ export default function Sidebar() {
                   if (ra !== rb) return ra - rb;
                   return a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' });
                 });
+              const marches = applyCustomOrder(marchesSorted, key);
 
               // Hide empty secteurs when searching
               if (search && !marches.length) return null;
@@ -259,11 +346,20 @@ export default function Sidebar() {
                   <button
                     className="sidebar-secteur-label"
                     onClick={() => toggle(key)}
+                    onDragOver={e => { e.preventDefault(); setDragOverSecteur(key); }}
+                    onDragLeave={() => setDragOverSecteur(null)}
+                    onDrop={e => handleDropOnSecteur(e, key)}
+                    style={dragOverSecteur === key && draggedId ? {
+                      background: '#dbeafe', borderColor: '#3b82f6',
+                    } : undefined}
                   >
                     <span className="sidebar-secteur-title">
                       {secteur.label}
                       {marches.length > 0 && (
                         <span className="sidebar-secteur-count">{marches.length}</span>
+                      )}
+                      {dragOverSecteur === key && draggedId && (
+                        <span style={{ fontSize: 9, color: '#3b82f6', marginLeft: 4 }}>Deposer ici</span>
                       )}
                     </span>
                     <span className="sidebar-secteur-chevron">
@@ -280,14 +376,29 @@ export default function Sidebar() {
                         const isCloture = statut === 'cloture';
 
                         return (
-                          <NavLink
+                          <div
                             key={m.id}
+                            draggable
+                            onDragStart={e => handleDragStart(e, m.id)}
+                            onDragOver={e => handleDragOver(e, m.id)}
+                            onDrop={e => handleDrop(e, m.id, key, marches)}
+                            onDragEnd={handleDragEnd}
+                            style={{
+                              ...(dragOverId === m.id ? { borderTop: '2px solid #3b82f6' } : {}),
+                              ...(draggedId === m.id ? { opacity: 0.4 } : {}),
+                            }}
+                          >
+                          <NavLink
                             to={'/marche/' + m.id + '/notation'}
                             className={() =>
                               'nav-item nav-marche-item' + (isActive ? ' active' : '') + (isCloture ? ' is-cloture' : '')
                             }
-                            style={isCloture ? { opacity: 0.6 } : undefined}
+                            style={{
+                              ...(isCloture ? { opacity: 0.6 } : {}),
+                              cursor: 'grab',
+                            }}
                             title={isCloture ? m.nom + ' (clôturé)' : m.nom}
+                            draggable={false}
                           >
                             <span
                               className="nm-dot"
@@ -309,6 +420,7 @@ export default function Sidebar() {
                               </span>
                             )}
                           </NavLink>
+                          </div>
                         );
                       })}
                     </div>

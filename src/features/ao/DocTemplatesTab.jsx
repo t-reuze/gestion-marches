@@ -9,46 +9,172 @@ function buildExcelBuffer(doc, marcheNom) {
   const wb = XLSX.utils.book_new();
   let ws;
   switch (doc.id) {
+    // ── BPU générique ──
     case 'bpu-xls': {
-      const h = ['Désignation', 'Unité', 'Prix unitaire HT', '% Remise', 'Prix remisé HT', 'TVA (%)', 'Prix TTC'];
-      ws = XLSX.utils.aoa_to_sheet([[`BPU — ${marcheNom}`], ['À compléter'], [], h, ...Array.from({ length: 20 }, () => ['', '', '', '', '', '20%', ''])]);
-      ws['!cols'] = [{ wch: 40 }, { wch: 10 }, { wch: 16 }, { wch: 10 }, { wch: 16 }, { wch: 8 }, { wch: 14 }];
+      const h = ['Désignation de la prestation / fourniture', 'Référence', 'Unité', 'PUHT Tarif (€)', 'Taux de remise (%)', 'PUHT remisé (€)', 'TVA (%)', 'PUTTC (€)'];
+      ws = XLSX.utils.aoa_to_sheet([
+        [`Bordereau de Prix Unitaires — ${marcheNom}`], ['Marché Unicancer'], [],
+        ['Fournisseur :'], ['Lot :'], [],
+        ['Le Candidat complète les colonnes PUHT et taux de remise. Les colonnes PUHT remisé et PUTTC sont calculées automatiquement.'],
+        [], h,
+        ...Array.from({ length: 25 }, () => ['', '', '', '', '', '', '20%', '']),
+      ]);
+      ws['!cols'] = [{ wch: 45 }, { wch: 14 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 14 }];
       break;
     }
+    // ── BPU Accélérateurs Mono-Ref ──
+    case 'bpu-mono': {
+      const sheets = ['Base', 'Variante_1', 'Variante_2', 'Financement', 'DROM-COM', 'Guide_Remises'];
+      for (const sn of sheets) {
+        const h = ['Désignation / Composition offre', 'Détail fourniture', 'Référence commerciale', 'Réf CCTP', '', 'PUHT Tarif (€)', 'Taux de remise', 'PUHT remisé (€)', 'TVA', 'PUTTC (€)'];
+        const data = [[`BPU Mono-Référence — ${marcheNom}`], ['Fournisseur :'], ['Matériels :'], [], h,
+          ['Le Candidat peut ajouter des lignes si nécessaire'], [],
+          ['Composition offre de base', 'Détail fourniture'], ...Array.from({ length: 15 }, () => [])];
+        const s = XLSX.utils.aoa_to_sheet(data);
+        s['!cols'] = [{ wch: 38 }, { wch: 30 }, { wch: 20 }, { wch: 10 }, { wch: 4 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 6 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(wb, s, sn);
+      }
+      return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    }
+    // ── BPU Accélérateurs Multi-Ref ──
+    case 'bpu-multi': {
+      const sheets = ['Base', 'Variante_1', 'Variante_2', 'Base_Financement', 'DROM-COM', 'Guide_Remises'];
+      for (const sn of sheets) {
+        const h = ['Désignation / Composition offre', 'Détail fourniture', 'Réf commerciale', 'Réf CCTP', '', 'PUHT Tarif (€)', 'Taux de remise', 'PUHT remisé (€)', 'TVA', 'PUTTC (€)'];
+        const data = [[`BPU Multi-Références — ${marcheNom}`], ['Offre dans le cadre d\'un multi-références'], ['Fournisseur :'], [], h,
+          ...Array.from({ length: 15 }, () => [])];
+        const s = XLSX.utils.aoa_to_sheet(data);
+        s['!cols'] = [{ wch: 38 }, { wch: 30 }, { wch: 20 }, { wch: 10 }, { wch: 4 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 6 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(wb, s, sn);
+      }
+      return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    }
+    // ── BPU Cybersécurité TJM ──
+    case 'bpu-tjm': {
+      for (let lot = 1; lot <= 5; lot++) {
+        const data = [[`BPU — Taux Journaliers Moyens — ${marcheNom}`], [], [],
+          ['', 'TJM € HT', 'TVA', 'Montant € TTC'], [],
+          [`Lot ${lot}`], [],
+          ['Consultant Junior'], ['Consultant Senior'], ['Consultant Expert'], [],
+          ['Profil spécialisé 1'], ['Profil spécialisé 2']];
+        const s = XLSX.utils.aoa_to_sheet(data);
+        s['!cols'] = [{ wch: 30 }, { wch: 14 }, { wch: 10 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(wb, s, `Lot ${lot} - TJM`);
+      }
+      return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    }
+    // ── BPU Cybersécurité Cas d'usage ──
+    case 'bpu-cas': {
+      for (let lot = 1; lot <= 5; lot++) {
+        const h = ['Volume (jour)', 'Qualification', 'TJM lissé € HT', 'Montant € HT', 'TVA', 'Montant € TTC'];
+        const data = [[`BPU — Cas d'usage — ${marcheNom}`], [], [],
+          ['', ...h], [],
+          [`Lot ${lot} — Cas d'usage`], [],
+          [`L${lot}_CU1 — Cas d'usage 1`], [`L${lot}_CU2 — Cas d'usage 2`], [`L${lot}_CU3 — Cas d'usage 3`]];
+        const s = XLSX.utils.aoa_to_sheet(data);
+        s['!cols'] = [{ wch: 28 }, { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(wb, s, `Lot ${lot} - CU`);
+      }
+      return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    }
+    // ── Annexe 4 — Fiche contacts ──
     case 'contact': {
-      ws = XLSX.utils.aoa_to_sheet([[`Fiche Contacts — ${marcheNom}`], ['À compléter'], [],
-        ['Rôle', 'Civilité', 'Prénom', 'Nom', 'Fonction', 'Téléphone', 'Email', 'Adresse'],
-        ['Responsable commercial'], ['Responsable technique'], ['Contact facturation'], ['Contact SAV'], ['Référent marché']]);
-      ws['!cols'] = [{ wch: 22 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 16 }, { wch: 28 }, { wch: 30 }];
+      ws = XLSX.utils.aoa_to_sheet([
+        [`Annexe 4 CCAP — Fiche Contacts — ${marcheNom}`], ['Marché Unicancer — À compléter par le candidat'], [],
+        ['Fournisseur :'], ['Lot(s) :'], [],
+        ['Rôle / Fonction', 'Civilité', 'Prénom', 'Nom', 'Service / Direction', 'Téléphone fixe', 'Téléphone mobile', 'Email', 'Adresse postale'],
+        ['Responsable commercial du marché'], ['Responsable technique / Chef de projet'],
+        ['Contact facturation'], ['Contact SAV / Support technique'], ['Référent marché Unicancer'],
+        ['Contact logistique / livraison'], ['Directeur de compte'], [''],
+        ['Commentaires :'],
+      ]);
+      ws['!cols'] = [{ wch: 30 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 28 }, { wch: 30 }];
       break;
     }
+    // ── Annexe 8 — Questionnaire DD/RSE ──
     case 'rse-quest': {
-      ws = XLSX.utils.aoa_to_sheet([[`Questionnaire DD — ${marcheNom}`], ['À compléter'], [],
-        ['N°', 'Thématique', 'Question', 'Réponse', 'Justificatifs'],
-        [1, 'Environnement', 'Politique environnementale formalisée ?'], [2, 'Environnement', 'Bilan carbone réalisé ?'],
-        [3, 'Social', 'Index égalité F/H ?'], [4, 'Social', 'Politique handicap ?'],
-        [5, 'Gouvernance', 'Certification ISO 14001 ?'], [6, 'Achats', 'Charte achats responsables ?']]);
-      ws['!cols'] = [{ wch: 4 }, { wch: 18 }, { wch: 42 }, { wch: 28 }, { wch: 18 }];
+      ws = XLSX.utils.aoa_to_sheet([
+        ['ANNEXE 8 — QUESTIONNAIRE DEVELOPPEMENT DURABLE'], [`${marcheNom} — Marché Unicancer`], [],
+        ['THEMATIQUE', 'QUESTION', 'COMMENTAIRES / REPONSE CANDIDAT'], [],
+        ['PILIER SOCIAL'],
+        ['Certification organisme évaluation', 'Certification EcoVadis ? Autre organisme d\'évaluation RSE ?'],
+        ['Stratégie RSE / gouvernance', 'Avez-vous une démarche, une politique ou une charte RSE formalisée ?'],
+        ['Stratégie RSE / gouvernance', 'Avez-vous rédigé un rapport RSE / DD ?'],
+        ['Stratégie RSE / gouvernance', 'Avez-vous des ressources internes dédiées à la mise en oeuvre de votre politique RSE ?'],
+        ['Stratégie RSE / gouvernance', 'Nombre d\'heures de formations RSE/DD dispensées ?'],
+        ['Stratégie RSE / gouvernance', 'Système de management de l\'environnement certifié (ISO 14001…) ?'],
+        ['Stratégie RSE / gouvernance', 'Système de management santé et sécurité au travail (ISO 45001…) ?'],
+        ['Relations et conditions de travail', 'Mesure du bien-être et satisfaction des collaborateurs ?'],
+        ['Relations et conditions de travail', 'Politique RH favorisant l\'égalité des chances, la diversité, le handicap ?'],
+        ['Relations et conditions de travail', 'Justification qu\'aucun enfant ne travaille dans votre chaîne de valeur ?'],
+        ['ACHATS RESPONSABLES'],
+        ['Achats responsables', 'Intégration de l\'économie sociale et solidaire dans vos achats ?'],
+        ['Achats responsables', 'Critères environnementaux/sociaux pour la sélection de vos fournisseurs ?'],
+        ['PERFORMANCE ENVIRONNEMENTALE'],
+        ['Indicateurs environnementaux', 'Suivi d\'indicateurs environnementaux (eau, énergie, déchets, GES) ?'],
+        ['Indicateurs environnementaux', 'Bilan Carbone et/ou bilan gaz à effet de serre réalisé ?'],
+        ['ECHANGES DEMATÉRIALISES'],
+        ['Dématérialisation', 'Système de dématérialisation des échanges (facturation, commandes, reporting) ?'],
+      ]);
+      ws['!cols'] = [{ wch: 35 }, { wch: 60 }, { wch: 50 }];
       break;
     }
+    // ── Annexe 1 CCTP — Questionnaire Technique ──
     case 'qt': {
-      ws = XLSX.utils.aoa_to_sheet([[`Questionnaire Technique — ${marcheNom}`], ['À compléter — un onglet par lot'], [],
-        ['N°', 'Rubrique', 'Question / Critère', 'Réponse', 'Commentaire'],
-        [1, 'Général', 'Nom commercial'], [2, 'Général', 'Fabricant'], [3, 'Performance', 'Caractéristiques principales'],
-        [4, 'Installation', 'Délai'], [5, 'Maintenance', 'MTBF'], [6, 'Formation', 'Programme proposé']]);
-      ws['!cols'] = [{ wch: 4 }, { wch: 16 }, { wch: 42 }, { wch: 28 }, { wch: 18 }];
+      ws = XLSX.utils.aoa_to_sheet([
+        ['QUESTIONS TECHNIQUES COMPLEMENTAIRES'], [`${marcheNom} — Marché Unicancer`],
+        ['Base (répéter pour les variantes)'], [], [],
+        ['Fournisseur :'], ['Matériels :'], [], [],
+        ['Technical Criteria', 'Réponse Fournisseur', 'Commentaire / Précision'],
+        ['General information'],
+        ['Nom du responsable installation', '', ''], ['Adresse email', '', ''], ['Téléphone', '', ''],
+        ['Nom du responsable matériovigilance', '', ''],
+        ['Performance'],
+        ['Caractéristiques techniques principales', '', ''], ['Normes et certifications applicables', '', ''],
+        ['Dimensions et poids de l\'équipement', '', ''], ['Prérequis techniques (surface, alimentation)', '', ''],
+        ['Installation'],
+        ['Délai de fabrication et livraison', '', ''], ['Délai d\'installation sur site', '', ''],
+        ['Maintenance'],
+        ['MTBF (temps moyen entre pannes)', '', ''], ['Délai d\'intervention garanti', '', ''],
+        ['Stock pièces détachées en France', '', ''], ['Durée de vie estimée de l\'équipement', '', ''],
+        ['Formation'],
+        ['Programme de formation utilisateurs', '', ''], ['Programme de formation physiciens', '', ''],
+        ['Durée de la formation initiale', '', ''],
+      ]);
+      ws['!cols'] = [{ wch: 45 }, { wch: 40 }, { wch: 35 }];
       break;
     }
+    // ── Annexe 3 CCTP — Rétroplanning ──
     case 'retro': {
-      ws = XLSX.utils.aoa_to_sheet([[`Rétroplanning — ${marcheNom}`], ['À compléter'], [],
-        ['Phase', 'Étape', 'Durée (j)', 'Date début', 'Date fin', 'Responsable'],
-        ['Préparation', 'Commande'], ['Livraison', 'Transport'], ['Installation', 'Mise en place'],
-        ['Mise en service', 'Tests'], ['Formation', 'Utilisateurs']]);
-      ws['!cols'] = [{ wch: 16 }, { wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 16 }];
+      ws = XLSX.utils.aoa_to_sheet([
+        [`Annexe 3 CCTP — Rétroplanning Installation — ${marcheNom}`],
+        ['Planning prévisionnel à compléter par le candidat — un par site bénéficiaire'], [],
+        ['Fournisseur :'], ['Équipement :'], ['Site bénéficiaire :'], [],
+        ['Phase', 'Étape détaillée', 'Durée (jours ouvrés)', 'Semaine début (S+)', 'Semaine fin (S+)', 'Responsable', 'Prérequis / Commentaires'],
+        ['Commande', 'Confirmation de commande'], ['Commande', 'Fabrication'], ['Commande', 'Contrôle qualité usine'],
+        ['Livraison', 'Transport vers le site'], ['Livraison', 'Déchargement et mise en salle'],
+        ['Installation', 'Assemblage mécanique'], ['Installation', 'Raccordement électrique'], ['Installation', 'Installation logicielle'], ['Installation', 'Mise en réseau'],
+        ['Recette', 'Tests de performance'], ['Recette', 'Calibration et dosimétrie'], ['Recette', 'Validation acceptance tests'],
+        ['Formation', 'Formation utilisateurs (RTT, manipulateurs)'], ['Formation', 'Formation physiciens'],
+        ['Formation', 'Formation techniciens maintenance'], ['Formation', 'Formation applicative avancée'],
+        ['Mise en service', 'Mise en service clinique'], ['Mise en service', 'Accompagnement premiers patients'],
+      ]);
+      ws['!cols'] = [{ wch: 16 }, { wch: 35 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 30 }];
       break;
     }
+    // ── Annexe 6 — Volumes du marché (Cyber) ──
+    case 'annexe6': {
+      ws = XLSX.utils.aoa_to_sheet([
+        [`Annexe 6 — Volumes du Marché — ${marcheNom}`], ['Estimation prévisionnelle — À compléter par Unicancer'], [],
+        ['Lot', 'Intitulé du lot', 'Volume annuel estimé (jours)', 'Commentaires'],
+        [1, '', '', ''], [2, '', '', ''], [3, '', '', ''], [4, '', '', ''], [5, '', '', ''],
+      ]);
+      ws['!cols'] = [{ wch: 6 }, { wch: 45 }, { wch: 25 }, { wch: 30 }];
+      break;
+    }
+    // ── Défaut ──
     default: {
-      ws = XLSX.utils.aoa_to_sheet([[doc.label + ' — ' + marcheNom], [doc.description], [], ['À compléter']]);
+      ws = XLSX.utils.aoa_to_sheet([[doc.label], [`${marcheNom} — Marché Unicancer`], [], [doc.description], [], ['À compléter par le candidat']]);
       ws['!cols'] = [{ wch: 60 }];
     }
   }
@@ -56,45 +182,7 @@ function buildExcelBuffer(doc, marcheNom) {
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
 }
 
-async function buildPdfBuffer(doc, marcheNom) {
-  const { default: jsPDF } = await import('jspdf');
-  const pdf = new jsPDF();
-  pdf.setFillColor(0, 30, 69);
-  pdf.rect(0, 0, 210, 25, 'F');
-  pdf.setTextColor(255); pdf.setFontSize(14);
-  pdf.text(doc.label, 14, 12);
-  pdf.setFontSize(9); pdf.text(marcheNom + ' — UNICANCER', 14, 19);
-
-  let y = 40;
-  pdf.setTextColor(0); pdf.setFontSize(11); pdf.text('Description :', 14, y); y += 8;
-  pdf.setFontSize(10); pdf.setTextColor(80, 80, 80);
-  const lines = pdf.splitTextToSize(doc.description, 180);
-  pdf.text(lines, 14, y); y += lines.length * 6 + 10;
-
-  pdf.setTextColor(0); pdf.setFontSize(11); pdf.text('Instructions :', 14, y); y += 8;
-  pdf.setFontSize(10); pdf.setTextColor(80, 80, 80);
-  const instr = {
-    dc1: ['Remplir identification candidat', 'Cocher forme du groupement', 'Signer et dater'],
-    dc2: ['Section A : Identification', 'Section B : Capacites economiques', 'Section C : Capacites techniques'],
-    ae: ['Indiquer le numero du lot', 'Montant total HT et TTC', 'Signer par le representant habilite'],
-    ccap: ['Parapher chaque page', 'Dater et signer la derniere page'],
-    cctp: ['Parapher chaque page', 'Dater et signer'],
-    confid: ['Remplir informations signataire', 'Signer et dater'],
-    memoire: ['Presenter l entreprise', 'Decrire la methodologie', 'CV des intervenants cles'],
-  };
-  for (const line of (instr[doc.id] || ['Completer selon le reglement de consultation', 'Signer et dater'])) {
-    if (y > 270) { pdf.addPage(); y = 20; }
-    pdf.text('  - ' + line, 14, y); y += 6;
-  }
-  y += 15;
-  if (y > 240) { pdf.addPage(); y = 20; }
-  pdf.setDrawColor(200); pdf.rect(14, y, 85, 30); pdf.rect(110, y, 85, 30);
-  pdf.setFontSize(9); pdf.setTextColor(150);
-  pdf.text('Date :', 18, y + 8); pdf.text('Signature et cachet :', 114, y + 8);
-  pdf.setFontSize(7); pdf.setTextColor(180); pdf.text('UNICANCER — Template ' + doc.label, 14, 290);
-
-  return pdf.output('arraybuffer');
-}
+// Plus de PDF — tous les templates sont en Excel (.xlsx) ou Word (.docx via Excel)
 
 function sanitizeFileName(s) {
   return s.replace(/[^a-zA-Z0-9àâäéèêëïîôùûüçÀÂÄÉÈÊËÏÎÔÙÛÜÇ\s\-]/g, '').replace(/\s+/g, '_').substring(0, 60);
@@ -178,13 +266,8 @@ export default function DocTemplatesTab({ marcheId, annuaire = [] }) {
       for (const doc of allDocs) {
         if (!selectedDocs.has(doc.id)) continue;
         const fileName = sanitizeFileName(doc.label) + '_template';
-        if (doc.format === '.xlsx' || doc.format === '.xls') {
-          const buf = buildExcelBuffer(doc, marcheNom);
-          folder.file(fileName + '.xlsx', buf);
-        } else {
-          const buf = await buildPdfBuffer(doc, marcheNom);
-          folder.file(fileName + '.pdf', buf);
-        }
+        const buf = buildExcelBuffer(doc, marcheNom);
+        folder.file(fileName + '.xlsx', buf);
       }
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -216,24 +299,14 @@ export default function DocTemplatesTab({ marcheId, annuaire = [] }) {
     setGenerating(false);
   }, [selectedDocs, allDocs, marcheNom, collectedEmails]);
 
-  // Télécharger un seul template
+  // Télécharger un seul template (toujours en Excel)
   const handleDownloadOne = useCallback((doc) => {
-    if (doc.format === '.xlsx' || doc.format === '.xls') {
-      const buf = buildExcelBuffer(doc, marcheNom);
-      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = sanitizeFileName(doc.label) + '_template.xlsx'; a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      buildPdfBuffer(doc, marcheNom).then(buf => {
-        const blob = new Blob([buf], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = sanitizeFileName(doc.label) + '_template.pdf'; a.click();
-        URL.revokeObjectURL(url);
-      });
-    }
+    const buf = buildExcelBuffer(doc, marcheNom);
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = sanitizeFileName(doc.label) + '_template.xlsx'; a.click();
+    URL.revokeObjectURL(url);
   }, [marcheNom]);
 
   const totalDocs = allDocs.length;

@@ -1132,6 +1132,7 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
   const [filter, setFilter] = useState('');
   const [refCQ, setRefCQ] = useState(null);   // { fileName, comparison }
   const [cqLoading, setCqLoading] = useState(false);
+  const [visibleRows, setVisibleRows] = useState(25);
 
   // Groupes de colonnes pour affichage compact
   const COL_GROUPS = [
@@ -1530,7 +1531,7 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, ri) => (
+              {rows.slice(0, visibleRows).map((row, ri) => (
                 <tr key={ri} style={{
                   borderTop: '1px solid #f3f4f6',
                   transition: 'background 0.1s',
@@ -1623,6 +1624,21 @@ function AnnuaireTab({ annuaire, edits, setCell, config }) {
             </tbody>
           </table>
         </div>
+        {rows.length > visibleRows && (
+          <div style={{
+            padding: '10px 16px', textAlign: 'center', borderTop: '1px solid #e5e7eb',
+            background: '#f9fafb',
+          }}>
+            <button className="btn btn-outline btn-sm" style={{ fontSize: 12 }}
+              onClick={() => setVisibleRows(v => v + 25)}>
+              Voir plus ({rows.length - visibleRows} restants)
+            </button>
+            <button className="btn btn-outline btn-sm" style={{ fontSize: 12, marginLeft: 8 }}
+              onClick={() => setVisibleRows(rows.length)}>
+              Tout afficher
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Légende */}
@@ -1813,13 +1829,31 @@ export default function AnalyseMarche() {
   const marche = marches.find(m => m.id === id);
   const config = getAnalyseConfig(id);
 
-  // ── Dossier state (restauré depuis le cache de session si on revient sur la page) ──
+  // ── Dossier state (restauré depuis le cache de session ou IndexedDB) ──
   const __s0 = getSession(id);
   const [dirHandle, setDirHandle] = useState(__s0.dirHandle || null);
   const [dirPath, setDirPath] = useState(__s0.dirPath || '');
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState('');
   const [dirWarning, setDirWarning] = useState('');
+
+  // Auto-charger le dossier lié depuis IndexedDB si pas de handle en session
+  useEffect(() => {
+    if (dirHandle) return;
+    (async () => {
+      try {
+        const { getFolderHandle, verifyPermission } = await import('../../utils/folderStore.js');
+        const handle = await getFolderHandle(id);
+        if (handle) {
+          const ok = await verifyPermission(handle);
+          if (ok) {
+            setDirHandle(handle);
+            setDirPath(handle.name);
+          }
+        }
+      } catch {}
+    })();
+  }, [id]);
 
   // ── Annuaire ──
   const { setMeta } = useMarcheMeta();
@@ -1858,10 +1892,12 @@ export default function AnalyseMarche() {
     let root = dirHandle;
     if (action === 'pick') {
       try {
-        root = await window.showDirectoryPicker();
+        root = await window.showDirectoryPicker({ mode: 'readwrite' });
         setDirHandle(root);
         setDirPath(root.name);
         setAnnuaire([]); setEdits({}); setDirWarning('');
+        // Persister le handle dans IndexedDB pour le retrouver dans la page Documents
+        import('../../utils/folderStore.js').then(({ saveFolderHandle }) => saveFolderHandle(id, root)).catch(() => {});
       } catch (e) { if (e.name !== 'AbortError') console.error(e); return; }
     }
     if (!root) return;

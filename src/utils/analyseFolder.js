@@ -805,6 +805,56 @@ export function compareAnnuaireWithRef(annuaireRows, refData, docLabels) {
  * @returns {Promise<{ rows: object[], warning: string }>}
  */
 export async function scanAnnuaire(rootHandle, config, onProgress = () => {}) {
+  // ── Auto-descente : détecte les dossiers intermédiaires (wrappers) ──
+  // Un wrapper = un dossier qui ne contient QUE des sous-dossiers (pas de fichiers
+  // exploitables) ET dont les sous-dossiers eux-mêmes ne contiennent que des sous-dossiers
+  // (pas le profil d'un fournisseur qui aurait des fichiers dedans).
+  // Un fournisseur unique = un dossier qui contient des fichiers ou dont le sous-dossier
+  // contient directement des fichiers → on ne descend PAS.
+  let effectiveRoot = rootHandle;
+  for (let depth = 0; depth < 3; depth++) {
+    const entries = [];
+    for await (const [name, handle] of effectiveRoot.entries()) {
+      if (name.startsWith('.') || name.startsWith('~')) continue;
+      entries.push({ name, handle, kind: handle.kind });
+    }
+    const dirs = entries.filter(e => e.kind === 'directory');
+    const files = entries.filter(e => e.kind === 'file');
+
+    // Si aucun sous-dossier → c'est le bon niveau
+    if (dirs.length === 0) break;
+
+    // Si plusieurs sous-dossiers → c'est le niveau fournisseurs, on reste
+    if (dirs.length > 1) break;
+
+    // Un seul sous-dossier → regarder ce qu'il contient pour décider
+    const singleDir = dirs[0];
+    let innerDirs = 0, innerFiles = 0;
+    for await (const [innerName, innerHandle] of singleDir.handle.entries()) {
+      if (innerName.startsWith('.') || innerName.startsWith('~')) continue;
+      if (innerHandle.kind === 'directory') innerDirs++;
+      else innerFiles++;
+    }
+
+    // Le sous-dossier contient PLUS d'éléments que le dossier actuel → c'est un wrapper
+    // Ex: racine a 1 dossier + 1 fichier xlsx, mais le sous-dossier a 33 dossiers fournisseurs
+    if (innerDirs > 1) {
+      onProgress(`Descente dans ${singleDir.name}/...`);
+      effectiveRoot = singleDir.handle;
+    } else if (innerDirs === 0 && innerFiles > 0) {
+      // Le sous-dossier unique ne contient que des fichiers → fournisseur unique → rester
+      break;
+    } else if (innerDirs === 1 && innerFiles > 0) {
+      // 1 sous-dossier + fichiers → ambigu, on reste (fournisseur avec sous-dossier)
+      break;
+    } else {
+      // innerDirs <= 1 et innerFiles === 0 → descendre quand même
+      onProgress(`Descente dans ${singleDir.name}/...`);
+      effectiveRoot = singleDir.handle;
+    }
+  }
+  rootHandle = effectiveRoot;
+
   let { lots = [], docLabels = [], bpuReq = {} } = config;
   // Lots / labels auto-détectés si absents du config (mode default)
   const autoLots = new Set();

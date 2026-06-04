@@ -14,6 +14,7 @@ const ACCENT = '#E8501A';
 
 function activeFromPath(path) {
   if (path.includes('/sourcing'))              return 'sourcing';
+  if (path.includes('/documents'))             return 'documents';
   if (path.includes('/analyse'))               return 'analyse';
   if (path.includes('/notation'))              return 'notation';
   if (path.includes('/reponses'))              return 'reponses';
@@ -35,15 +36,32 @@ export default function MarcheNavTabs() {
   if (!marche) return null;
 
   const active = activeFromPath(location.pathname);
-  const workflowSteps = (getMeta(id).workflowSteps) || {};
+  const meta = getMeta(id);
+  const session = getSession(id);
+
+  // Auto-calcul de la progression du workflow
+  const STATUT_ORDER = { sourcing: 0, ouvert: 1, analyse: 2, attribution: 3, reporting: 4, cloture: 5 };
+  const statutRank = STATUT_ORDER[meta.statut || marche.statut] ?? 0;
+  const hasFournisseurs = meta.fournisseurs && meta.fournisseurs.length > 0;
+  const hasNotation = session && session.questions && session.questions.some(q =>
+    q.notes && Object.keys(q.notes).length > 0
+  );
+
+  const workflowSteps = {
+    sourcing: statutRank >= 1 || hasFournisseurs,  // passé sourcing ou des fournisseurs détectés
+    analyse: hasFournisseurs || statutRank >= 2,    // annuaire scanné ou statut analyse+
+    notation: hasNotation || statutRank >= 3,       // notes saisies ou statut attribution+
+    ...(meta.workflowSteps || {}),                  // override manuel si existant
+  };
 
   const dockItems = [
+    { key: 'documents',            label: 'Documents',             path: '/marche/' + id + '/documents',             show: true },
     { key: 'templates',             label: 'Templates',             path: '/marche/' + id + '/templates',             show: true },
     { key: 'contacts-fournisseurs', label: 'Contacts fournisseurs', path: '/marche/' + id + '/contacts-fournisseurs', show: true },
-    { key: 'infos',                 label: 'Informations',          path: '/marche/' + id + '/infos',                 show: true },
-    { key: 'interlocuteurs',        label: 'Interlocuteurs',        path: '/marche/' + id + '/interlocuteurs',        show: true },
     { key: 'reponses',              label: 'Réponses fournisseurs', path: '/marche/' + id + '/reponses',              show: !!getSession(id) },
     { key: 'reporting',             label: 'Reporting',             path: '/marche/' + id + '/reporting',             show: true },
+    { key: 'interlocuteurs',        label: 'Interlocuteurs',        path: '/marche/' + id + '/interlocuteurs',        show: true },
+    { key: 'infos',                 label: 'Informations',          path: '/marche/' + id + '/infos',                 show: true },
   ].filter(d => d.show);
 
   // Tous les onglets pour les raccourcis clavier
