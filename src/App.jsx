@@ -22,6 +22,7 @@ import { MarcheMetaProvider }            from './context/MarcheMetaContext';
 import { NewMarchesProvider }            from './context/NewMarchesContext';
 import { FormationsMetaProvider }        from './context/FormationsMetaContext';
 import { ReportingDataProvider }         from './context/ReportingDataContext';
+import { BddPendingProvider }            from './context/BddPendingContext';
 import { NewFormationsProvider }         from './context/NewFormationsContext';
 import { SourcingTemplatesProvider }     from './context/SourcingTemplatesContext';
 import { ShortcutsProvider }            from './context/ShortcutsContext';
@@ -70,11 +71,13 @@ export default function App() {
     <NewMarchesProvider>
     <NewFormationsProvider>
     <ReportingDataProvider>
+    <BddPendingProvider>
     <SourcingTemplatesProvider>
     <NotationProvider>
       <RouterProvider router={router} />
     </NotationProvider>
     </SourcingTemplatesProvider>
+    </BddPendingProvider>
     </ReportingDataProvider>
     </NewFormationsProvider>
     </NewMarchesProvider>

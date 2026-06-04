@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useRef } from 'react';
 
 const STORAGE_KEY = 'gm-reporting-data';
 
@@ -10,14 +10,24 @@ export function ReportingDataProvider({ children }) {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { return null; }
   });
 
-  function setData(parsed) {
+  // Buffer du fichier source, conservé en mémoire pour la session
+  // (non sérialisé dans le localStorage). Utilisé par l'outil d'alimentation Suivi_Invest.
+  const fileBufferRef = useRef(null);
+
+  function setData(parsed, buffer) {
     setDataState(parsed);
+    if (buffer !== undefined) fileBufferRef.current = buffer;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch (_) {}
   }
 
   function clearData() {
     setDataState(null);
+    fileBufferRef.current = null;
     try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  }
+
+  function getFileBuffer() {
+    return fileBufferRef.current;
   }
 
   const rows = data?.rows || [];
@@ -25,7 +35,7 @@ export function ReportingDataProvider({ children }) {
   const fileName = data?.fileName || null;
 
   return (
-    <Ctx.Provider value={{ data, rows, meta, fileName, setData, clearData }}>
+    <Ctx.Provider value={{ data, rows, meta, fileName, setData, clearData, getFileBuffer }}>
       {children}
     </Ctx.Provider>
   );

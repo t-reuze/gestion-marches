@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Tables d'alias et de configuration — Suivi_Invest</title>
+<style>
+  :root {
+    --orange: #E8501A;
+    --navy: #001E45;
+    --bg: #FAFAFA;
+    --card: #FFFFFF;
+    --border: #E5E7EB;
+    --text: #0F172A;
+    --muted: #64748B;
+    --green-soft: #D1FAE5;
+    --orange-soft: #FEF3C7;
+    --gray-soft: #F1F5F9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text); background: var(--bg);
+    line-height: 1.55;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, #002A5C 100%);
+    color: #fff;
+    padding: 36px 24px;
+    margin-bottom: 24px;
+  }
+  header .container { max-width: 1080px; margin: 0 auto; padding: 0; }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 24px 80px; }
+  header .eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--orange); font-weight: 700; }
+  header h1 { font-size: 28px; font-weight: 700; margin: 6px 0 4px; }
+  header .sub { font-size: 13px; color: rgba(255,255,255,0.75); max-width: 720px; }
+
+  h2 { font-size: 22px; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--orange); display: inline-block; }
+  h3 { font-size: 16px; margin: 22px 0 8px; color: var(--navy); }
+  h4 { font-size: 12px; margin: 16px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p, li { font-size: 13px; }
+  code { background: var(--gray-soft); padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: 'DM Mono', 'Consolas', monospace; }
+  .nav { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin-bottom: 18px; }
+  .nav h4 { margin: 0 0 6px; }
+  .nav ol { padding-left: 18px; margin: 4px 0; font-size: 13px; }
+  .nav a { color: var(--navy); text-decoration: none; }
+  .nav a:hover { color: var(--orange); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 8px 0; }
+  th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--navy); color: #fff; font-weight: 600; font-size: 11.5px; position: sticky; top: 0; }
+  tr:hover { background: var(--gray-soft); }
+
+  .target { font-family: 'DM Mono', monospace; font-weight: 600; color: var(--orange); white-space: nowrap; font-size: 12px; }
+  .alias { font-family: 'DM Mono', monospace; font-size: 11.5px; }
+  .alias-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .alias-chip {
+    display: inline-block; background: var(--gray-soft); color: var(--text);
+    padding: 2px 8px; border-radius: 10px; font-size: 11px; font-family: 'DM Mono', monospace;
+    border: 1px solid var(--border);
+  }
+  .group {
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; margin: 6px 0; background: #fff;
+    display: grid; grid-template-columns: 220px 1fr; gap: 14px; align-items: center;
+  }
+  @media (max-width: 700px) { .group { grid-template-columns: 1fr; } }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .b-clcc { background: var(--green-soft); color: #064E3B; }
+  .b-ea   { background: #DBEAFE; color: #1E3A8A; }
+  .b-mix  { background: var(--orange-soft); color: #78350F; }
+
+  blockquote {
+    margin: 12px 0;
+    padding: 10px 14px;
+    background: var(--orange-soft);
+    border-left: 4px solid var(--orange);
+    border-radius: 0 4px 4px 0;
+    font-size: 12.5px; color: #78350F;
+  }
+  .stat { font-size: 11px; color: var(--muted); }
+  .col-letter { font-family: 'DM Mono', monospace; font-weight: 600; color: var(--orange); white-space: nowrap; }
+  .key {
+    background: var(--gray-soft); padding: 1px 5px; border-radius: 3px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+  }
+  details { margin: 8px 0; }
+  summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 4px 0; font-size: 13px; }
+  summary:hover { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="eyebrow">Reporting · Référence technique</div>
+    <h1>Tables d'alias et de configuration</h1>
+    <div class="sub">
+      Toutes les tables internes utilisées par l'algorithme d'alimentation Suivi_Invest, exhaustives et regroupées
+      par cible. Source <code>src/utils/bddBuilder/</code> et <code>src/data/</code>.
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="nav">
+  <h4>Sommaire</h4>
+  <ol>
+    <li><a href="#alias-clcc">Aliases établissements (CLCC + EA)</a> — 120+ entrées</li>
+    <li><a href="#alias-fournisseur">Aliases fournisseurs</a> — 27 entrées</li>
+    <li><a href="#stop-words">Mots ignorés (stop words)</a></li>
+    <li><a href="#config-marche">Configuration par marché d'investissement</a></li>
+    <li><a href="#marche-grouping">Groupement des libellés marché</a></li>
+    <li><a href="#column-map">Mapping colonnes Excel → clés algo</a></li>
+    <li><a href="#numeric-keys">Colonnes numériques</a></li>
+  </ol>
+</div>
+
+<h2 id="alias-clcc">1. Aliases établissements (CLCC + EA)</h2>
+
+<p>Source : <code>MANUAL_ALIASES</code> dans <code>matchClcc.js</code>. Quand un libellé d'établissement
+contient l'un de ces alias en sous-chaîne (après normalisation accents/casse), il est mappé sur le code
+canonique. Match avec confiance <strong>95 %</strong>.</p>
+
+<p>Tables groupées par <strong>code cible</strong> : un même CLCC/EA peut avoir plusieurs alias qui
+le déclenchent (forme courte, forme longue, ancienne dénomination, sites multiples).</p>
+
+<h3>1.1 — CLCC (Centres de Lutte Contre le Cancer)</h3>
+
+<div class="group"><span class="target">Bordeaux</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">bergonie</span>
+    <span class="alias-chip">institut bergonie</span>
+  </div>
+</div>
+<div class="group"><span class="target">Caen</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">baclesse</span>
+    <span class="alias-chip">francois baclesse</span>
+  </div>
+</div>
+<div class="group"><span class="target">Reims</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">jean godinot</span>
+  </div>
+</div>
+<div class="group"><span class="target">Nice</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">campus nice</span>
+    <span class="alias-chip">lacassagne</span>
+    <span class="alias-chip">antoine lacassagne</span>
+  </div>
+</div>
+<div class="group"><span class="target">Rennes</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">eugene marquis</span>
+  </div>
+</div>
+<div class="group"><span class="target">Rouen</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">henri becquerel</span>
+    <span class="alias-chip">becquerel</span>
+  </div>
+</div>
+<div class="group"><span class="target">Clermont-Ferrand</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">jean perrin</span>
+    <span class="alias-chip">hopital clermont</span>
+    <span class="alias-chip">chu clermont</span>
+    <span class="alias-chip">clermont ferrand</span>
+  </div>
+</div>
+<div class="group"><span class="target">Lyon</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">leon berard</span>
+  </div>
+</div>
+<div class="group"><span class="target">Lille</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">oscar lambret</span>
+  </div>
+</div>
+<div class="group"><span class="target">Curie</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">curie</span>
+  </div>
+</div>
+<div class="group"><span class="target">Villejuif</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">gustave roussy</span>
+  </div>
+</div>
+<div class="group"><span class="target">Toulouse</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">claudius regaud</span>
+  </div>
+</div>
+<div class="group"><span class="target">Marseille</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">ipc</span>
+    <span class="alias-chip">paoli calmette</span>
+    <span class="alias-chip">paoli calmettes</span>
+  </div>
+</div>
+<div class="group"><span class="target">Dijon</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">leclerc dijon</span>
+    <span class="alias-chip">georges francois leclerc</span>
+  </div>
+</div>
+<div class="group"><span class="target">ICO</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">ico</span>
+    <span class="alias-chip">paul papin</span>
+    <span class="alias-chip">institut de cancerologie de l'ouest</span>
+    <span class="alias-chip">site canceropole</span>
+  </div>
+</div>
+<div class="group"><span class="target">Strasbourg</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">icans</span>
+    <span class="alias-chip">strasbourg europe</span>
+  </div>
+</div>
+<div class="group"><span class="target">Montpellier</span><span class="badge b-clcc">CLCC</span>
+  <div class="alias-list">
+    <span class="alias-chip">montpellier</span>
+  </div>
+</div>
+<div class="group"><span class="target">Multi-centres</span><span class="badge b-mix">Multi</span>
+  <div class="alias-list">
+    <span class="alias-chip">multi</span>
+  </div>
+</div>
+
+<h3>1.2 — EA (Établissements Affiliés)</h3>
+
+<div class="group"><span class="target">CHRU_Lille</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">chr lille</span></div>
+</div>
+<div class="group"><span class="target">CHU_Bordeaux</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">haut leveque</span>
+    <span class="alias-chip">pessac</span>
+    <span class="alias-chip">pellegrin</span>
+  </div>
+</div>
+<div class="group"><span class="target">CHU_Reims</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">chu reims</span></div>
+</div>
+<div class="group"><span class="target">CHU_Rennes</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">chu rennes</span>
+    <span class="alias-chip">rennes pontchaillou</span>
+  </div>
+</div>
+<div class="group"><span class="target">GH_La_Rochelle</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">la rochelle</span></div>
+</div>
+<div class="group"><span class="target">CHRU_Nancy</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">chru nancy</span>
+    <span class="alias-chip">brabois</span>
+  </div>
+</div>
+<div class="group"><span class="target">CHRU_Brest</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">chru brest</span></div>
+</div>
+<div class="group"><span class="target">Hopital_Necker_Paris</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">necker</span></div>
+</div>
+<div class="group"><span class="target">APHP_Henri_Mondor</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">henri mondor</span></div>
+</div>
+<div class="group"><span class="target">APHP_La_Pitie_Salpetriere</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">la pitie</span></div>
+</div>
+<div class="group"><span class="target">APHP_Pompidou</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">pompidou</span>
+    <span class="alias-chip">hegp</span>
+    <span class="alias-chip">broussais</span>
+  </div>
+</div>
+<div class="group"><span class="target">APHP_Paul_Brousse</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">paul brousse</span></div>
+</div>
+<div class="group"><span class="target">APHP_Hopital_Tenon</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">tenon</span></div>
+</div>
+<div class="group"><span class="target">APHP_Cochin</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">cochin</span></div>
+</div>
+<div class="group"><span class="target">APHP_Hopital_Charles-Foix</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">charles foix</span></div>
+</div>
+<div class="group"><span class="target">APHP_Kremlin_Bicetre</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">kremlin bicetre</span>
+    <span class="alias-chip">kremlin-bicetre</span>
+  </div>
+</div>
+<div class="group"><span class="target">APHM</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">aphm</span></div>
+</div>
+<div class="group"><span class="target">APHM_La_Timone</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">timone</span></div>
+</div>
+<div class="group"><span class="target">CHU_Montpellier</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">lapeyronie</span></div>
+</div>
+<div class="group"><span class="target">CHU_Nîmes_Caremeau</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">nimes</span></div>
+</div>
+<div class="group"><span class="target">CHU_Nice</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">chu nice</span></div>
+</div>
+<div class="group"><span class="target">CHU_Saint-Etienne</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">st etienne</span>
+    <span class="alias-chip">saint etienne</span>
+    <span class="alias-chip">saint-etienne</span>
+  </div>
+</div>
+<div class="group"><span class="target">CHU_Amiens_Picardie</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">amiens</span></div>
+</div>
+<div class="group"><span class="target">CHU_Limoges</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">limoges</span></div>
+</div>
+<div class="group"><span class="target">CHU_Poitiers</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">poitiers</span></div>
+</div>
+<div class="group"><span class="target">CHU_Reunion</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">reunion</span></div>
+</div>
+<div class="group"><span class="target">GHT_Guadeloupe</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">guadeloupe</span></div>
+</div>
+<div class="group"><span class="target">CHRU_Tours</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">tours</span></div>
+</div>
+<div class="group"><span class="target">CHRU_Besancon</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">besancon</span>
+    <span class="alias-chip">besançon</span>
+  </div>
+</div>
+<div class="group"><span class="target">CHR_Metz_Thionville</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">metz</span>
+    <span class="alias-chip">thionville</span>
+  </div>
+</div>
+<div class="group"><span class="target">CHR_Orleans</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">orleans</span></div>
+</div>
+<div class="group"><span class="target">HNFC_Trévenans</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">trevenans</span>
+    <span class="alias-chip">hnfc</span>
+  </div>
+</div>
+<div class="group"><span class="target">CSJ_Saint-Doulchard</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">doulchard</span>
+    <span class="alias-chip">saint doulchard</span>
+    <span class="alias-chip">bourges</span>
+  </div>
+</div>
+<div class="group"><span class="target">ICLN_Saint-Priest-en-Jarez</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">st priest</span>
+    <span class="alias-chip">saint priest en jarez</span>
+  </div>
+</div>
+<div class="group"><span class="target">CHICAS_Gap</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">gap</span></div>
+</div>
+<div class="group"><span class="target">CH_Perpignan</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">perpignan</span></div>
+</div>
+<div class="group"><span class="target">CH_R_BOULIN_Libourne</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">boulin</span>
+    <span class="alias-chip">libourne</span>
+    <span class="alias-chip">r.boulin</span>
+    <span class="alias-chip">r boulin</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Troyes</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">troyes</span></div>
+</div>
+<div class="group"><span class="target">CH_Béziers</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">beziers</span>
+    <span class="alias-chip">béziers</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Roanne</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">roanne</span></div>
+</div>
+<div class="group"><span class="target">CH_Colmar</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">colmar</span></div>
+</div>
+<div class="group"><span class="target">CH_Valenciennes</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">valenciennes</span></div>
+</div>
+<div class="group"><span class="target">CH_Aubagne</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">aubagne</span></div>
+</div>
+<div class="group"><span class="target">CH_Le_Mans</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">le mans</span></div>
+</div>
+<div class="group"><span class="target">CHD_La_Roche</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">la roche</span></div>
+</div>
+<div class="group"><span class="target">CHPC_Cherbourg</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">cherbourg</span></div>
+</div>
+<div class="group"><span class="target">Hopital_Novo_Pontoise</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">pontoise</span></div>
+</div>
+<div class="group"><span class="target">CH_Beauvais</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">beauvais</span></div>
+</div>
+<div class="group"><span class="target">CH_Argenteuil</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">argenteuil</span></div>
+</div>
+<div class="group"><span class="target">CH_Chambery</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">chambery</span>
+    <span class="alias-chip">chambéry</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Gueret</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">gueret</span>
+    <span class="alias-chip">guéret</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Brive</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">brive</span></div>
+</div>
+<div class="group"><span class="target">CH_Rodez</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">rodez</span></div>
+</div>
+<div class="group"><span class="target">CH_Dax</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">dax</span></div>
+</div>
+<div class="group"><span class="target">CH_Sud_Gironde</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">sud gironde</span>
+    <span class="alias-chip">la reole</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Lens</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">lens</span></div>
+</div>
+<div class="group"><span class="target">CH_Saint_Omer</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">helfaut</span>
+    <span class="alias-chip">saint omer</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Arcachon</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">arcachon</span>
+    <span class="alias-chip">la teste</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Montelimar</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">montelimar</span></div>
+</div>
+<div class="group"><span class="target">CH_Niort</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">niort</span></div>
+</div>
+<div class="group"><span class="target">CH_Annecy</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">annecy</span></div>
+</div>
+<div class="group"><span class="target">CH_Moulins</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">moulins</span></div>
+</div>
+<div class="group"><span class="target">CH_Bourg-en-Bresse</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">bourg en bresse</span>
+    <span class="alias-chip">fleyriat</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Chateauroux</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">chateauroux</span></div>
+</div>
+<div class="group"><span class="target">CH_Castres</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">castres</span></div>
+</div>
+<div class="group"><span class="target">CH_Saint_Quentin</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">saint quentin</span>
+    <span class="alias-chip">st quentin</span>
+  </div>
+</div>
+<div class="group"><span class="target">CH_Charleville_Mezieres</span><span class="badge b-ea">EA</span>
+  <div class="alias-list"><span class="alias-chip">charleville</span></div>
+</div>
+<div class="group"><span class="target">CH_Ajaccio_Miséricorde</span><span class="badge b-ea">EA</span>
+  <div class="alias-list">
+    <span class="alias-chip">ajaccio</span>
+    <span class="alias-chip">miséricorde</span>
+    <span class="alias-chip">misericorde</span>
+  </div>
+</div>
+
+<blockquote>
+  <strong>Note :</strong> ces aliases sont matchés en <em>sous-chaîne</em> sur l'input normalisé
+  (sans accents, en minuscules). Ex&nbsp;: <code>"GH HEGP-BROUSSAIS"</code> → normalisé en
+  <code>"gh hegp broussais"</code> → contient <code>"hegp"</code> → match
+  <code>APHP_Pompidou</code>.
+</blockquote>
+
+<h2 id="alias-fournisseur">2. Aliases fournisseurs</h2>
+
+<p>Source : <code>fournisseurCanon.js</code>. Toutes les variantes sont normalisées (uppercase, sans
+espaces ni tirets) puis mappées vers le libellé canonique attendu en col F de la BDD.</p>
+
+<table>
+  <thead>
+    <tr><th style="width:40%">Forme normalisée (clé)</th><th>Libellé canonique BDD</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr><th colspan="3" style="background:var(--gray-soft); color: var(--text); font-size:11px;">— Marché PPE025 (Biologie moléculaire) —</th></tr>
+    <tr><td><code>AGILENT</code></td><td class="target">Agilent</td><td></td></tr>
+    <tr><td><code>ILLUMINA</code></td><td class="target">Illumina</td><td></td></tr>
+    <tr><td><code>PROMEGA</code></td><td class="target">Promega</td><td></td></tr>
+    <tr><td><code>NEB</code> · <code>NEWENGLANDBIOLABS</code></td><td class="target">New England Biolabs</td><td>Forme courte vs longue</td></tr>
+    <tr><td><code>LIFETECHNOLOGIES</code> · <code>LIFETECH</code></td><td class="target">Life Technologies</td><td></td></tr>
+    <tr><td><code>STILLA</code></td><td class="target">STILLA</td><td>Filiale BIO-RAD depuis 2024</td></tr>
+    <tr><td><code>SYNORIS</code></td><td class="target">SYNORIS</td><td></td></tr>
+    <tr><td><code>HAMILTON</code></td><td class="target">Hamilton</td><td></td></tr>
+    <tr><td><code>THERMOFISHER</code> · <code>THERMOFISCHER</code></td><td class="target">ThermoFisher</td><td>Typo « Fischer » observée tolérée</td></tr>
+    <tr><td><code>TELEMIS</code></td><td class="target">Telemis</td><td></td></tr>
+    <tr><td><code>STARLAB</code></td><td class="target">Starlab</td><td></td></tr>
+    <tr><td><code>EUROGENTEC</code></td><td class="target">Eurogentec</td><td></td></tr>
+    <tr><td><code>AATI</code></td><td class="target">AATI</td><td></td></tr>
+    <tr><td><code>PERKINELMER</code></td><td class="target">Perkinelmer</td><td></td></tr>
+    <tr><td><code>QIAGEN</code></td><td class="target">Qiagen</td><td></td></tr>
+    <tr><td><code>BIORAD</code></td><td class="target">BIO-RAD</td><td></td></tr>
+    <tr><th colspan="3" style="background:var(--gray-soft); color: var(--text); font-size:11px;">— Marché PPE028 (Anatomopathologie) —</th></tr>
+    <tr><td><code>LEICA</code></td><td class="target">Leica</td><td></td></tr>
+    <tr><td><code>HAMAMATSU</code></td><td class="target">Hamamatsu</td><td></td></tr>
+    <tr><td><code>ROCHE</code></td><td class="target">ROCHE</td><td></td></tr>
+    <tr><td><code>DIAPATH</code></td><td class="target">Diapath</td><td></td></tr>
+    <tr><td><code>MMFRANCE</code> · <code>MM</code></td><td class="target">MM France</td><td>Forme courte vs longue</td></tr>
+  </tbody>
+</table>
+
+<blockquote>
+  Si le nom dans le reporting <strong>n'est dans aucun alias</strong>, l'algo le passe tel quel
+  (juste trimmé). On préfère perdre la canonicalisation que perdre des données.
+</blockquote>
+
+<h2 id="stop-words">3. Mots ignorés (stop words)</h2>
+
+<p>Liste des tokens filtrés lors du fuzzy match. Trop fréquents pour être discriminants
+(« centre », « hôpital », « universitaire »…), ils ne pèsent rien dans le score IDF.</p>
+
+<div class="alias-list" style="margin-top: 8px;">
+  <span class="alias-chip">centre</span>
+  <span class="alias-chip">center</span>
+  <span class="alias-chip">hopital</span>
+  <span class="alias-chip">hôpital</span>
+  <span class="alias-chip">hopitaux</span>
+  <span class="alias-chip">hospitalier</span>
+  <span class="alias-chip">hospitalière</span>
+  <span class="alias-chip">universitaire</span>
+  <span class="alias-chip">régional</span>
+  <span class="alias-chip">regional</span>
+  <span class="alias-chip">institut</span>
+  <span class="alias-chip">le</span>
+  <span class="alias-chip">la</span>
+  <span class="alias-chip">les</span>
+  <span class="alias-chip">de</span>
+  <span class="alias-chip">du</span>
+  <span class="alias-chip">des</span>
+  <span class="alias-chip">et</span>
+  <span class="alias-chip">à</span>
+  <span class="alias-chip">a</span>
+  <span class="alias-chip">au</span>
+  <span class="alias-chip">aux</span>
+  <span class="alias-chip">en</span>
+  <span class="alias-chip">sur</span>
+  <span class="alias-chip">site</span>
+  <span class="alias-chip">ensemble</span>
+  <span class="alias-chip">chu</span>
+  <span class="alias-chip">chr</span>
+  <span class="alias-chip">chru</span>
+  <span class="alias-chip">aphp</span>
+  <span class="alias-chip">aphm</span>
+  <span class="alias-chip">ch</span>
+  <span class="alias-chip">gh</span>
+  <span class="alias-chip">ea</span>
+  <span class="alias-chip">groupe</span>
+  <span class="alias-chip">groupement</span>
+  <span class="alias-chip">sas</span>
+  <span class="alias-chip">clcc</span>
+</div>
+
+<h2 id="config-marche">4. Configuration par marché d'investissement</h2>
+
+<p>Source : <code>MARCHE_INVEST_CONFIG</code> dans <code>marcheInvestConfig.js</code>. Deux marchés ont
+une config détaillée ; les autres tombent sur une config par défaut générée depuis <code>mockData.js</code>
+(voir <code>buildDefaultConfig</code>).</p>
+
+<h3>4.1 — BioMol (id <code>bio-mol</code>)</h3>
+
+<table>
+  <tbody>
+    <tr><td style="width:35%"><strong>Libellé Marché (col C)</strong></td><td><code>Biologie moléculaire</code></td></tr>
+    <tr><td><strong>Référence PPE</strong></td><td><code>PPE025</code></td></tr>
+    <tr><td><strong>Format de lot équipement</strong></td><td><code>Biologie moléculaire PPE025_Lot_{N}</code></td></tr>
+    <tr><td><strong>Lot consommables groupé</strong></td><td><code>Biologie moléculaire PPE025_Lots_13-40</code></td></tr>
+    <tr><td><strong>Range consommables</strong></td><td>Lots 13 à 40 inclus</td></tr>
+    <tr><td><strong>Type d'équipement par lot</strong></td><td>
+      Lots 1-9 → <code>Automate</code><br>
+      Lots 10-11 → <code>Logiciels</code><br>
+      Lot 12 → <code>Automate</code><br>
+      Lot 41 → <code>Logiciels</code><br>
+      Lots 13-40 → <code>Consommables</code> (par défaut)
+    </td></tr>
+  </tbody>
+</table>
+
+<h3>4.2 — Anapath (id <code>anapath</code>)</h3>
+
+<table>
+  <tbody>
+    <tr><td style="width:35%"><strong>Libellé Marché (col C)</strong></td><td><code>Anatomopathologie</code></td></tr>
+    <tr><td><strong>Référence PPE</strong></td><td><code>PPE028</code></td></tr>
+    <tr><td><strong>Format de lot</strong></td><td><code>Anatomopathologie_PPE028_Lot_{N}</code></td></tr>
+    <tr><td><strong>Lot consommables groupé</strong></td><td>—  <em>(pas d'agrégation : 1 BC = 1 ligne)</em></td></tr>
+    <tr><td><strong>Range consommables</strong></td><td>—</td></tr>
+    <tr><td><strong>Type d'équipement par lot</strong></td><td>
+      Lots 1-11 → <code>Automate</code><br>
+      Lots 12-13 → <code>Logiciels</code>
+    </td></tr>
+  </tbody>
+</table>
+
+<h3>4.3 — Autres marchés invest</h3>
+
+<p>Pour tout marché de <code>mockData.js</code> avec <code>secteur === 'investissements'</code> qui
+n'est pas explicitement listé ci-dessus, une config par défaut est générée :</p>
+
+<pre style="background: #0F172A; color: #E2E8F0; padding: 14px; border-radius: 6px; font-size: 12px; overflow-x: auto;">
+excelMarcheLabel: <span style="color:#FBBF24;">"&lt;Nom marché&gt;_&lt;Référence&gt;"</span>
+ppeRef:           <span style="color:#FBBF24;">"&lt;Référence&gt;"</span>  (ex: PPE033, AL109)
+lotLabel:         (n) =&gt; <span style="color:#FBBF24;">`&lt;Nom marché&gt;_&lt;Référence&gt;_Lot${n}`</span>
+typeEquipementByLot:    {} <span style="color:#94A3B8;">// vide → saisie manuelle ou apprise depuis BDD</span>
+consommablesLotRange:   null
+</pre>
+
+<p>Les conventions sont aussi enrichies par <strong>l'apprentissage automatique depuis la BDD</strong>
+(voir doc Algorithme §7). Marchés concernés : <code>inv-accelerateurs</code>, <code>lert</code>,
+<code>med-nuc</code>, <code>ctrl-regl-al109</code>, <code>ctrl-qual-al083</code>, <code>rad-int</code>,
+<code>ctrl-regl-al080</code>, <code>telerad</code>, <code>ia</code>, <code>pacs-dacs</code>.</p>
+
+<h2 id="marche-grouping">5. Groupement des libellés marché (Reporting Dashboard)</h2>
+
+<p>Source : <code>MARCHE_GROUPING</code> dans <code>reportingConstants.js</code>. Utilisé par le dashboard
+Reporting pour regrouper les variantes Excel sous un libellé unifié dans les graphiques.</p>
+
+<table>
+  <thead><tr><th>Libellé Excel (col C BDD)</th><th>Label unifié (graphiques)</th></tr></thead>
+  <tbody>
+    <tr><td><code>imagerie</code></td><td class="target">Imagerie</td></tr>
+    <tr><td><code>médecine nucléaire</code></td><td class="target">Médecine nucléaire</td></tr>
+    <tr><td><code>radiologie interventionnelle</code></td><td class="target">Radiologie interventionnelle</td></tr>
+    <tr><td><code>radiothérapie</code></td><td class="target">Radiothérapie</td></tr>
+    <tr><td><code>radiothérapie_acc_2020_2023</code></td><td class="target">Radiothérapie</td></tr>
+    <tr><td><code>radiothérapie_cont_2020_2023</code></td><td class="target">Radiothérapie</td></tr>
+    <tr><td><code>radiothérapie_cq_2020_2023</code></td><td class="target">Radiothérapie</td></tr>
+    <tr><td><code>radiothérapie_log_ppe034</code></td><td class="target">Radiothérapie</td></tr>
+    <tr><td><code>radiothérapie_acc_hyp_recosurf_asserv_ppe033</code></td><td class="target">Radiothérapie</td></tr>
+    <tr><td><code>radiothérapie_rtpo_rts_curie_ppe035</code></td><td class="target">Radiothérapie</td></tr>
+    <tr><td><code>biologie moléculaire</code></td><td class="target">Biologie moléculaire</td></tr>
+    <tr><td><code>anatomopathologie</code></td><td class="target">Anatomopathologie</td></tr>
+  </tbody>
+</table>
+
+<h3>5.bis — Mapping libellé groupé ↔ id app</h3>
+
+<p><code>MARCHE_TO_APP_ID</code> : sert au pré-filtrage par marché dans la vue Reporting d'un marché.</p>
+
+<table>
+  <thead><tr><th>Label unifié</th><th>id app (mockData)</th></tr></thead>
+  <tbody>
+    <tr><td class="target">Imagerie</td><td><code>imagerie</code></td></tr>
+    <tr><td class="target">Médecine nucléaire</td><td><code>med-nuc</code></td></tr>
+    <tr><td class="target">Radiologie interventionnelle</td><td><code>rad-int</code></td></tr>
+    <tr><td class="target">Radiothérapie</td><td><code>radiotherapie</code></td></tr>
+    <tr><td class="target">Biologie moléculaire</td><td><code>bio-mol</code></td></tr>
+    <tr><td class="target">Anatomopathologie</td><td><code>anapath</code></td></tr>
+  </tbody>
+</table>
+
+<h2 id="column-map">6. Mapping colonnes Excel → clés algo</h2>
+
+<p>Source : <code>COLUMN_MAP</code> dans <code>reportingConstants.js</code>. Les en-têtes Excel (col C
+de la BDD) sont normalisés (lowercase, espaces collapsés, trim) puis mappés vers une clé propre
+utilisée par l'algorithme et les graphiques.</p>
+
+<table>
+  <thead><tr><th>En-tête Excel (normalisé)</th><th>Clé algo</th></tr></thead>
+  <tbody>
+    <tr><td><code>etablissement</code></td><td class="key">etablissement</td></tr>
+    <tr><td><code>clcc unique</code></td><td class="key">clcc</td></tr>
+    <tr><td><code>marché</code></td><td class="key">marche</td></tr>
+    <tr><td><code>type d'équipement</code></td><td class="key">typeEquipement</td></tr>
+    <tr><td><code>lot</code></td><td class="key">lot</td></tr>
+    <tr><td><code>fournisseur</code></td><td class="key">fournisseur</td></tr>
+    <tr><td><code>nom equipement</code></td><td class="key">nomEquipement</td></tr>
+    <tr><td><code>année</code></td><td class="key">annee</td></tr>
+    <tr><td><code>quantite</code></td><td class="key">quantite</td></tr>
+    <tr><td><code>cattc</code></td><td class="key">caTtc</td></tr>
+    <tr><td><code>coût annuel du contrat de maintenance (ttc)</code></td><td class="key">coutMaintenanceAnnuel</td></tr>
+    <tr><td><code>durée tco -années</code></td><td class="key">dureeTco</td></tr>
+    <tr><td><code>tco final ttc</code></td><td class="key">tcoFinalTtc</td></tr>
+    <tr><td><code>gain/achats de référence</code></td><td class="key">gainAchatsRef</td></tr>
+    <tr><td><code>gain/achats (euros) nouvelle formule dgos</code></td><td class="key">gainAchatsDgos</td></tr>
+    <tr><td><code>gain/achats (euros) ancienne formule dgos</code></td><td class="key">gainAchatsAncien</td></tr>
+    <tr><td><code>gain/achats maintenance (euros)</code></td><td class="key">gainAchatsMaintenance</td></tr>
+    <tr><td><code>contrat de maintenance en cours ?</code></td><td class="key">contratMaintenance</td></tr>
+    <tr><td><code>coût maintenance total à aujourd'hui (réel avec tco)</code></td><td class="key">coutMaintenanceReel</td></tr>
+    <tr><td><code>potentiellement à renouveller (tco terminé)…</code></td><td class="key">aRenouveler</td></tr>
+    <tr><td><code>année de changement théorique (annee d'installation + tco)</code></td><td class="key">anneeChangement</td></tr>
+  </tbody>
+</table>
+
+<h2 id="numeric-keys">7. Colonnes numériques</h2>
+
+<p>Source : <code>NUMERIC_KEYS</code>. Liste des clés algo dont la valeur Excel est convertie en
+<code>Number</code> au parsing (les autres restent en string).</p>
+
+<div class="alias-list" style="margin-top: 8px;">
+  <span class="alias-chip">annee</span>
+  <span class="alias-chip">quantite</span>
+  <span class="alias-chip">caTtc</span>
+  <span class="alias-chip">coutMaintenanceAnnuel</span>
+  <span class="alias-chip">dureeTco</span>
+  <span class="alias-chip">tcoFinalTtc</span>
+  <span class="alias-chip">gainAchatsRef</span>
+  <span class="alias-chip">gainAchatsDgos</span>
+  <span class="alias-chip">gainAchatsAncien</span>
+  <span class="alias-chip">gainAchatsMaintenance</span>
+  <span class="alias-chip">coutMaintenanceReel</span>
+  <span class="alias-chip">anneeChangement</span>
+</div>
+
+<hr style="margin: 36px 0; border: none; border-top: 1px solid var(--border);">
+
+<p style="font-size: 12px; color: var(--muted); text-align: center;">
+  Tables d'alias et de configuration — Outil d'alimentation Suivi_Invest, Unicancer.<br>
+  Ces tables s'enrichissent automatiquement via les <strong>aliases utilisateur</strong> (corrections
+  faites à l'étape 4 de revue, persistées en localStorage).
+</p>
+
+</div>
+</body>
+</html>

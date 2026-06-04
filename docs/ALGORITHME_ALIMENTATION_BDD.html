@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Algorithme d'alimentation Suivi_Invest — Documentation</title>
+<style>
+  :root {
+    --orange: #E8501A;
+    --navy: #001E45;
+    --bg: #FAFAFA;
+    --card: #FFFFFF;
+    --border: #E5E7EB;
+    --text: #0F172A;
+    --muted: #64748B;
+    --green: #10B981;
+    --orange-soft: #FEF3C7;
+    --red-soft: #FEE2E2;
+    --green-soft: #D1FAE5;
+    --blue-soft: #DBEAFE;
+    --gray-soft: #F1F5F9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text); background: var(--bg);
+    line-height: 1.55;
+  }
+  .container { max-width: 980px; margin: 0 auto; padding: 32px 24px 80px; }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, #002A5C 100%);
+    color: #fff;
+    padding: 40px 24px;
+    margin-bottom: 28px;
+  }
+  header .container { padding-top: 0; padding-bottom: 0; }
+  header .eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--orange); font-weight: 700; }
+  header h1 { font-size: 32px; font-weight: 700; margin: 6px 0 4px; }
+  header .sub { font-size: 14px; color: rgba(255,255,255,0.75); max-width: 720px; }
+
+  h2 { font-size: 22px; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--orange); display: inline-block; }
+  h3 { font-size: 17px; margin: 24px 0 8px; color: var(--navy); }
+  h4 { font-size: 14px; margin: 18px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p, li { font-size: 14px; }
+  code { background: var(--gray-soft); padding: 1px 5px; border-radius: 3px; font-size: 12.5px; font-family: 'DM Mono', 'Consolas', monospace; }
+  pre {
+    background: #0F172A; color: #E2E8F0; padding: 14px 16px; border-radius: 6px;
+    overflow-x: auto; font-size: 12.5px; font-family: 'DM Mono', 'Consolas', monospace;
+    line-height: 1.6;
+  }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 14px 0; }
+  .card.tight { padding: 14px 18px; }
+  .nav {
+    background: #fff; border-radius: 8px; padding: 16px 20px;
+    border: 1px solid var(--border); margin-bottom: 20px;
+  }
+  .nav h4 { margin-top: 0; }
+  .nav ol { padding-left: 20px; margin: 6px 0; }
+  .nav a { color: var(--navy); text-decoration: none; }
+  .nav a:hover { color: var(--orange); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--navy); color: #fff; font-weight: 600; font-size: 12px; }
+  tr:hover { background: var(--gray-soft); }
+  td.col { font-family: 'DM Mono', monospace; font-weight: 600; color: var(--orange); white-space: nowrap; font-size: 12px; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 11px; font-weight: 600; margin-right: 4px;
+  }
+  .b-auto    { background: var(--green-soft); color: #064E3B; }
+  .b-derived { background: var(--blue-soft); color: #1E3A8A; }
+  .b-default { background: var(--gray-soft); color: var(--muted); }
+  .b-formula { background: #EDE9FE; color: #5B21B6; }
+  .b-empty   { background: #F3F4F6; color: var(--muted); }
+
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .d-ok    { background: var(--green); }
+  .d-warn  { background: #F59E0B; }
+  .d-err   { background: #DC2626; }
+  .d-empty { background: #94A3B8; }
+  .d-form  { background: #94A3B8; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+  .pipeline { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+  .pipeline-step {
+    background: #fff; border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; flex: 1; min-width: 140px; font-size: 12px;
+    position: relative;
+  }
+  .pipeline-step::after {
+    content: '→'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%);
+    color: var(--orange); font-weight: 700; font-size: 16px;
+  }
+  .pipeline-step:last-child::after { content: ''; }
+  .pipeline-step .num { font-size: 9px; color: var(--orange); font-weight: 700; letter-spacing: 0.5px; }
+  .pipeline-step .label { font-weight: 600; margin-top: 2px; color: var(--text); }
+  .pipeline-step .what { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  blockquote {
+    margin: 12px 0;
+    padding: 10px 14px;
+    background: var(--orange-soft);
+    border-left: 4px solid var(--orange);
+    border-radius: 0 4px 4px 0;
+    font-size: 13px; color: #78350F;
+  }
+  details { margin: 8px 0; }
+  summary { cursor: pointer; font-weight: 600; color: var(--navy); padding: 4px 0; }
+  summary:hover { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="eyebrow">Reporting · Outil d'alimentation Suivi_Invest</div>
+    <h1>Comment l'algorithme remplit chaque case</h1>
+    <div class="sub">
+      Documentation technique de la pipeline d'alimentation automatique de la BDD à partir des reportings fournisseurs.
+      Lecture conseillée pour les acheteurs et les développeurs qui souhaitent comprendre exactement <em>d'où vient
+      chaque valeur</em> écrite dans le fichier final.
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="nav">
+  <h4>Sommaire</h4>
+  <ol>
+    <li><a href="#pipeline">Vue d'ensemble : les 5 étapes</a></li>
+    <li><a href="#sources">Les 4 sources d'information</a></li>
+    <li><a href="#bdd">Comment chaque colonne BDD est remplie</a></li>
+    <li><a href="#matching">Le matching CLCC/EA en détail</a></li>
+    <li><a href="#aggregation">Agrégation des consommables</a></li>
+    <li><a href="#dedup">Détection des doublons</a></li>
+    <li><a href="#learning">Apprentissage automatique depuis la BDD</a></li>
+    <li><a href="#user-aliases">Mémorisation des corrections</a></li>
+    <li><a href="#status">Code couleur des cellules à la revue</a></li>
+    <li><a href="#export">Export Excel et préservation des styles</a></li>
+  </ol>
+</div>
+
+<h2 id="pipeline">1. Vue d'ensemble : les 5 étapes</h2>
+
+<div class="pipeline">
+  <div class="pipeline-step">
+    <div class="num">1</div>
+    <div class="label">Marché &amp; Suivi_Invest</div>
+    <div class="what">L'utilisateur choisit le marché et charge le fichier Suivi_Invest cible.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="num">2</div>
+    <div class="label">Allotissement</div>
+    <div class="what">Mapping n° de lot → intitulé du lot. Source : .docx ou .xlsx d'allotissement.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="num">3</div>
+    <div class="label">Reportings fournisseurs</div>
+    <div class="what">Multi-fichiers .xlsx avec les bons de commande (BC) effectifs par CLCC.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="num">4</div>
+    <div class="label">Vérification</div>
+    <div class="what">Toutes les 28 colonnes BDD calculées par ligne, code couleur, édition inline.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="num">5</div>
+    <div class="label">Export</div>
+    <div class="what">Merge dans le Suivi_Invest, conservation des styles, rapport qualité.</div>
+  </div>
+</div>
+
+<h2 id="sources">2. Les 4 sources d'information</h2>
+
+<p>L'algorithme combine quatre sources pour remplir chaque case BDD :</p>
+
+<div class="card tight">
+  <h4>① Reporting fournisseur</h4>
+  <p style="margin:0">Pour chaque BC : <code>Lot</code>, <code>Date d'achat</code>, <code>Établissement (nom + ville)</code>,
+  <code>Désignation</code>, <code>Quantité</code>, <code>Prix TTC</code>, etc.</p>
+</div>
+
+<div class="card tight">
+  <h4>② Allotissement</h4>
+  <p style="margin:0">Liste officielle des lots du marché avec leur intitulé.
+  Utilisé pour confirmer que les n° de lot des reportings sont valides.</p>
+</div>
+
+<div class="card tight">
+  <h4>③ Onglet « Nomenclature CLCC et EA » du Suivi_Invest</h4>
+  <p style="margin:0">93 entrées de référence (CLCC + Établissements affiliés) avec leur
+  <strong>code canonique</strong>. C'est la table de vérité pour la colonne B <code>CLCC unique</code>.</p>
+</div>
+
+<div class="card tight">
+  <h4>④ Configuration marché (<code>marcheInvestConfig.js</code> + apprise depuis la BDD)</h4>
+  <p style="margin:0">Pour chaque marché : libellé Excel attendu, format de lot, mapping lot → type d'équipement,
+  range consommables, taux Gain/Achats par défaut. Voir <a href="#learning">§7</a>.</p>
+</div>
+
+<h2 id="bdd">3. Comment chaque colonne BDD est remplie</h2>
+
+<p>Légende des origines :</p>
+<p>
+  <span class="badge b-auto">auto</span> remplie automatiquement par l'algo
+  <span class="badge b-derived">déduit</span> calculé depuis une autre colonne
+  <span class="badge b-default">défaut</span> valeur par défaut si absente du reporting
+  <span class="badge b-formula">formule</span> calculée par Excel à l'ouverture
+  <span class="badge b-empty">vide</span> laissée vide volontairement
+</p>
+
+<table>
+  <thead>
+    <tr><th>Col</th><th>Nom BDD</th><th>Origine</th><th>Règle de remplissage</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="col">A</td><td>Etablissement</td>
+      <td><span class="badge b-derived">déduit</span></td>
+      <td><code>"Unicancer"</code> si le code CLCC matché est de type CLCC, <code>"Etablissement affilié"</code> sinon.
+      Lu depuis l'onglet <em>Nomenclature CLCC et EA</em>.</td>
+    </tr>
+    <tr>
+      <td class="col">B</td><td>CLCC unique</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Match du libellé brut (col « Établissement (nom + ville) » du reporting) vers la nomenclature.
+      Voir <a href="#matching">§4</a> pour le détail.</td>
+    </tr>
+    <tr>
+      <td class="col">C</td><td>Marché</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Lu depuis la config (<code>excelMarcheLabel</code>) du marché sélectionné en étape 1. Ex&nbsp;: <code>Biologie moléculaire</code>, <code>Anatomopathologie</code>.</td>
+    </tr>
+    <tr>
+      <td class="col">D</td><td>Type d'équipement</td>
+      <td><span class="badge b-auto">auto</span> / <span class="badge b-default">défaut</span></td>
+      <td>
+        <strong>Priorité&nbsp;:</strong>
+        <ol style="margin: 4px 0 0 18px; padding: 0;">
+          <li>Mapping <code>typeEquipementByLot[numLot]</code> de la config manuelle (ex: BioMol Lot 5 → <code>Automate</code>)</li>
+          <li>Mapping appris automatiquement depuis la BDD (vote majoritaire pour ce lot)</li>
+          <li>Si lot dans range consommables → <code>"Consommables"</code></li>
+          <li>Sinon vide → l'utilisateur saisit en revue</li>
+        </ol>
+      </td>
+    </tr>
+    <tr>
+      <td class="col">E</td><td>Lot</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Construit via <code>lotLabel(numLot)</code> de la config. Ex&nbsp;: <code>Anatomopathologie_PPE028_Lot_5</code>.<br>
+      Pour les consommables BioMol, libellé groupé&nbsp;: <code>Biologie moléculaire PPE025_Lots_13-40</code>.</td>
+    </tr>
+    <tr>
+      <td class="col">F</td><td>Fournisseur</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Extraction du fournisseur depuis le reporting (ligne <code>Fournisseur :</code> ou nom de fichier),
+      puis canonicalisation via une table d'aliases (ex: <code>NEB</code> → <code>New England Biolabs</code>,
+      <code>LIFE TECH</code> → <code>Life Technologies</code>).</td>
+    </tr>
+    <tr>
+      <td class="col">G</td><td>Nom equipement</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Recopie de la <code>Désignation</code> du reporting.<br>
+      Pour les consommables agrégés&nbsp;: nom du fournisseur (ex&nbsp;: <code>Promega</code>).</td>
+    </tr>
+    <tr>
+      <td class="col">H</td><td>Date précise d'Achat</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Date du reporting convertie en serial Excel. Formats acceptés&nbsp;: <code>2024-M03</code>,
+      serial Excel (ex <code>45580</code>), <code>YYYYMMDD</code>, <code>DD/MM/YYYY</code>.</td>
+    </tr>
+    <tr>
+      <td class="col">I</td><td>Année</td>
+      <td><span class="badge b-derived">déduit</span></td>
+      <td>Extraite de la date. Si la date n'est pas parsable, fallback sur l'année du nom de fichier
+      (<code>..._2024_...</code> → <code>2024</code>).</td>
+    </tr>
+    <tr>
+      <td class="col">J</td><td>Année d'installation</td>
+      <td><span class="badge b-empty">vide</span></td>
+      <td>Pas remplie auto&nbsp;: l'algo ne peut pas la déduire de manière fiable. Saisie manuelle.</td>
+    </tr>
+    <tr>
+      <td class="col">K</td><td>QUANTITE</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Recopie de la quantité du reporting.<br>
+      Pour les consommables agrégés&nbsp;: <strong>1</strong> par convention BDD.</td>
+    </tr>
+    <tr>
+      <td class="col">L</td><td>CATTC</td>
+      <td><span class="badge b-auto">auto</span></td>
+      <td>Recopie du montant TTC (<code>Quantité × Prix TTC</code>) du reporting.<br>
+      Pour les consommables agrégés&nbsp;: somme des montants TTC du tuple
+      <code>(CLCC × Fournisseur × Année × Lot)</code>.</td>
+    </tr>
+    <tr>
+      <td class="col">M</td><td>Durée garantie (mois)</td>
+      <td><span class="badge b-empty">vide</span></td>
+      <td>Pas dans le reporting. Saisie manuelle si besoin.</td>
+    </tr>
+    <tr>
+      <td class="col">N</td><td>Contrat de maintenance en cours&nbsp;?</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td>Calcul Excel&nbsp;: <code>=IF(AND((J+(M/12))&lt;YEAR(TODAY()),YEAR(TODAY())&lt;J+P),"oui","non")</code></td>
+    </tr>
+    <tr>
+      <td class="col">O</td><td>Coût annuel maintenance (TTC)</td>
+      <td><span class="badge b-empty">vide</span></td>
+      <td>Pas dans le reporting. Saisie manuelle.</td>
+    </tr>
+    <tr>
+      <td class="col">P</td><td>Durée TCO (années)</td>
+      <td><span class="badge b-empty">vide</span></td>
+      <td>Saisie manuelle.</td>
+    </tr>
+    <tr>
+      <td class="col">Q</td><td>Comptabilisé maintenance</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=CONCATENATE(N,S)</code></td>
+    </tr>
+    <tr>
+      <td class="col">R</td><td>Coût maint. total (Fictif)</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=IF(N="oui",(YEAR(TODAY())-S+((M/12)-1))*O,"")</code></td>
+    </tr>
+    <tr>
+      <td class="col">S</td><td>Année activation maintenance</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=ROUND(J+M/12,0)</code></td>
+    </tr>
+    <tr>
+      <td class="col">T</td><td>TCO Final TTC</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=L+(O*(P-M/12))</code></td>
+    </tr>
+    <tr>
+      <td class="col">U</td><td>Coût maint. réel (avec TCO)</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=IF(YEAR(TODAY())&gt;(S+(P-(M/12))),O*(P-(M/12)),O*((YEAR(TODAY())-S)))</code></td>
+    </tr>
+    <tr>
+      <td class="col">V</td><td>Potentiellement à renouveler</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=IF(AND(P&gt;0,P+J&lt;YEAR(TODAY())),"Oui","")</code></td>
+    </tr>
+    <tr>
+      <td class="col">W</td><td>Année de changement théorique</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=P+J</code></td>
+    </tr>
+    <tr>
+      <td class="col">X</td><td>TCO en temps réel</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=U+L</code></td>
+    </tr>
+    <tr>
+      <td class="col">Y</td><td>Gain/Achats de référence</td>
+      <td><span class="badge b-empty">vide</span></td>
+      <td><strong>Toujours laissée vide</strong> par l'algo.<br>
+      C'est un taux négocié au cas par cas, jamais déductible des reportings fournisseurs.<br>
+      La cellule apparaît en <strong>rouge</strong> à la revue (étape 4) pour rappeler à
+      l'acheteur de la renseigner avant l'export.</td>
+    </tr>
+    <tr>
+      <td class="col">Z</td><td>Gain/Achats Ancienne DGOS</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=L*Y</code></td>
+    </tr>
+    <tr>
+      <td class="col">AA</td><td>Gain/Achats Maintenance</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=O*0.15</code></td>
+    </tr>
+    <tr>
+      <td class="col">AB</td><td>Gain/Achats Nouvelle DGOS</td>
+      <td><span class="badge b-formula">formule</span></td>
+      <td><code>=(L/7)*Y</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="matching">4. Le matching CLCC/EA en détail</h2>
+
+<p>Pour chaque ligne d'un reporting, on doit transformer un libellé brut comme
+<code>"Centre Eugène Marquis - Rennes"</code> ou <code>"GH HEGP-BROUSSAIS"</code>
+en un code canonique (<code>Rennes</code>, <code>APHP_Pompidou</code>) qui sera écrit en colonne B de la BDD.</p>
+
+<p>L'algorithme tente <strong>4 stratégies dans l'ordre</strong> :</p>
+
+<div class="card">
+  <h4>① Alias utilisateur appris (priorité absolue)</h4>
+  <p>Si l'utilisateur a déjà corrigé manuellement ce <em>même libellé exact</em> lors d'une revue précédente,
+  on réutilise sa décision (confiance <strong>100&nbsp;%</strong>). Voir <a href="#user-aliases">§8</a>.</p>
+</div>
+
+<div class="card">
+  <h4>② Aliases manuels (codés)</h4>
+  <p>Une table de ~120 alias couvre les noms courts/abréviations rencontrés régulièrement&nbsp;:</p>
+  <pre>'ipc'           → 'Marseille'    (Institut Paoli Calmettes)
+'becquerel'     → 'Rouen'        (Centre Henri Becquerel)
+'hegp'          → 'APHP_Pompidou'
+'pellegrin'     → 'CHU_Bordeaux' (Hôpital Pellegrin)
+'brabois'       → 'CHRU_Nancy'   (Hôpital Brabois)
+'haut leveque'  → 'CHU_Bordeaux'</pre>
+  <p>Si l'input contient l'alias en sous-chaîne (après normalisation accents/casse), match avec
+  confiance <strong>95&nbsp;%</strong>.</p>
+</div>
+
+<div class="card">
+  <h4>③ Fuzzy match pondéré (IDF)</h4>
+  <p>Si aucun alias ne matche, on calcule un score 0–1 entre l'input et chaque entrée de la nomenclature.
+  Les tokens rares (<code>becquerel</code>, <code>lacassagne</code>) <strong>pèsent plus</strong>
+  que les communs (<code>centre</code>, <code>hopital</code>) via une formule IDF&nbsp;:</p>
+  <pre>poids(token) = log(1 + N_total / fréquence(token))</pre>
+  <p>Bonus +0.35 si la <strong>ville</strong> matche, +0.4 si le <strong>code de nomenclature</strong>
+  apparaît tel quel dans l'input. Match retenu si score ≥ 0.4.</p>
+</div>
+
+<div class="card">
+  <h4>④ Pas de match → erreur</h4>
+  <p>Si toutes les stratégies échouent, la ligne est marquée <span class="dot d-err"></span> erreur,
+  la cellule CLCC reste vide et l'utilisateur doit corriger en revue.</p>
+</div>
+
+<h4>Niveaux de confiance utilisés</h4>
+<table>
+  <thead><tr><th>Confiance</th><th>Origine</th><th>Statut</th></tr></thead>
+  <tbody>
+    <tr><td>1.00</td><td>Alias utilisateur (correction passée)</td><td><span class="dot d-ok"></span> ok</td></tr>
+    <tr><td>0.95</td><td>Alias manuel codé</td><td><span class="dot d-ok"></span> ok</td></tr>
+    <tr><td>0.85</td><td>Alias mappé vers code absent de la nomenclature</td><td><span class="dot d-ok"></span> ok</td></tr>
+    <tr><td>0.70 – 1.00</td><td>Fuzzy haute confiance</td><td><span class="dot d-ok"></span> ok</td></tr>
+    <tr><td>0.40 – 0.70</td><td>Fuzzy faible confiance</td><td><span class="dot d-warn"></span> warning</td></tr>
+    <tr><td>&lt; 0.40</td><td>Aucun match</td><td><span class="dot d-err"></span> error</td></tr>
+  </tbody>
+</table>
+
+<h2 id="aggregation">5. Agrégation des consommables</h2>
+
+<p>La BDD réelle traite les consommables différemment des équipements&nbsp;:</p>
+
+<div class="grid">
+  <div class="card">
+    <h4>Équipements (lots 1-12, 41 pour BioMol)</h4>
+    <p style="margin:0"><strong>1 ligne BDD = 1 BC</strong>.<br>
+    Lot label spécifique (<code>Lot_5</code>), montant TTC réel,
+    quantité effective, désignation détaillée.</p>
+  </div>
+  <div class="card">
+    <h4>Consommables (lots 13-40 pour BioMol)</h4>
+    <p style="margin:0"><strong>1 ligne BDD = N BCs agrégés</strong> par tuple
+    <code>(CLCC × Fournisseur × Année)</code>.<br>
+    Lot label groupé (<code>Lots_13-40</code>), CATTC = somme des BCs,
+    quantité = 1, désignation = nom du fournisseur.</p>
+  </div>
+</div>
+
+<blockquote>
+  Cette convention vient de l'observation directe de la BDD ground truth&nbsp;: 174 BCs Promega
+  consommables 2024 sont représentés par 7 lignes BDD (une par CLCC). C'est ce que reproduit l'algo.
+</blockquote>
+
+<p>Pour Anapath PPE028, la BDD <strong>ne fait pas d'agrégation</strong> : chaque BC reste une ligne
+individuelle. La config marché contrôle ce comportement via <code>consommablesGroupedLotLabel</code>
+et <code>consommablesLotRange</code>.</p>
+
+<h2 id="dedup">6. Détection des doublons</h2>
+
+<p>Trois niveaux de dédup pour éviter les doublons à l'export&nbsp;:</p>
+
+<div class="card tight">
+  <h4>Niveau 1 — Filtre des fichiers de test/copie</h4>
+  <p>Les fichiers nommés <code>Test-*</code>, <code>Copie de *</code>, <code>* (1).xlsx</code>,
+  <code>Copy of *</code> sont automatiquement filtrés. Si plusieurs reportings du même fournisseur
+  pour la même année existent, on garde le moins « junk ».</p>
+</div>
+
+<div class="card tight">
+  <h4>Niveau 2 — Dédup intra-fichier (lignes copiées-collées)</h4>
+  <p>Si une ligne du reporting est strictement identique à une autre (même
+  établissement + désignation + référence + qté + montant + date + lot),
+  une seule occurrence est conservée. Sécurise contre les sections collées deux fois.</p>
+</div>
+
+<div class="card tight">
+  <h4>Niveau 3 — Dédup cross-fichier</h4>
+  <p>Si deux reportings (ex&nbsp;: bilan mid-year + bilan end-year d'un même fournisseur) contiennent
+  les mêmes BCs, le BC n'est compté qu'une fois. Même clé stricte que le niveau 2.</p>
+</div>
+
+<h2 id="learning">7. Apprentissage automatique depuis la BDD</h2>
+
+<p>Au chargement du Suivi_Invest, l'algo scanne les lignes BDD existantes pour <strong>apprendre les
+conventions par marché</strong> :</p>
+
+<table>
+  <thead><tr><th>Convention apprise</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td>Libellé Marché (col C)</td><td>Valeurs distinctes col C</td></tr>
+    <tr><td>Référence PPE/AL</td><td>Pattern <code>PPE\d+</code> ou <code>AL\d+</code> dans col E</td></tr>
+    <tr><td>Type d'équipement par lot</td><td>Vote majoritaire col D pour chaque lot col E</td></tr>
+    <tr><td>Lot consommables groupé</td><td>Pattern <code>Lots_X-Y</code> dans col E</td></tr>
+    <tr><td>Taux Gain/Achats par défaut</td><td>Valeur Y la plus fréquente</td></tr>
+    <tr><td>Fournisseurs canoniques vus</td><td>Valeurs distinctes col F</td></tr>
+    <tr><td>Médiane TTC + écart-type par fournisseur</td><td>Stats sur col L par fournisseur</td></tr>
+  </tbody>
+</table>
+
+<p>Cela permet à l'algo de fonctionner pour des marchés <strong>sans configuration manuelle</strong>
+(Imagerie, Médecine nucléaire, Radiothérapie, etc.) en s'inspirant des conventions historiques
+de la BDD.</p>
+
+<p>Priorité de résolution&nbsp;: <strong>config manuelle</strong> > <strong>config apprise</strong> >
+<strong>config par défaut</strong> dérivée de <code>mockData.js</code>.</p>
+
+<h2 id="user-aliases">8. Mémorisation des corrections utilisateur</h2>
+
+<p>À l'étape 4 (revue), si l'utilisateur édite manuellement la cellule CLCC d'une ligne,
+l'algo enregistre la correspondance <code>(libellé source brut → code corrigé)</code>
+dans le <code>localStorage</code> du navigateur.</p>
+
+<p>Au prochain import, la même chaîne sera reconnue automatiquement avec confiance 100&nbsp;%.
+L'algo s'enrichit donc <strong>tout seul</strong> avec l'usage.</p>
+
+<blockquote>
+  Exemple&nbsp;: vous corrigez « <code>GH HEGP-BROUSSAIS</code> » → <code>APHP_Pompidou</code>.
+  Au prochain reporting MM France, ce libellé sera trouvé automatiquement, sans intervention.
+</blockquote>
+
+<h2 id="status">9. Code couleur des cellules à la revue</h2>
+
+<p>À l'étape 4, chaque ligne candidate peut être dépliée pour voir <strong>les 28 colonnes BDD</strong>.
+Chaque cellule porte un statut visuel&nbsp;:</p>
+
+<table>
+  <thead><tr><th>Couleur</th><th>Statut</th><th>Sens</th></tr></thead>
+  <tbody>
+    <tr><td><span class="dot d-ok"></span> vert</td><td><code>ok</code></td>
+      <td>Valeur présente avec confiance ≥ 70&nbsp;%</td></tr>
+    <tr><td><span class="dot d-warn"></span> orange</td><td><code>warning</code></td>
+      <td>Valeur présente mais confiance 40–70&nbsp;% : à vérifier</td></tr>
+    <tr><td><span class="dot d-err"></span> rouge</td><td><code>error</code></td>
+      <td>Valeur attendue mais vide, ou confiance &lt; 40&nbsp;% : <strong>bloquant</strong></td></tr>
+    <tr><td><span class="dot d-empty"></span> blanc</td><td><code>empty-ok</code></td>
+      <td>Cellule optionnelle laissée vide volontairement</td></tr>
+    <tr><td><span class="dot d-form"></span> gris</td><td><code>formula</code></td>
+      <td>Calculée par Excel à l'ouverture du fichier</td></tr>
+  </tbody>
+</table>
+
+<p>L'utilisateur peut <strong>éditer toutes les cellules non-formule</strong> avec un éditeur adapté
+(text, number, date picker, dropdown CLCC). Les modifications sont persistées dans la file d'attente
+d'export.</p>
+
+<h2 id="export">10. Export Excel et préservation des styles</h2>
+
+<p>L'export utilise la bibliothèque <code>xlsx-js-style</code> (extension de SheetJS) qui&nbsp;:</p>
+<ul>
+  <li><strong>Lit</strong> le Suivi_Invest source en conservant <code>cellStyles: true</code></li>
+  <li><strong>Hérite</strong> du style de la dernière ligne data pour chaque nouvelle ligne ajoutée
+  (couleurs, polices, alignements, bordures du template UNICANCER conservés)</li>
+  <li><strong>Écrit</strong> en re-sérialisant les styles (le <code>xlsx</code> standard ne sait pas le faire,
+  d'où l'utilisation de la version <em>js-style</em>)</li>
+</ul>
+
+<p>Les <strong>formules</strong> des colonnes calculées (N, Q, R, S, T, U, V, W, X, Z, AA, AB) sont
+écrites comme expressions canoniques (<code>=L1893+J1893</code>, etc.) avec une valeur cachée 0.
+Excel recalcule à l'ouverture.</p>
+
+<h4>Rapport qualité post-export</h4>
+
+<p>Une modale s'ouvre automatiquement après chaque export et affiche&nbsp;:</p>
+<ul>
+  <li><strong>Origine des lignes</strong>&nbsp;: 100&nbsp;% auto / auto-éditées / saisies manuelles</li>
+  <li><strong>Statut initial</strong>&nbsp;: combien étaient OK, en avertissement, en erreur (corrigées avant export)</li>
+  <li><strong>Confiance moyenne</strong> du matching CLCC sur l'ensemble</li>
+  <li><strong>Répartition par marché</strong> si plusieurs marchés exportés ensemble</li>
+</ul>
+
+<hr style="margin: 36px 0; border: none; border-top: 1px solid var(--border);">
+
+<p style="font-size: 12px; color: var(--muted); text-align: center;">
+  Documentation technique de l'outil d'alimentation Suivi_Invest — Unicancer.<br>
+  Code source&nbsp;: <code>src/utils/bddBuilder/</code> et <code>src/features/reporting/BddBuilder/</code>.
+</p>
+
+</div>
+</body>
+</html>
