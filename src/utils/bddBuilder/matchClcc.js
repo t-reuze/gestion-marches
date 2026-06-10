@@ -151,10 +151,42 @@ export const MANUAL_ALIASES = {
   'haut leveque':         'CHU_Bordeaux',
   'lacassagne':           'Nice',                  // Centre Antoine Lacassagne = CLCC Nice
   'antoine lacassagne':   'Nice',
+  // CLCC observés non reconnus dans les reportings BM/Anapath (audit 2026) :
+  'institut de cancerologie de lorraine': 'Nancy',
+  'cancerologie de lorraine':             'Nancy',
+  'alexis vautrin':                       'Nancy',  // Centre Alexis Vautrin = ICL Nancy
+  'icl':                                  'Nancy',
+  'godinot':                              'Reims',  // Institut Jean Godinot
+  'institut du cancer de montpellier':    'Montpellier',
+  'institut regional du cancer':          'Montpellier',  // ICM Montpellier
+  'institut regional de cancer':          'Montpellier',
+  'icm':                                  'Montpellier',
+  'gauducheau':                           'ICO',    // Centre René Gauducheau = ICO Nantes
+  'rene gauducheau':                      'ICO',
+  'cancerologie de l ouest':              'ICO',    // variante sans "de" / "Institut"
+  'paul strauss':                         'Strasbourg',
+  'francois leclerc':                     'Dijon',  // "G.François Leclerc" (sans "Georges")
+  'nord franche comte':                   'HNFC_Trévenans',
+  'franche comte':                        'HNFC_Trévenans',
 };
 
 function stripAccents(s) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Clés d'alias pré-normalisées (mêmes règles que l'input) → la comparaison se fait
+// normalisé-contre-normalisé. Sans ça, tout alias contenant une apostrophe ou un
+// accent (ex: "institut de cancerologie de l'ouest") ne matchait JAMAIS.
+// Trié par longueur décroissante : on privilégie l'alias le plus spécifique
+// (ex: "saint priest en jarez" avant "st priest") en cas de chevauchement.
+let _normalizedAliases = null;
+function getNormalizedAliases() {
+  if (_normalizedAliases) return _normalizedAliases;
+  _normalizedAliases = Object.entries(MANUAL_ALIASES)
+    .map(([alias, target]) => [normalizeText(alias), target])
+    .filter(([a]) => a.length > 0)
+    .sort((x, y) => y[0].length - x[0].length);
+  return _normalizedAliases;
 }
 
 /**
@@ -359,8 +391,8 @@ export function matchEtablissement(input, nomenclature) {
     };
   }
 
-  // 1. Alias manuels (substring)
-  for (const [alias, target] of Object.entries(MANUAL_ALIASES)) {
+  // 1. Alias manuels (substring, comparaison normalisé-contre-normalisé)
+  for (const [alias, target] of getNormalizedAliases()) {
     if (normInput.includes(alias)) {
       const cand = nomenclature.find(e => e.nomenclature === target);
       if (cand) {
@@ -398,4 +430,73 @@ export function matchEtablissement(input, nomenclature) {
   }
 
   return { nomenclature: '', type: '', confidence: best.score, candidate: best.cand, matchedVia: 'none' };
+}
+
+/**
+ * RÉCONCILIATION : dérive des alias (libellé brut → code CLCC) en s'appuyant sur
+ * la BDD historique comme supervision, SANS modèle. Principe : une ligne de
+ * reporting non reconnue qui s'apparie (même montant TTC arrondi + même année)
+ * à une ligne BDD au CLCC connu et UNIQUE → on en déduit l'alias.
+ *
+ * @param {Array<{etablissement, annee, montantTtc}>} lignes  lignes parsées (reporting)
+ * @param {Array<{clcc, annee, ttc}>} bddRows  lignes existantes de la BDD (même marché)
+ * @param {Array} nomenclature
+ * @returns {Array<{key, raw, code, support}>}  alias dérivés (key = libellé normalisé)
+ */
+export function deriveAliasesFromBdd(lignes, bddRows, nomenclature) {
+  const byTtc = new Map();
+  for (const r of bddRows) {
+    const k = Math.round(Number(r.ttc) || 0);
+    if (!k) continue;
+    (byTtc.get(k) || byTtc.set(k, []).get(k)).push(r);
+  }
+  const votes = new Map();   // libellé normalisé → { raw, codes: {code: count} }
+  for (const l of lignes) {
+    const raw = l.etablissement;
+    if (!raw) continue;
+    if (matchEtablissement(raw, nomenclature).confidence >= 0.7) continue;   // déjà bien reconnu
+    const cand = byTtc.get(Math.round(Number(l.montantTtc) || 0));
+    if (!cand || !cand.length) continue;
+    // si une année est dispo des deux côtés, on l'exige identique
+    const sameYear = cand.filter(c => !l.annee || !c.annee || Number(c.annee) === Number(l.annee));
+    const codes = [...new Set((sameYear.length ? sameYear : cand).map(c => c.clcc).filter(Boolean))];
+    if (codes.length !== 1) continue;   // ambigu → on s'abstient
+    const key = normalizeText(raw);
+    if (!key) continue;
+    const v = votes.get(key) || { raw, codes: {} };
+    v.codes[codes[0]] = (v.codes[codes[0]] || 0) + 1;
+    votes.set(key, v);
+  }
+  const out = [];
+  for (const [key, v] of votes) {
+    const [code, support] = Object.entries(v.codes).sort((a, b) => b[1] - a[1])[0];
+    out.push({ key, raw: v.raw, code, support });
+  }
+  return out;
+}
+
+/**
+ * Retourne les k meilleurs candidats de nomenclature pour un libellé, classés
+ * par score décroissant (dédupliqués par code). Sert aux suggestions de
+ * correction à l'étape de revue — particulièrement utile sur des marchés non
+ * vus, où l'alias manuel n'existe pas encore.
+ * @returns {Array<{ nomenclature, type, nom, ville, score }>}
+ */
+export function topCandidates(input, nomenclature, k = 3) {
+  const raw = String(input || '').trim();
+  if (!raw || !nomenclature?.length) return [];
+  const tokenWeights = getTokenWeights(nomenclature);
+  const scored = nomenclature
+    .map(cand => ({ cand, score: scoreCandidate(raw, cand, tokenWeights) }))
+    .sort((a, b) => b.score - a.score);
+
+  const seen = new Set();
+  const out = [];
+  for (const { cand, score } of scored) {
+    if (seen.has(cand.nomenclature)) continue;   // un même code peut avoir plusieurs sites
+    seen.add(cand.nomenclature);
+    out.push({ nomenclature: cand.nomenclature, type: cand.type, nom: cand.nom, ville: cand.ville, score });
+    if (out.length >= k) break;
+  }
+  return out;
 }

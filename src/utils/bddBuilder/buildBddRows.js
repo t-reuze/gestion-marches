@@ -59,18 +59,26 @@ export const FORMULA_COLUMNS = new Set([
 ]);
 
 // Colonnes obligatoires pour avoir une ligne « propre » (sans erreur critique).
-// Le taux Gain/Achats de référence est volontairement obligatoire : il doit être
-// renseigné par l'acheteur à la revue (négocié au cas par cas, jamais auto-rempli).
+// Ce sont les colonnes que l'outil EST censé remplir depuis le reporting fournisseur.
 export const REQUIRED_COLUMNS = new Set([
   'Etablissement', 'CLCC unique', 'Marché', "Type d'équipement", 'Lot',
   'Fournisseur', 'Nom equipement', 'Année', 'QUANTITE', 'CATTC',
+]);
+
+// Colonnes que l'acheteur renseigne lui-même : non déductibles du reporting
+// fournisseur (négociées / contractuelles / propres au suivi). On les PRÉ-REMPLIT
+// avec les valeurs apprises de la BDD quand on peut (statut 'prefill' = à vérifier),
+// sinon elles restent en 'todo' (à compléter). Jamais erreur/avertissement de ligne.
+export const MANUAL_COLUMNS = new Set([
+  "Année d'installation",
+  'Durée garantie (mois)',
+  'Coût annuel du contrat de maintenance (TTC)',
+  'Durée TCO -années',
   'Gain/Achats de référence',
 ]);
 
 // Colonnes optionnelles : leur absence n'est pas problématique (signal "empty-ok").
 export const OPTIONAL_COLUMNS = new Set([
-  "Année d'installation", 'Durée garantie (mois)',
-  'Coût annuel du contrat de maintenance (TTC)', 'Durée TCO -années',
   "Date précise d'Achat",
 ]);
 
@@ -111,6 +119,51 @@ function resolveLotLabel(numLot, cfg, learnedCfg) {
     if (grouped) return grouped;
   }
   return cfg.lotLabel(numLot);
+}
+
+// Valeurs de pré-remplissage apprises depuis la BDD pour un type d'équipement donné :
+// priorité à la valeur apprise par type, repli sur la valeur niveau marché.
+function learnedDefaultsFor(typeEquip, learnedCfg) {
+  const d = learnedCfg?.defaults || {};
+  const t = (typeEquip && learnedCfg?.defaultsByType?.[typeEquip]) || {};
+  const pick = (k) => (t[k] != null ? t[k] : (d[k] != null ? d[k] : null));
+  return {
+    dureeGarantieMois: pick('dureeGarantieMois'),
+    dureeTcoAnnees:    pick('dureeTcoAnnees'),
+    coutMaintAnnuel:   pick('coutMaintAnnuel'),
+    gainRef:           pick('gainRef'),
+    anneeInstallOffset: d.anneeInstallOffset ?? 0,
+  };
+}
+
+// Applique les défauts appris aux colonnes "manuelles" d'une ligne BDD.
+// Retourne la liste des colonnes effectivement pré-remplies (pour le marquage UI).
+function applyLearnedPrefill(bdd, { anneeAchat, typeEquip, learnedCfg }) {
+  if (!learnedCfg) return [];
+  const def = learnedDefaultsFor(typeEquip, learnedCfg);
+  const filled = [];
+  // Année d'installation = année d'achat + décalage médian appris (souvent 0)
+  if (anneeAchat) {
+    bdd["Année d'installation"] = anneeAchat + (def.anneeInstallOffset || 0);
+    filled.push("Année d'installation");
+  }
+  if (def.dureeGarantieMois != null) {
+    bdd['Durée garantie (mois)'] = Math.round(def.dureeGarantieMois);
+    filled.push('Durée garantie (mois)');
+  }
+  if (def.dureeTcoAnnees != null) {
+    bdd['Durée TCO -années'] = Math.round(def.dureeTcoAnnees);
+    filled.push('Durée TCO -années');
+  }
+  if (def.coutMaintAnnuel != null) {
+    bdd['Coût annuel du contrat de maintenance (TTC)'] = Math.round(def.coutMaintAnnuel * 100) / 100;
+    filled.push('Coût annuel du contrat de maintenance (TTC)');
+  }
+  if (def.gainRef != null) {
+    bdd['Gain/Achats de référence'] = def.gainRef;
+    filled.push('Gain/Achats de référence');
+  }
+  return filled;
 }
 
 function makeEmptyBdd() {
@@ -159,7 +212,8 @@ function buildIndividualRow({ ligne, fournisseur, fileName, cfg, nomenclature, l
 
   if (!ligne.quantite || ligne.quantite <= 0) warnings.push(`Quantité nulle`);
   if (!ligne.montantTtc || ligne.montantTtc <= 0) warnings.push(`Montant TTC nul`);
-  warnings.push(`Taux Gain/Achats à renseigner manuellement`);
+  // Le taux Gain/Achats de référence est à saisir manuellement, mais ce n'est PAS
+  // un avertissement : c'est signalé par la cellule « à compléter » (statut 'todo').
 
   const bdd = makeEmptyBdd();
   bdd['Etablissement']             = match.type || '';
@@ -174,8 +228,10 @@ function buildIndividualRow({ ligne, fournisseur, fileName, cfg, nomenclature, l
   bdd['QUANTITE']                  = ligne.quantite ?? '';
   bdd['CATTC']                     = ligne.montantTtc ?? '';
   bdd['Année activation maintenance'] = ligne.anneeActivationMaintenance ?? '';
-  // Gain/Achats de référence : volontairement laissé vide.
-  // L'acheteur DOIT le renseigner à l'étape de revue (la cellule apparaît en rouge).
+
+  // Pré-remplissage des colonnes manuelles depuis les valeurs apprises de la BDD
+  // (durée garantie/TCO, coût maintenance, taux Gain, année d'installation).
+  const prefilled = applyLearnedPrefill(bdd, { anneeAchat: ligne.annee, typeEquip, learnedCfg });
 
   const hasCritical = warnings.some(w => /non reconnu|Quantité nulle|Montant TTC nul/i.test(w));
   const status = hasCritical ? 'error' : (warnings.length > 0 ? 'warning' : 'ok');
@@ -189,18 +245,19 @@ function buildIndividualRow({ ligne, fournisseur, fileName, cfg, nomenclature, l
     match,
     status,
     warnings,
+    prefilled,
   };
 }
 
 // Construit une ligne BDD AGRÉGÉE pour les consommables (somme TTC sur le tuple).
-function buildAggregatedConsommableRow({ tuple, lignes, cfg }) {
+function buildAggregatedConsommableRow({ tuple, lignes, cfg, learnedCfg }) {
   const warnings = [];
   const totalTtc = lignes.reduce((s, l) => s + (Number(l.montantTtc) || 0), 0);
   const fileNames = [...new Set(lignes.map(l => l.fileName))];
 
   if (totalTtc === 0) warnings.push(`Aucun montant TTC pour ce groupe`);
   if (!tuple.clcc) warnings.push(`CLCC non identifié`);
-  warnings.push(`Taux Gain/Achats à renseigner manuellement`);
+  // Taux Gain/Achats : saisie manuelle signalée par la cellule 'todo', pas un avertissement.
 
   const bdd = makeEmptyBdd();
   bdd['Etablissement']     = tuple.etabType;
@@ -213,7 +270,9 @@ function buildAggregatedConsommableRow({ tuple, lignes, cfg }) {
   bdd['Année']             = tuple.annee;
   bdd['QUANTITE']          = 1;                    // BDD : qté = 1 pour les consommables agrégés
   bdd['CATTC']             = totalTtc;
-  // Gain/Achats de référence laissé vide : à renseigner par l'acheteur en revue.
+
+  // Pré-remplissage des colonnes manuelles depuis les valeurs apprises de la BDD.
+  const prefilled = applyLearnedPrefill(bdd, { anneeAchat: Number(tuple.annee) || null, typeEquip: tuple.typeEquip, learnedCfg });
 
   const hasCritical = !tuple.clcc;
   const status = hasCritical ? 'error' : (warnings.length > 0 ? 'warning' : 'ok');
@@ -229,6 +288,7 @@ function buildAggregatedConsommableRow({ tuple, lignes, cfg }) {
     },
     status,
     warnings,
+    prefilled,
   };
 }
 
@@ -310,7 +370,7 @@ export function buildBddRows(reportings, marcheConfig, nomenclature, learnedCfg 
   }
 
   const aggregatedRows = [...consommableBuckets.values()].map(b =>
-    buildAggregatedConsommableRow({ tuple: b.tuple, lignes: b.lignes, cfg: marcheConfig })
+    buildAggregatedConsommableRow({ tuple: b.tuple, lignes: b.lignes, cfg: marcheConfig, learnedCfg })
   );
 
   return [...individualRows, ...aggregatedRows];
@@ -334,9 +394,11 @@ export function summarize(rows) {
  * Utilise la confiance du match CLCC (row.match.confidence) pour propager
  * l'incertitude sur les colonnes Etablissement et CLCC unique.
  */
-export function computeCellStatus(row) {
+export function computeCellStatus(row, editedFields = null) {
   const bdd = row.bdd;
   const conf = row.match?.confidence ?? null;
+  const edited = editedFields ? new Set(editedFields) : null;
+  const prefilled = row.prefilled ? new Set(row.prefilled) : null;
   const out = {};
   const isEmpty = (v) => v === '' || v == null || (typeof v === 'number' && !Number.isFinite(v));
 
@@ -353,6 +415,15 @@ export function computeCellStatus(row) {
       continue;
     }
 
+    if (MANUAL_COLUMNS.has(col)) {
+      // À compléter par l'acheteur :
+      //  - vide → 'todo' (à compléter)
+      //  - pré-rempli depuis la BDD, pas encore validé → 'prefill' (à vérifier)
+      //  - saisi / validé par l'utilisateur → 'ok'
+      if (empty) { out[col] = 'todo'; continue; }
+      out[col] = (prefilled?.has(col) && !edited?.has(col)) ? 'prefill' : 'ok';
+      continue;
+    }
     if (REQUIRED_COLUMNS.has(col)) {
       out[col] = empty ? 'error' : 'ok';
       continue;

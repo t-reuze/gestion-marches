@@ -1,4 +1,4 @@
-import { useRef, useMemo, Suspense } from 'react';
+import { useRef, useMemo, useState, useEffect, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { motion } from 'framer-motion';
@@ -374,6 +374,44 @@ const SCENES = {
   cells:     CellsScene,
 };
 
+/* ================================================================
+   Hook de performance : ne fait tourner la boucle de rendu WebGL
+   QUE lorsque le bandeau est visible à l'écran ET l'onglet actif.
+   - prefers-reduced-motion → 3D totalement désactivée (gradient seul)
+   - hors écran / onglet masqué → frameloop coupé (GPU au repos)
+   Évite le drain GPU permanent qui faisait ramer la machine.
+================================================================ */
+function useHeroRenderActive(ref) {
+  const reducedMotion = useMemo(
+    () => typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    if (reducedMotion) { setActive(false); return; }
+    const el = ref.current;
+    if (!el) return;
+
+    let inView = false;
+    const compute = () => setActive(inView && !document.hidden);
+
+    const io = new IntersectionObserver(
+      ([entry]) => { inView = entry.isIntersecting; compute(); },
+      { rootMargin: '120px' }   // marge pour pré-allumer juste avant l'entrée à l'écran
+    );
+    io.observe(el);
+
+    const onVis = () => compute();
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => { io.disconnect(); document.removeEventListener('visibilitychange', onVis); };
+  }, [ref, reducedMotion]);
+
+  return { active, reducedMotion };
+}
+
 export default function MedTechHero({
   theme = 'helix',
   kpis = [],
@@ -383,9 +421,12 @@ export default function MedTechHero({
   height = 520,
 }) {
   const Scene = SCENES[theme] || HelixScene;
+  const containerRef = useRef(null);
+  const { active, reducedMotion } = useHeroRenderActive(containerRef);
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'relative',
         height,
@@ -396,11 +437,14 @@ export default function MedTechHero({
         boxShadow: '0 24px 60px rgba(15,23,42,.18)',
       }}
     >
+      {!reducedMotion && (
       <Canvas
+        frameloop={active ? 'always' : 'never'}
         camera={{ position: [0, 0, 5], fov: 55 }}
         gl={{
           antialias: true,
           alpha: true,
+          powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.0,
         }}
@@ -425,6 +469,7 @@ export default function MedTechHero({
           </EffectComposer>
         </Suspense>
       </Canvas>
+      )}
 
       <div style={{
         position: 'absolute', inset: 0,

@@ -38,6 +38,24 @@ function readBddRows(wb) {
   });
 }
 
+/**
+ * Lignes BDD existantes d'un marché donné, réduites à { clcc, annee, ttc }.
+ * Sert à la réconciliation montant→CLCC (apprentissage d'alias depuis l'historique).
+ */
+export function readBddRowsForMarket(wb, marcheLabel) {
+  if (!wb || !marcheLabel) return [];
+  const out = [];
+  for (const r of readBddRows(wb)) {
+    if (String(r['Marché'] ?? '').trim() !== marcheLabel) continue;
+    out.push({
+      clcc: String(r['CLCC unique'] ?? '').trim(),
+      annee: Number(r['Année']) || null,
+      ttc: Number(r['CATTC']) || 0,
+    });
+  }
+  return out;
+}
+
 function topKey(map) {
   let best = null, bestN = 0;
   for (const [k, n] of Object.entries(map)) {
@@ -78,6 +96,12 @@ export function learnConfigFromBdd(wb) {
     const gainRef = Number(r['Gain/Achats de référence']);
     const ttc = Number(r['CATTC']);
     const qte = Number(r['QUANTITE']);
+    // Colonnes économiques/maintenance à apprendre pour le pré-remplissage.
+    const dureeGarantie = Number(r['Durée garantie (mois)']);
+    const dureeTco      = Number(r['Durée TCO -années']);
+    const coutMaint     = Number(r['Coût annuel du contrat de maintenance (TTC)']);
+    const anneeInstall  = Number(r["Année d'installation"]);
+    const anneeAchat    = Number(r['Année']);
 
     if (!byMarche[marche]) {
       byMarche[marche] = {
@@ -88,6 +112,9 @@ export function learnConfigFromBdd(wb) {
         gainRefHistogram: {},
         ttcsByFournisseur: {},
         quantites: [],
+        // Échantillons pour le pré-remplissage (niveau marché + par type d'équipement)
+        garantie: [], tco: [], cout: [], gainVals: [], installOffset: [],
+        byType: {},
         rowCount: 0,
       };
     }
@@ -110,6 +137,16 @@ export function learnConfigFromBdd(wb) {
       m.ttcsByFournisseur[fournisseur].push(ttc);
     }
     if (Number.isFinite(qte) && qte > 0) m.quantites.push(qte);
+
+    // Accumulation des échantillons de pré-remplissage (marché + par type)
+    const tb = type ? (m.byType[type] || (m.byType[type] = { garantie: [], tco: [], cout: [], gain: [] })) : null;
+    if (Number.isFinite(dureeGarantie) && dureeGarantie > 0) { m.garantie.push(dureeGarantie); tb?.garantie.push(dureeGarantie); }
+    if (Number.isFinite(dureeTco) && dureeTco > 0)           { m.tco.push(dureeTco);           tb?.tco.push(dureeTco); }
+    if (Number.isFinite(coutMaint) && coutMaint > 0)         { m.cout.push(coutMaint);         tb?.cout.push(coutMaint); }
+    if (Number.isFinite(gainRef) && gainRef > 0)             { m.gainVals.push(gainRef);       tb?.gain.push(gainRef); }
+    if (Number.isFinite(anneeInstall) && Number.isFinite(anneeAchat) && anneeAchat > 1990) {
+      m.installOffset.push(anneeInstall - anneeAchat);
+    }
   }
 
   // Post-traitement : déduire les conventions exploitables
@@ -162,6 +199,26 @@ export function learnConfigFromBdd(wb) {
     const qteMed = median(m.quantites);
     const qteStddev = stddev(m.quantites, qteMed);
 
+    // 7. Valeurs par défaut apprises pour le pré-remplissage (niveau marché)
+    const med0 = (arr, min = 1) => (arr.length >= min ? median(arr) : null);
+    const defaults = {
+      dureeGarantieMois: med0(m.garantie),
+      dureeTcoAnnees:    med0(m.tco),
+      coutMaintAnnuel:   med0(m.cout),
+      gainRef:           gainRefDefault,
+      anneeInstallOffset: m.installOffset.length ? Math.round(median(m.installOffset)) : 0,
+    };
+    // Valeurs par défaut par type d'équipement (médiane, min 3 échantillons pour être fiable)
+    const defaultsByType = {};
+    for (const [t, b] of Object.entries(m.byType)) {
+      defaultsByType[t] = {
+        dureeGarantieMois: med0(b.garantie, 3),
+        dureeTcoAnnees:    med0(b.tco, 3),
+        coutMaintAnnuel:   med0(b.cout, 3),
+        gainRef:           med0(b.gain, 3),
+      };
+    }
+
     out[marche] = {
       excelMarcheLabel: marche,
       ppeRef,
@@ -170,6 +227,8 @@ export function learnConfigFromBdd(wb) {
       consommablesLotRange,
       typeEquipementDefaultForConsommables: typeConsommablesDefault,
       gainAchatsRefDefault: gainRefDefault,
+      defaults,                                  // pré-remplissage niveau marché
+      defaultsByType,                            // pré-remplissage par type d'équipement
       knownFournisseurs: [...m.fournisseurs],
       anomalies: {
         ttcStatsByFournisseur,                   // { "Agilent": { median, stddev, n } }

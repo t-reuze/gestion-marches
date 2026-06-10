@@ -223,14 +223,20 @@ function Scene3D() {
 
 /* ─── COMPOSANT PRINCIPAL ───────────────────────────────────── */
 export default function SplashScreen3D({ onDone }) {
+  const reducedMotion = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const [show, setShow] = useState(true);
   const [reveal, setReveal] = useState(false);
 
   useEffect(() => {
+    // En reduced-motion : on saute complètement le splash 3D (coûteux au démarrage).
+    if (reducedMotion) { onDone && onDone(); return; }
     const t1 = setTimeout(() => setReveal(true), 2300);
     const tEnd = setTimeout(() => setShow(false), 4500);
     return () => { clearTimeout(t1); clearTimeout(tEnd); };
   }, []);
+
+  if (reducedMotion) return null;
 
   return (
     <AnimatePresence onExitComplete={() => onDone && onDone()}>
@@ -253,10 +259,11 @@ export default function SplashScreen3D({ onDone }) {
             camera={{ position: [0, 0, 5], fov: 55 }}
             gl={{
               antialias: true,
+              powerPreference: 'high-performance',
               toneMapping: THREE.ACESFilmicToneMapping,
               toneMappingExposure: 1.1,
             }}
-            dpr={[1, 2]}
+            dpr={[1, 1.5]}
             style={{ position: 'absolute', inset: 0 }}
           >
             <Suspense fallback={null}>

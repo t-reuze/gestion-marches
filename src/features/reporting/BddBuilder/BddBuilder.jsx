@@ -1,13 +1,14 @@
-import { useState, useMemo, useRef, useEffect, Fragment } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback, memo, Fragment } from 'react';
 import * as XLSX from 'xlsx-js-style';
 import { marches } from '../../../data/mockData';
 import { getInvestConfig, isInvestConfigured, hasFullInvestConfig } from '../../../data/marcheInvestConfig';
 import { parseAllotissement } from '../../../utils/bddBuilder/parseAllotissement';
 import { parseSupplierReporting } from '../../../utils/bddBuilder/parseSupplierReporting';
-import { loadNomenclature } from '../../../utils/bddBuilder/matchClcc';
-import { buildBddRows, summarize, computeCellStatus, BDD_COLUMNS, FORMULA_COLUMNS, COLUMN_EDITORS } from '../../../utils/bddBuilder/buildBddRows';
+import { loadNomenclature, topCandidates, deriveAliasesFromBdd } from '../../../utils/bddBuilder/matchClcc';
+import { getProfilesMap, saveProfile, forgetProfile } from '../../../utils/bddBuilder/templateProfiles';
+import { buildBddRows, summarize, computeCellStatus, BDD_COLUMNS, FORMULA_COLUMNS, COLUMN_EDITORS, MANUAL_COLUMNS } from '../../../utils/bddBuilder/buildBddRows';
 import { rememberUserAlias } from '../../../utils/bddBuilder/userAliases';
-import { learnConfigFromBdd, findMatchingBddMarcheLabel } from '../../../utils/bddBuilder/learnConfigFromBdd';
+import { learnConfigFromBdd, findMatchingBddMarcheLabel, readBddRowsForMarket } from '../../../utils/bddBuilder/learnConfigFromBdd';
 import { marches as MARCHES_LIST } from '../../../data/mockData';
 import { readSuiviInvest } from '../../../utils/bddBuilder/exportSuiviInvest';
 import { useReportingData } from '../../../context/ReportingDataContext';
@@ -31,7 +32,9 @@ export default function BddBuilder({ onClose }) {
     cellEdits: {},
   });
 
-  const update = (patch) => setState(s => ({ ...s, ...patch }));
+  // Stable : indispensable pour que les lignes mémoïsées de l'étape 4 ne se
+  // re-rendent pas toutes à chaque frappe (les callbacks dérivés en dépendent).
+  const update = useCallback((patch) => setState(s => ({ ...s, ...patch })), []);
   const cfg = state.marcheId ? getInvestConfig(state.marcheId) : null;
 
   // Résout la config apprise pour le marché actuellement sélectionné en cherchant
@@ -76,7 +79,7 @@ export default function BddBuilder({ onClose }) {
         {step === 1 && <Step1 state={state} update={update} next={() => setStep(2)} />}
         {step === 2 && <Step2 state={state} update={update} next={() => setStep(3)} prev={() => setStep(1)} />}
         {step === 3 && <Step3 state={state} update={update} cfg={cfg} next={() => { buildRows(state, cfg, learnedCfg, update); setStep(4); }} prev={() => setStep(2)} />}
-        {step === 4 && <Step4 state={state} update={update} cfg={cfg} prev={() => setStep(3)} onClose={onClose} />}
+        {step === 4 && <Step4 state={state} update={update} cfg={cfg} learnedCfg={learnedCfg} onRebuild={() => buildRows(state, cfg, learnedCfg, update)} prev={() => setStep(3)} onClose={onClose} />}
       </div>
     </div>
   );
@@ -95,7 +98,7 @@ const STEPS = [
   { n: 1, label: 'Marché & Suivi_Invest' },
   { n: 2, label: 'Allotissement' },
   { n: 3, label: 'Reportings fournisseurs' },
-  { n: 4, label: 'Vérification & export' },
+  { n: 4, label: 'Vérification & remplissage' },
 ];
 
 function Stepper({ step }) {
@@ -242,29 +245,55 @@ function Step2({ state, update, next, prev }) {
 function Step3({ state, update, cfg, next, prev }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [editMapIdx, setEditMapIdx] = useState(null);
+
+  async function parseOne(file) {
+    const r = await parseSupplierReporting(file, { nomenclature: state.nomenclature, profiles: getProfilesMap() });
+    r._file = file;   // conservé pour pouvoir ré-appliquer un profil après édition
+    return r;
+  }
 
   async function onFiles(fileList) {
     setError(''); setLoading(true);
     try {
       const reportings = [...state.reportings];
       for (const file of fileList) {
-        try {
-          const r = await parseSupplierReporting(file);
-          reportings.push(r);
-        } catch (e) {
-          setError(`Erreur sur ${file.name} : ${e.message}`);
-        }
+        try { reportings.push(await parseOne(file)); }
+        catch (e) { setError(`Erreur sur ${file.name} : ${e.message}`); }
       }
       update({ reportings });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
+  }
+
+  // Re-parse tous les fichiers (après enregistrement/oubli d'un profil) pour ré-appliquer le mapping.
+  async function reparseAll() {
+    setLoading(true);
+    try {
+      const next = [];
+      for (const r of state.reportings) {
+        if (r._file) { try { next.push(await parseOne(r._file)); continue; } catch (_) { /* garde l'ancien */ } }
+        next.push(r);
+      }
+      update({ reportings: next });
+    } finally { setLoading(false); }
   }
 
   function remove(i) {
     const next = state.reportings.slice();
     next.splice(i, 1);
     update({ reportings: next });
+    if (editMapIdx === i) setEditMapIdx(null);
+  }
+
+  async function onSaveProfile(fingerprint, roles, name) {
+    saveProfile(fingerprint, { name, roles, savedAt: Date.now() });
+    setEditMapIdx(null);
+    await reparseAll();
+  }
+  async function onForgetProfile(fingerprint) {
+    forgetProfile(fingerprint);
+    setEditMapIdx(null);
+    await reparseAll();
   }
 
   const totalLignes = state.reportings.reduce((s, r) => s + r.lignes.length, 0);
@@ -281,30 +310,53 @@ function Step3({ state, update, cfg, next, prev }) {
         {state.reportings.length > 0 && (
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 12, marginBottom: 6 }}>
-              <strong>{state.reportings.length}</strong> fichier{state.reportings.length > 1 ? 's' : ''} chargé{state.reportings.length > 1 ? 's' : ''} — {totalLignes} lignes de bons de commande au total
+              <strong>{state.reportings.length}</strong> fichier{state.reportings.length > 1 ? 's' : ''} chargé{state.reportings.length > 1 ? 's' : ''} — {totalLignes} lignes au total
             </div>
             <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
                   <th style={{ padding: 6 }}>Fichier</th>
-                  <th style={{ padding: 6 }}>Fournisseur détecté</th>
+                  <th style={{ padding: 6 }}>Fournisseur</th>
+                  <th style={{ padding: 6 }}>Détection</th>
                   <th style={{ padding: 6, textAlign: 'right' }}>Lignes</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {state.reportings.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--border-soft, #f0f0f0)' }}>
-                    <td style={{ padding: 6, fontFamily: 'DM Mono,monospace', fontSize: 11 }}>{r.fileName}</td>
-                    <td style={{ padding: 6, fontWeight: 600 }}>{r.fournisseur}</td>
-                    <td style={{ padding: 6, textAlign: 'right' }}>{r.lignes.length}</td>
-                    <td style={{ padding: 6, textAlign: 'right' }}>
-                      <button className="btn btn-xs btn-ghost" onClick={() => remove(i)} style={{ fontSize: 11 }}>Retirer</button>
-                    </td>
-                  </tr>
+                  <Fragment key={i}>
+                    <tr style={{ borderBottom: '1px solid var(--border-soft, #f0f0f0)' }}>
+                      <td style={{ padding: 6, fontFamily: 'DM Mono,monospace', fontSize: 11 }}>{r.fileName}</td>
+                      <td style={{ padding: 6, fontWeight: 600 }}>{r.fournisseur}</td>
+                      <td style={{ padding: 6 }}>
+                        <DetectionBadge mode={r.mode} profileApplied={r.profileApplied} profileName={r.profileName} />
+                      </td>
+                      <td style={{ padding: 6, textAlign: 'right', color: r.lignes.length === 0 ? '#dc2626' : undefined, fontWeight: r.lignes.length === 0 ? 700 : 400 }}>{r.lignes.length}</td>
+                      <td style={{ padding: 6, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-xs btn-ghost" onClick={() => setEditMapIdx(editMapIdx === i ? null : i)} style={{ fontSize: 11 }}
+                          title="Régler/mémoriser le mapping des colonnes pour ce type de fichier">⚙ Mapping</button>
+                        <button className="btn btn-xs btn-ghost" onClick={() => remove(i)} style={{ fontSize: 11 }}>Retirer</button>
+                      </td>
+                    </tr>
+                    {editMapIdx === i && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: 0, background: '#F8FAFC' }}>
+                          <MappingEditor
+                            reporting={r}
+                            onSave={(roles) => onSaveProfile(r.fingerprint, roles, r.fournisseur)}
+                            onForget={() => onForgetProfile(r.fingerprint)}
+                            onCancel={() => setEditMapIdx(null)}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
+              ⚙ Mapping : si une colonne est mal détectée, corrigez-la une fois et « Enregistrer le profil » — tous les fichiers de la même structure (même empreinte) l'appliqueront automatiquement.
+            </p>
           </div>
         )}
       </Card>
@@ -314,15 +366,118 @@ function Step3({ state, update, cfg, next, prev }) {
   );
 }
 
+function DetectionBadge({ mode, profileApplied, profileName }) {
+  const label = mode === 'matrix' ? 'matrice' : 'transactionnel';
+  const color = mode === 'matrix' ? { bg: '#ECFEFF', fg: '#0E7490' } : { bg: '#F0FDF4', fg: '#16a34a' };
+  return (
+    <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 10, fontWeight: 700, background: color.bg, color: color.fg, borderRadius: 8, padding: '1px 7px' }}>{label}</span>
+      {profileApplied && (
+        <span style={{ fontSize: 10, fontWeight: 700, background: '#EEF2FF', color: '#4338CA', borderRadius: 8, padding: '1px 7px' }}
+          title={`Profil mémorisé appliqué : ${profileName || ''}`}>profil ✓</span>
+      )}
+    </span>
+  );
+}
+
+// Éditeur de mapping : associe chaque rôle BDD à une colonne du fichier (lettre Excel).
+const MAPPING_ROLES = [
+  { role: 'etablissement', label: 'Établissement' },
+  { role: 'date',          label: 'Date' },
+  { role: 'reference',     label: 'Référence' },
+  { role: 'designation',   label: 'Désignation' },
+  { role: 'quantite',      label: 'Quantité' },
+  { role: 'montantTtc',    label: 'Montant TTC' },
+  { role: 'lot',           label: 'N° de lot' },
+];
+const COL_LETTERS = Array.from({ length: 16 }, (_, i) => String.fromCharCode(65 + i)); // A..P
+
+function MappingEditor({ reporting, onSave, onForget, onCancel }) {
+  const [roles, setRoles] = useState(() => ({ ...(reporting.mapping || {}) }));
+  const setRole = (role, val) => setRoles(r => {
+    const next = { ...r };
+    if (val === '') delete next[role]; else next[role] = Number(val);
+    return next;
+  });
+  return (
+    <div style={{ padding: 12 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+        Empreinte de structure : <span style={{ fontFamily: 'DM Mono,monospace', color: '#1f2937' }}>{reporting.fingerprint || '—'}</span>
+        {reporting.profileApplied && <span style={{ color: '#4338CA', marginLeft: 8 }}>· profil actuellement appliqué</span>}
+      </div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        {MAPPING_ROLES.map(({ role, label }) => (
+          <div key={role} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <label style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>{label}</label>
+            <select value={roles[role] ?? ''} onChange={e => setRole(role, e.target.value)}
+              style={{ padding: '3px 6px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 4, minWidth: 90 }}>
+              <option value="">— colonne —</option>
+              {COL_LETTERS.map((L, idx) => <option key={idx} value={idx}>Col {L}</option>)}
+            </select>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button className="btn btn-xs btn-primary" style={{ fontSize: 11 }} onClick={() => onSave(roles)}>Enregistrer le profil</button>
+        {reporting.profileApplied && <button className="btn btn-xs btn-outline" style={{ fontSize: 11 }} onClick={onForget}>Oublier le profil</button>}
+        <button className="btn btn-xs btn-ghost" style={{ fontSize: 11 }} onClick={onCancel}>Annuler</button>
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════
-// Step 4 — revue des lignes + export
+// Step 4 — vérification & remplissage des lignes + export
 // ═══════════════════════════════════════════════════════════
 
-function Step4({ state, update, prev, onClose }) {
+// Colonnes proposées au remplissage groupé (les colonnes "manuelles" à compléter).
+// learnKey = clé dans learnedCfg.defaults (null = pas de valeur apprise, ex. année).
+const BATCH_FIELDS = [
+  { col: "Année d'installation",                          label: "Année d'installation",          step: 1,    learnKey: null,                hint: "déf. = année d'achat" },
+  { col: 'Durée garantie (mois)',                         label: 'Durée garantie (mois)',          step: 1,    learnKey: 'dureeGarantieMois' },
+  { col: 'Durée TCO -années',                             label: 'Durée TCO (années)',             step: 1,    learnKey: 'dureeTcoAnnees' },
+  { col: 'Coût annuel du contrat de maintenance (TTC)',   label: 'Coût annuel maint. (TTC)',        step: 0.01, learnKey: 'coutMaintAnnuel' },
+  { col: 'Gain/Achats de référence',                      label: 'Gain/Achats réf. (taux)',         step: 0.01, learnKey: 'gainRef' },
+];
+
+function Step4({ state, update, cfg, learnedCfg, onRebuild, prev, onClose }) {
   const { addRows } = useBddPending() || {};
   const [filter, setFilter] = useState('all');
+  const [reconcileDone, setReconcileDone] = useState(false);
+
+  // Réconciliation BDD→alias : déduit des correspondances libellé→CLCC en appariant
+  // les montants des reportings aux lignes existantes de la BDD (même marché).
+  const marcheLabel = learnedCfg?.excelMarcheLabel || cfg?.excelMarcheLabel || null;
+  const derivedAliases = useMemo(() => {
+    if (reconcileDone || !state.targetWb || !marcheLabel) return [];
+    try {
+      const bddRows = readBddRowsForMarket(state.targetWb, marcheLabel);
+      if (!bddRows.length) return [];
+      const lignes = state.reportings.flatMap(r => r.lignes);
+      return deriveAliasesFromBdd(lignes, bddRows, state.nomenclature);
+    } catch { return []; }
+  }, [state.targetWb, marcheLabel, state.reportings, state.nomenclature, reconcileDone]);
+
+  function applyReconciliation() {
+    for (const d of derivedAliases) rememberUserAlias(d.raw, d.code);
+    setReconcileDone(true);
+    if (onRebuild) onRebuild();   // recalcule les lignes → les CLCC déduits passent au vert
+  }
+
   const [adding, setAdding] = useState(false);
   const [expanded, setExpanded] = useState(new Set());
+  // Valeurs du remplissage groupé, pré-saisies depuis les défauts appris de la BDD.
+  const [batch, setBatch] = useState({});
+  useEffect(() => {
+    const d = learnedCfg?.defaults || {};
+    setBatch({
+      "Année d'installation": '',
+      'Durée garantie (mois)': d.dureeGarantieMois != null ? Math.round(d.dureeGarantieMois) : '',
+      'Durée TCO -années': d.dureeTcoAnnees != null ? Math.round(d.dureeTcoAnnees) : '',
+      'Coût annuel du contrat de maintenance (TTC)': d.coutMaintAnnuel != null ? Math.round(d.coutMaintAnnuel * 100) / 100 : '',
+      'Gain/Achats de référence': d.gainRef ?? '',
+    });
+  }, [learnedCfg]);
 
   const summary = useMemo(() => summarize(state.builtRows), [state.builtRows]);
   const indexedRows = useMemo(
@@ -335,22 +490,55 @@ function Step4({ state, update, prev, onClose }) {
   }, [indexedRows, filter]);
   const countIncluded = state.builtRows.length - state.excluded.size;
 
-  function toggleExclude(idx) {
-    const next = new Set(state.excluded);
+  // Refs vers l'état courant → callbacks stables (identité constante) pour ne pas
+  // invalider la mémoïsation des lignes à chaque édition.
+  const excludedRef = useRef(state.excluded); excludedRef.current = state.excluded;
+  const editsRef = useRef(state.cellEdits);   editsRef.current = state.cellEdits;
+
+  const toggleExclude = useCallback((idx) => {
+    const next = new Set(excludedRef.current);
     if (next.has(idx)) next.delete(idx); else next.add(idx);
     update({ excluded: next });
-  }
-  function toggleExpand(idx) {
-    const next = new Set(expanded);
-    if (next.has(idx)) next.delete(idx); else next.add(idx);
-    setExpanded(next);
+  }, [update]);
+  const toggleExpand = useCallback((idx) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
+      return next;
+    });
+  }, []);
+  const editCell = useCallback((idx, field, val) => {
+    const cur = editsRef.current;
+    update({ cellEdits: { ...cur, [idx]: { ...(cur[idx] || {}), [field]: val } } });
+  }, [update]);
+  // Édition de plusieurs champs en UNE fois (atomique) — nécessaire pour appliquer
+  // une suggestion qui touche CLCC + type d'établissement sans écrasement.
+  const editCells = useCallback((idx, patch) => {
+    const cur = editsRef.current;
+    update({ cellEdits: { ...cur, [idx]: { ...(cur[idx] || {}), ...patch } } });
+  }, [update]);
+
+  // Applique une (ou toutes les) valeur(s) du remplissage groupé à toutes les
+  // lignes actuellement AFFICHÉES (filtre courant). Écrit dans cellEdits, donc
+  // la valeur devient une saisie validée (cellule verte 'ok').
+  function applyBatch(cols) {
+    const cur = editsRef.current;
+    const next = { ...cur };
+    let touched = 0;
+    for (const { idx } of visibleRows) {
+      let rowEdits = null;
+      for (const col of cols) {
+        const v = batch[col];
+        if (v === '' || v == null) continue;
+        if (!rowEdits) rowEdits = { ...(next[idx] || {}) };
+        rowEdits[col] = Number(v);
+      }
+      if (rowEdits) { next[idx] = rowEdits; touched++; }
+    }
+    if (touched) update({ cellEdits: next });
   }
   function expandAll() { setExpanded(new Set(visibleRows.map(({ idx }) => idx))); }
   function collapseAll() { setExpanded(new Set()); }
-  function editCell(idx, field, val) {
-    const edits = { ...state.cellEdits, [idx]: { ...(state.cellEdits[idx] || {}), [field]: val } };
-    update({ cellEdits: edits });
-  }
   function effectiveBdd(row, idx) {
     const override = state.cellEdits[idx] || {};
     return { ...row.bdd, ...override };
@@ -411,6 +599,36 @@ function Step4({ state, update, prev, onClose }) {
 
         <CellLegend />
 
+        <BatchFillPanel
+          batch={batch}
+          setBatch={setBatch}
+          learnedCfg={learnedCfg}
+          visibleCount={visibleRows.length}
+          onApply={applyBatch}
+        />
+
+        {derivedAliases.length > 0 && (
+          <div style={{ border: '1px solid #C7D2FE', background: '#EEF2FF', borderRadius: 6, padding: '10px 12px', marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#3730A3', marginBottom: 4 }}>
+              {derivedAliases.length} correspondance{derivedAliases.length > 1 ? 's' : ''} CLCC déduite{derivedAliases.length > 1 ? 's' : ''} de la BDD
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+              Établissements non reconnus, rapprochés d'une ligne BDD existante par appariement du montant. Appliquer = mémoriser ces alias et recalculer.
+            </div>
+            <div style={{ maxHeight: 120, overflow: 'auto', fontSize: 11, marginBottom: 8 }}>
+              {derivedAliases.map((d, i) => (
+                <div key={i} style={{ padding: '1px 0' }}>
+                  <span style={{ fontFamily: 'DM Mono,monospace' }}>“{d.raw}”</span> → <strong>{d.code}</strong>
+                  {d.support > 1 && <span style={{ color: 'var(--text-muted)' }}> ·×{d.support}</span>}
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-xs btn-primary" style={{ fontSize: 11 }} onClick={applyReconciliation}>
+              Appliquer les {derivedAliases.length} correspondance{derivedAliases.length > 1 ? 's' : ''} et recalculer
+            </button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
           {['all', 'ok', 'warning', 'error'].map(f => (
             <button key={f}
@@ -424,7 +642,7 @@ function Step4({ state, update, prev, onClose }) {
           <button className="btn btn-xs btn-outline" onClick={collapseAll} style={{ fontSize: 11 }}>Tout replier</button>
         </div>
 
-        <div style={{ maxHeight: 580, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 4 }}>
+        <div style={{ maxHeight: '58vh', overflow: 'auto', border: '1px solid var(--border)', borderRadius: 4 }}>
           <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
             <thead style={{ position: 'sticky', top: 0, background: '#F8FAFC', zIndex: 2 }}>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -442,51 +660,28 @@ function Step4({ state, update, prev, onClose }) {
               </tr>
             </thead>
             <tbody>
-              {visibleRows.map(({ row: r, idx }) => {
-                const excluded = state.excluded.has(idx);
-                const b = effectiveBdd(r, idx);
-                const isOpen = expanded.has(idx);
-                const cellStatus = computeCellStatus({ ...r, bdd: b });
-                const rowBg = r.status === 'error' ? '#FEF2F2' : r.status === 'warning' ? '#FFFBEB' : undefined;
-                return (
-                  <Fragment key={idx}>
-                    <tr style={{ background: excluded ? '#F3F4F6' : rowBg, borderBottom: '1px solid #f0f0f0', opacity: excluded ? 0.5 : 1 }}>
-                      <td style={{ padding: 4, textAlign: 'center' }}>
-                        <input type="checkbox" checked={!excluded} onChange={() => toggleExclude(idx)} />
-                      </td>
-                      <td style={{ padding: 4, textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: 'var(--orange)', fontWeight: 700 }}
-                          onClick={() => toggleExpand(idx)} title={isOpen ? 'Replier' : 'Déplier'}>
-                        {isOpen ? '▾' : '▸'}
-                      </td>
-                      <td style={{ padding: 4 }}><CellPill status={cellStatus['CLCC unique']}>{b['CLCC unique'] || '∅'}</CellPill></td>
-                      <td style={{ padding: 4, whiteSpace: 'nowrap' }}>{b['Lot']}</td>
-                      <td style={{ padding: 4 }}><CellPill status={cellStatus["Type d'équipement"]}>{b["Type d'équipement"] || '∅'}</CellPill></td>
-                      <td style={{ padding: 4, fontWeight: 600 }}>{b['Fournisseur']}</td>
-                      <td style={{ padding: 4, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b['Nom equipement']}>{b['Nom equipement']}</td>
-                      <td style={{ padding: 4, textAlign: 'right' }}>{b['Année'] || '—'}</td>
-                      <td style={{ padding: 4, textAlign: 'right' }}>{b['QUANTITE']}</td>
-                      <td style={{ padding: 4, textAlign: 'right' }}>{typeof b['CATTC'] === 'number' ? b['CATTC'].toFixed(2) : ''}</td>
-                      <td style={{ padding: 4, color: '#78350F' }}>{r.warnings?.join(' · ')}</td>
-                    </tr>
-                    {isOpen && (
-                      <tr key={idx + '-detail'}>
-                        <td colSpan={11} style={{ padding: 0, background: '#FAFAFA' }}>
-                          <DetailGrid
-                            bdd={b}
-                            cellStatus={cellStatus}
-                            nomenclature={state.nomenclature}
-                            source={r.source}
-                            onEdit={(field, val) => editCell(idx, field, val)}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
+              {visibleRows.map(({ row: r, idx }) => (
+                <BddRow
+                  key={idx}
+                  row={r}
+                  idx={idx}
+                  edits={state.cellEdits[idx]}
+                  excluded={state.excluded.has(idx)}
+                  isOpen={expanded.has(idx)}
+                  nomenclature={state.nomenclature}
+                  onToggleExclude={toggleExclude}
+                  onToggleExpand={toggleExpand}
+                  onEdit={editCell}
+                  onEditMulti={editCells}
+                />
+              ))}
             </tbody>
           </table>
         </div>
+        {/* Datalist CLCC unique partagée par toutes les cellules éditables (1 seule fois). */}
+        <datalist id="bdd-clcc-list">
+          {state.nomenclature.map((n, i) => <option key={i} value={n.nomenclature} />)}
+        </datalist>
       </Card>
 
       <Nav
@@ -500,6 +695,182 @@ function Step4({ state, update, prev, onClose }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Panneau de remplissage groupé : pré-saisi avec les valeurs apprises
+// de la BDD, appliquable en masse aux lignes affichées (filtre courant).
+// ─────────────────────────────────────────────────────────────
+function BatchFillPanel({ batch, setBatch, learnedCfg, visibleCount, onApply }) {
+  const hasLearned = !!(learnedCfg && learnedCfg.defaults);
+  return (
+    <div style={{ border: '1px solid #BAE6FD', background: '#F0FBFF', borderRadius: 6, padding: '10px 12px', marginBottom: 10 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#0E7490', marginBottom: 2 }}>
+        Remplissage groupé des colonnes à compléter
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+        {hasLearned
+          ? <>Valeurs <strong>apprises de votre BDD</strong> (médianes). Vérifiez-les puis appliquez aux <strong>{visibleCount}</strong> ligne(s) affichée(s) — modifiable ensuite ligne par ligne.</>
+          : <>Saisissez une valeur puis appliquez-la aux <strong>{visibleCount}</strong> ligne(s) affichée(s). <em>(Aucune valeur apprise : BDD non chargée ou marché non reconnu.)</em></>}
+      </div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        {BATCH_FIELDS.map(f => {
+          const learned = f.learnKey && learnedCfg?.defaults?.[f.learnKey] != null;
+          return (
+            <div key={f.col} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {f.label}
+                {learned && <span style={{ background: '#CFFAFE', color: '#0E7490', borderRadius: 8, padding: '0 5px', fontSize: 8, fontWeight: 700 }}>appris</span>}
+              </span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input
+                  type="number" step={f.step} value={batch[f.col] ?? ''} placeholder={f.hint || ''}
+                  onChange={e => setBatch(b => ({ ...b, [f.col]: e.target.value }))}
+                  style={{ width: 96, padding: '3px 6px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 4 }}
+                />
+                <button className="btn btn-xs btn-outline" style={{ fontSize: 10 }}
+                  onClick={() => onApply([f.col])} title="Appliquer cette valeur aux lignes affichées">
+                  Appliquer
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        <button className="btn btn-xs btn-primary" style={{ fontSize: 11, marginLeft: 'auto' }}
+          onClick={() => onApply(BATCH_FIELDS.map(f => f.col))}
+          title="Appliquer toutes les valeurs renseignées aux lignes affichées">
+          Tout appliquer ↧
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Ligne du tableau de revue — MÉMOÏSÉE.
+// Ne se re-rend que si SA propre donnée change (édition, exclusion,
+// dépliage) : le statut des cellules n'est plus recalculé pour toutes
+// les lignes à chaque frappe → étape 4 fluide même sur gros volumes.
+// ─────────────────────────────────────────────────────────────
+const BddRow = memo(function BddRow({
+  row, idx, edits, excluded, isOpen, nomenclature, onToggleExclude, onToggleExpand, onEdit, onEditMulti,
+}) {
+  const b = useMemo(() => (edits ? { ...row.bdd, ...edits } : row.bdd), [row, edits]);
+  const cellStatus = useMemo(
+    () => computeCellStatus({ ...row, bdd: b }, edits ? Object.keys(edits) : null),
+    [row, b, edits]
+  );
+  const rowBg = row.status === 'error' ? '#FEF2F2' : row.status === 'warning' ? '#FFFBEB' : undefined;
+  const handleEdit = useCallback((field, val) => onEdit(idx, field, val), [onEdit, idx]);
+  const handleEditMulti = useCallback((patch) => onEditMulti(idx, patch), [onEditMulti, idx]);
+
+  return (
+    <Fragment>
+      <tr style={{ background: excluded ? '#F3F4F6' : rowBg, borderBottom: '1px solid #f0f0f0', opacity: excluded ? 0.5 : 1 }}>
+        <td style={{ padding: 4, textAlign: 'center' }}>
+          <input type="checkbox" checked={!excluded} onChange={() => onToggleExclude(idx)} />
+        </td>
+        <td style={{ padding: 4, textAlign: 'center', cursor: 'pointer', userSelect: 'none', color: 'var(--orange)', fontWeight: 700 }}
+            onClick={() => onToggleExpand(idx)} title={isOpen ? 'Replier' : 'Déplier (toutes les colonnes)'}>
+          {isOpen ? '▾' : '▸'}
+        </td>
+        <td style={{ padding: 3 }}><EditableCell col="CLCC unique" value={b['CLCC unique']} status={cellStatus['CLCC unique']} nomenclature={nomenclature} onChange={handleEdit} /></td>
+        <td style={{ padding: 3, whiteSpace: 'nowrap' }}><EditableCell col="Lot" value={b['Lot']} status={cellStatus['Lot']} onChange={handleEdit} /></td>
+        <td style={{ padding: 3 }}><EditableCell col="Type d'équipement" value={b["Type d'équipement"]} status={cellStatus["Type d'équipement"]} onChange={handleEdit} /></td>
+        <td style={{ padding: 3, fontWeight: 600 }}><EditableCell col="Fournisseur" value={b['Fournisseur']} status={cellStatus['Fournisseur']} onChange={handleEdit} /></td>
+        <td style={{ padding: 3 }}><EditableCell col="Nom equipement" value={b['Nom equipement']} status={cellStatus['Nom equipement']} onChange={handleEdit} ellipsis /></td>
+        <td style={{ padding: 3, textAlign: 'right' }}><EditableCell col="Année" value={b['Année']} status={cellStatus['Année']} align="right" onChange={handleEdit} /></td>
+        <td style={{ padding: 3, textAlign: 'right' }}><EditableCell col="QUANTITE" value={b['QUANTITE']} status={cellStatus['QUANTITE']} align="right" onChange={handleEdit} /></td>
+        <td style={{ padding: 3, textAlign: 'right' }}><EditableCell col="CATTC" value={b['CATTC']} status={cellStatus['CATTC']} align="right" onChange={handleEdit} /></td>
+        <td style={{ padding: 4, color: '#78350F' }}>{row.warnings?.join(' · ')}</td>
+      </tr>
+      {isOpen && (
+        <tr>
+          <td colSpan={11} style={{ padding: 0, background: '#FAFAFA' }}>
+            <DetailGrid
+              bdd={b}
+              cellStatus={cellStatus}
+              nomenclature={nomenclature}
+              source={row.source}
+              onEdit={handleEdit}
+              onEditMulti={handleEditMulti}
+            />
+          </td>
+        </tr>
+      )}
+    </Fragment>
+  );
+});
+
+// Cellule cliquable : affiche du texte léger ; passe en champ de saisie au clic.
+// Un seul champ est monté à la fois (celui en cours d'édition) → DOM léger.
+// Rouge/orange si statut error/warning ; bordure discrète sinon (signale l'éditabilité).
+function fmtCellVal(col, value) {
+  if (col === 'CATTC') return typeof value === 'number' ? value.toFixed(2) : (value || '');
+  return value == null ? '' : String(value);
+}
+function EditableCell({ col, value, status, nomenclature, align, ellipsis, onChange }) {
+  const editor = COLUMN_EDITORS[col];
+  const [editing, setEditing] = useState(false);
+  const flag = status === 'error' || status === 'warning';
+  const border = flag ? STATUS_BORDER[status] : '#E8EAED';
+  const bg = flag ? STATUS_BG[status] : 'transparent';
+
+  if (!editor) {
+    return <span style={{ fontSize: 11 }}>{fmtCellVal(col, value)}</span>;
+  }
+
+  if (!editing) {
+    const display = fmtCellVal(col, value);
+    return (
+      <span
+        onClick={() => setEditing(true)}
+        title="Cliquer pour modifier"
+        style={{
+          display: 'block',
+          maxWidth: ellipsis ? 232 : undefined,
+          overflow: ellipsis ? 'hidden' : undefined,
+          textOverflow: ellipsis ? 'ellipsis' : undefined,
+          whiteSpace: 'nowrap',
+          background: bg, border: `1px solid ${border}`, borderRadius: 4,
+          padding: '1px 5px', cursor: 'text', minHeight: 15,
+          textAlign: align || 'left',
+          color: display === '' ? '#CBD5E1' : '#1f2937',
+        }}
+      >
+        {display === '' ? '∅' : display}
+      </span>
+    );
+  }
+
+  const commit = () => setEditing(false);
+  const inputStyle = {
+    width: '100%', padding: '1px 5px', fontSize: 11,
+    border: `1px solid ${STATUS_BORDER[status] || 'var(--orange)'}`, borderRadius: 4,
+    background: '#fff', textAlign: align || 'left', boxSizing: 'border-box',
+  };
+  const onKey = (e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') commit(); };
+
+  if (editor.kind === 'clcc-select') {
+    return <input autoFocus list="bdd-clcc-list" value={value || ''}
+      onChange={e => onChange(col, e.target.value)} onBlur={commit} onKeyDown={onKey} style={inputStyle} />;
+  }
+  if (editor.kind === 'select') {
+    return (
+      <select autoFocus value={value || ''} onChange={e => onChange(col, e.target.value)} onBlur={commit} style={inputStyle}>
+        <option value="">—</option>
+        {editor.options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  }
+  if (editor.kind === 'number') {
+    return <input autoFocus type="number" step={editor.step || 1}
+      value={value === '' || value == null ? '' : value}
+      onChange={e => onChange(col, e.target.value === '' ? '' : Number(e.target.value))}
+      onBlur={commit} onKeyDown={onKey} style={{ ...inputStyle, textAlign: 'right' }} />;
+  }
+  return <input autoFocus type="text" value={value || ''}
+    onChange={e => onChange(col, e.target.value)} onBlur={commit} onKeyDown={onKey} style={inputStyle} />;
+}
+
+// ─────────────────────────────────────────────────────────────
 // Vue détail : grille des 28 cellules BDD pour la ligne courante.
 // Chaque cellule : couleur selon statut + champ d'édition adapté.
 // ─────────────────────────────────────────────────────────────
@@ -508,6 +879,8 @@ const STATUS_BG = {
   'ok':       '#D1FAE5',
   'warning':  '#FEF3C7',
   'error':    '#FEE2E2',
+  'todo':     '#EEF2FF',
+  'prefill':  '#ECFEFF',
   'empty-ok': '#FFFFFF',
   'formula':  '#EEF2F6',
 };
@@ -515,6 +888,8 @@ const STATUS_BORDER = {
   'ok':       '#10B981',
   'warning':  '#F59E0B',
   'error':    '#DC2626',
+  'todo':     '#6366F1',
+  'prefill':  '#06B6D4',
   'empty-ok': '#E5E7EB',
   'formula':  '#94A3B8',
 };
@@ -552,13 +927,55 @@ function shortLabel(col) {
   return col.replace(/\r\n/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function DetailGrid({ bdd, cellStatus, nomenclature, source, onEdit }) {
+function DetailGrid({ bdd, cellStatus, nomenclature, source, onEdit, onEditMulti }) {
+  const rawEtab = source?.rawEtablissement || '';
+  // Top-3 candidats CLCC pour ce libellé (suggestions de correction).
+  const suggestions = useMemo(
+    () => (rawEtab ? topCandidates(rawEtab, nomenclature, 3) : []),
+    [rawEtab, nomenclature]
+  );
+  const applySuggestion = (s) => {
+    if (onEditMulti) onEditMulti({ 'CLCC unique': s.nomenclature, 'Etablissement': s.type || bdd['Etablissement'] });
+    else onEdit('CLCC unique', s.nomenclature);
+  };
   return (
     <div style={{ padding: 12 }}>
       {source?.fileName && (
         <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 8 }}>
           Source : <span style={{ fontFamily: 'DM Mono,monospace' }}>{source.fileName}</span>
           {source.aggregated ? ` — ${source.aggregated} BC agrégés` : (source.row ? ` (ligne ${source.row})` : '')}
+        </div>
+      )}
+      {rawEtab && (
+        <div style={{ marginBottom: 10, fontSize: 11 }}>
+          <span style={{ color: 'var(--text-muted)' }}>
+            Libellé source : <span style={{ fontFamily: 'DM Mono,monospace', color: '#1f2937' }}>“{rawEtab}”</span>
+          </span>
+          {suggestions.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 4 }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 10, fontWeight: 600 }}>Suggestions CLCC :</span>
+              {suggestions.map((s, i) => {
+                const isCurrent = s.nomenclature === bdd['CLCC unique'];
+                const pct = Math.round(s.score * 100);
+                const tone = s.score >= 0.7 ? '#10B981' : s.score >= 0.4 ? '#F59E0B' : '#94A3B8';
+                return (
+                  <button key={i} onClick={() => applySuggestion(s)} disabled={isCurrent}
+                    title={`${s.nom}${s.ville ? ' — ' + s.ville : ''} · confiance ${pct}%`}
+                    style={{
+                      cursor: isCurrent ? 'default' : 'pointer', fontSize: 11,
+                      border: `1px solid ${isCurrent ? '#10B981' : 'var(--border)'}`,
+                      background: isCurrent ? '#D1FAE5' : '#fff', color: '#1f2937',
+                      borderRadius: 999, padding: '2px 9px', display: 'inline-flex', alignItems: 'center', gap: 5,
+                    }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: tone, display: 'inline-block' }} />
+                    <strong>{s.nomenclature}</strong>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 9 }}>{pct}%</span>
+                    {isCurrent && <span style={{ color: '#059669', fontSize: 9 }}>✓ actuel</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       {COLUMN_GROUPS.map(group => (
@@ -652,6 +1069,8 @@ function CellLegend() {
     { label: 'OK (confiance ≥ 70 %)', status: 'ok' },
     { label: 'À vérifier (40-70 %)',   status: 'warning' },
     { label: 'Erreur (vide ou < 40 %)', status: 'error' },
+    { label: 'Pré-rempli (à vérifier)', status: 'prefill' },
+    { label: 'À compléter (saisie acheteur)', status: 'todo' },
     { label: 'Optionnel — vide OK',    status: 'empty-ok' },
     { label: 'Calculé par Excel',      status: 'formula' },
   ];
